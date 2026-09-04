@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background-color: #f9f9ff;
+  color: #151c27;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+h1, h2 {
+  font-family: 'Cormorant Garamond', serif;
+}
+
+h3, h4, h5, h6 {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.font-serif-display {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.font-display {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.font-body {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.font-arabic {
+  font-family: 'Noto Naskh Arabic', serif;
+}
+
+.ambient-shadow {
+  box-shadow: 0 4px 24px -2px rgba(6, 95, 70, 0.06), 0 0 3px rgba(6, 95, 70, 0.02);
+}
+
+.glass-card, .glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(190, 201, 194, 0.35);
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, #ffe088 0%, #e9c349 100%);
+}
+
+.gold-gradient-hover:hover {
+  background: linear-gradient(135deg, #fdd243 0%, #d8b233 100%);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(111, 121, 115, 0.25);
+  border-radius: 20px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(111, 121, 115, 0.4);
+}
