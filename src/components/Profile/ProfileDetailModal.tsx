@@ -1,28 +1,67 @@
-import React from 'react';
-import { Profile } from '../../types';
+import React, { useState } from 'react';
+import { Profile, User } from '../../types';
 
 interface ProfileDetailModalProps {
   profile: Profile | null;
+  currentUser?: User;
   onClose: () => void;
   onStartMessage: (profile: Profile) => void;
   onRequestPhotoAccess: (profile: Profile) => void;
   isFavorited?: boolean;
   onToggleFavorite?: (profileId: string) => void;
+  onReport?: (profile: Profile, reason: string, description?: string) => void;
+  onBlock?: (profile: Profile, reason?: string) => void;
 }
 
 export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
   profile,
+  currentUser,
   onClose,
   onStartMessage,
   onRequestPhotoAccess,
   isFavorited = false,
   onToggleFavorite,
+  onReport,
+  onBlock,
 }) => {
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('Comportement inapproprié');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportSubmitted, setReportSubmitted] = useState(false);
+
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [blockReason, setBlockReason] = useState('Incompatibilité');
+  const [blockSubmitted, setBlockSubmitted] = useState(false);
+
   if (!profile) return null;
+
+  const handleSendReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onReport) {
+      onReport(profile, reportReason, reportDescription);
+    }
+    setReportSubmitted(true);
+    setTimeout(() => {
+      setReportSubmitted(false);
+      setReportModalOpen(false);
+    }, 2000);
+  };
+
+  const handleConfirmBlock = () => {
+    if (onBlock) {
+      onBlock(profile, blockReason);
+    }
+    setBlockSubmitted(true);
+    setTimeout(() => {
+      setBlockSubmitted(false);
+      setBlockModalOpen(false);
+      onClose();
+    }, 1500);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#211E1A]/60 backdrop-blur-sm animate-fadeIn">
-      <div className="w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-[#E8E3D7] max-h-[90vh] flex flex-col bg-white">
+      <div className="w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-[#E8E3D7] max-h-[90vh] flex flex-col bg-white relative">
         {/* Modal Header Bar */}
         <div className="p-4 sm:p-6 border-b border-[#E8E3D7] flex justify-between items-center bg-[#FAF8F2]">
           <div className="flex items-center gap-2">
@@ -51,6 +90,27 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                 </span>
               </button>
             )}
+
+            {/* Report button */}
+            <button
+              type="button"
+              onClick={() => setReportModalOpen(true)}
+              className="p-1.5 text-[#7D766C] hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+              title="Signaler ce profil"
+            >
+              <span className="material-symbols-outlined text-lg">flag</span>
+            </button>
+
+            {/* Block button */}
+            <button
+              type="button"
+              onClick={() => setBlockModalOpen(true)}
+              className="p-1.5 text-[#7D766C] hover:text-red-700 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+              title="Bloquer ce profil"
+            >
+              <span className="material-symbols-outlined text-lg">block</span>
+            </button>
+
             <button
               onClick={onClose}
               className="p-1.5 text-[#7D766C] hover:text-[#211E1A] hover:bg-[#FAF8F2] rounded-full transition-colors cursor-pointer"
@@ -107,6 +167,12 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                     Approuvé par Wali
                   </span>
                 )}
+                {profile.isAdmin && (
+                  <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-purple-200">
+                    <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
+                    Modérateur
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -139,6 +205,52 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                 {profile.education}
               </span>
             </div>
+
+            {profile.personality && (
+              <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2 sm:col-span-1">
+                <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
+                  Tempérament
+                </span>
+                <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
+                  {profile.personality}
+                </span>
+              </div>
+            )}
+
+            {profile.familyImportance && (
+              <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2">
+                <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
+                  Priorité Familiale
+                </span>
+                <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
+                  {profile.familyImportance}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Lifestyle Info (Alcohol, Smoking) */}
+          <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl text-xs text-[#575147]">
+              <span className="material-symbols-outlined text-sm text-[#0F5C4D]">
+                {profile.smokes ? 'smoking_rooms' : 'smoke_free'}
+              </span>
+              <span>{profile.smokes ? 'Fumeur' : 'Non-fumeur'}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl text-xs text-[#575147]">
+              <span className="material-symbols-outlined text-sm text-[#0F5C4D]">
+                {profile.drinksAlcohol ? 'local_bar' : 'no_drinks'}
+              </span>
+              <span>{profile.drinksAlcohol ? 'Consommation occasionnelle' : 'Ne boit pas d\'alcool'}</span>
+            </div>
+
+            {profile.interests && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl text-xs text-[#575147]">
+                <span className="material-symbols-outlined text-sm text-[#C9A45C]">interests</span>
+                <span>{profile.interests}</span>
+              </div>
+            )}
           </div>
 
           {/* Photo Gallery if photos exist */}
@@ -164,7 +276,7 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
               Présentation &amp; Attentes
             </h4>
             <p className="font-body text-xs sm:text-sm text-[#575147] leading-relaxed bg-[#FAF8F2] p-4 rounded-2xl border border-[#E8E3D7]">
-              "{profile.bio}"
+              "{profile.presentation || profile.bio}"
             </p>
           </div>
 
@@ -227,6 +339,140 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
             Démarrer une Conversation Supervisée
           </button>
         </div>
+
+        {/* Nested Report Modal */}
+        {reportModalOpen && (
+          <div className="absolute inset-0 bg-[#211E1A]/70 backdrop-blur-xs flex items-center justify-center p-4 z-20">
+            <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl border border-[#E8E3D7] space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="font-serif-display text-base font-bold text-[#211E1A] flex items-center gap-2">
+                  <span className="material-symbols-outlined text-red-600">flag</span>
+                  Signaler ce profil
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => setReportModalOpen(false)}
+                  className="text-[#7D766C] hover:text-[#211E1A]"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+
+              {reportSubmitted ? (
+                <div className="p-4 bg-emerald-50 text-[#0F5C4D] rounded-xl text-xs font-semibold flex items-center gap-2">
+                  <span className="material-symbols-outlined">check_circle</span>
+                  Votre signalement a été transmis à la modération. Merci de préserver l'éthique de la communauté.
+                </div>
+              ) : (
+                <form onSubmit={handleSendReport} className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-[#575147]">Motif du signalement</label>
+                    <select
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      className="w-full h-10 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3 text-xs text-[#211E1A]"
+                    >
+                      <option value="Comportement inapproprié">Comportement inapproprié</option>
+                      <option value="Fausse identité / Fraude">Fausse identité / Fraude</option>
+                      <option value="Non-respect du cadre islamique">Non-respect du cadre islamique</option>
+                      <option value="Harcèlement ou spam">Harcèlement ou spam</option>
+                      <option value="Autre motif">Autre motif</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-[#575147]">Précisions (optionnel)</label>
+                    <textarea
+                      value={reportDescription}
+                      onChange={(e) => setReportDescription(e.target.value)}
+                      rows={3}
+                      placeholder="Expliquez brièvement les faits constatés..."
+                      className="w-full bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl p-3 text-xs text-[#211E1A]"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setReportModalOpen(false)}
+                      className="flex-1 py-2 bg-gray-100 text-[#575147] rounded-xl text-xs font-bold hover:bg-gray-200"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 shadow-xs"
+                    >
+                      Confirmer le signalement
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Nested Block Modal */}
+        {blockModalOpen && (
+          <div className="absolute inset-0 bg-[#211E1A]/70 backdrop-blur-xs flex items-center justify-center p-4 z-20">
+            <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl border border-[#E8E3D7] space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="font-serif-display text-base font-bold text-[#211E1A] flex items-center gap-2">
+                  <span className="material-symbols-outlined text-red-700">block</span>
+                  Bloquer ce profil
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => setBlockModalOpen(false)}
+                  className="text-[#7D766C] hover:text-[#211E1A]"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+
+              {blockSubmitted ? (
+                <div className="p-4 bg-emerald-50 text-[#0F5C4D] rounded-xl text-xs font-semibold flex items-center gap-2">
+                  <span className="material-symbols-outlined">check_circle</span>
+                  Ce membre a été bloqué. Vous ne recevrez plus de messages de sa part.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-[#575147] leading-relaxed">
+                    En bloquant <strong>{profile.name}</strong>, cette personne ne pourra plus consulter votre profil complet ni vous envoyer de messages.
+                  </p>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-[#575147]">Raison du blocage</label>
+                    <input
+                      type="text"
+                      value={blockReason}
+                      onChange={(e) => setBlockReason(e.target.value)}
+                      placeholder="Ex: Incompatibilité de projet matrimonial"
+                      className="w-full h-10 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3 text-xs text-[#211E1A]"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setBlockModalOpen(false)}
+                      className="flex-1 py-2 bg-gray-100 text-[#575147] rounded-xl text-xs font-bold hover:bg-gray-200"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmBlock}
+                      className="flex-1 py-2 bg-red-700 text-white rounded-xl text-xs font-bold hover:bg-red-800 shadow-xs"
+                    >
+                      Bloquer définitivement
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

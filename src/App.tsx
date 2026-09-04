@@ -14,7 +14,10 @@ import {
   fetchMessagesFromSupabase,
   sendMessageToSupabase,
   fetchUserFavoritesFromSupabase,
-  toggleFavoriteInSupabase
+  toggleFavoriteInSupabase,
+  createOrGetConversationInSupabase,
+  reportUserOrProfileInSupabase,
+  blockUserInSupabase,
 } from './lib/supabase';
 import {
   getCurrentUserSession,

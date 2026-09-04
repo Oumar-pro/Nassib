@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserWaliInfo } from '../../types';
+import { submitVerificationRequestInSupabase, isSupabaseConfigured } from '../../lib/supabase';
 
 interface VerificationViewProps {
   user: User;
@@ -18,14 +19,22 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
   const [uploadedDocument, setUploadedDocument] = useState<boolean>(user.isVerifiedNNI);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
-  const handleDocumentSimulatedUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocumentSimulatedUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setUploadedDocument(true);
       onUploadNNI();
+      if (isSupabaseConfigured && user.id) {
+        await submitVerificationRequestInSupabase({
+          profileId: user.id,
+          userId: user.id,
+          verificationType: 'nni',
+          documentPath: e.target.files[0].name,
+        });
+      }
     }
   };
 
-  const handleSaveWali = (e: React.FormEvent) => {
+  const handleSaveWali = async (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateWaliInfo({
       name: waliName,
@@ -33,6 +42,14 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
       phone: waliPhone
     });
     setSaveSuccess(true);
+    if (isSupabaseConfigured && user.id) {
+      await submitVerificationRequestInSupabase({
+        profileId: user.id,
+        userId: user.id,
+        verificationType: 'wali',
+        adminNote: `${waliRelation} (${waliName}, +227 ${waliPhone})`,
+      });
+    }
     setTimeout(() => setSaveSuccess(false), 4000);
   };
 

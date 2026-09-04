@@ -7,7 +7,7 @@ export type TabType =
   | 'landing'
   | 'imam';
 
-export type MaritalStatus = 'Jamais marié(e)' | 'Divorcé(e)' | 'Veuf/Veuve';
+export type MaritalStatus = 'Jamais marié(e)' | 'Divorcé(e)' | 'Veuf/Veuve' | string;
 
 export interface UserStats {
   profileViews: number;
@@ -21,13 +21,13 @@ export interface UserStats {
 }
 
 export interface Profile {
-  id: string;
-  userId?: string;
+  id: string; // uuid
+  userId?: string; // uuid -> auth.users(id)
   userEmail?: string;
   name: string;
   age: number;
   profession: string;
-  city: 'Niamey' | 'Zinder' | 'Maradi' | 'Tahoua' | 'Agadez' | 'Dosso' | 'Tillabéri';
+  city: string;
   maritalStatus: MaritalStatus;
   religion: string;
   education: string;
@@ -43,6 +43,16 @@ export interface Profile {
   likesCount?: number;
   gender: 'female' | 'male';
   photos?: string[];
+  hobbies?: string;
+  interests?: string;
+  drinksAlcohol?: boolean;
+  smokes?: boolean;
+  presentation?: string;
+  personality?: string;
+  familyImportance?: string;
+  isAdmin?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Message {
@@ -60,6 +70,8 @@ export interface Message {
 
 export interface Conversation {
   id: string;
+  candidateId?: string;
+  suitorId?: string;
   participantId: string;
   participantName: string;
   participantAvatar: string;
@@ -94,4 +106,7 @@ export interface User {
   stats?: UserStats;
   gender?: 'female' | 'male';
   photos?: string[];
+  isAdmin?: boolean;
 }
+
+export * from './types/database';
