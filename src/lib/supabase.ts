@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Profile, Conversation, Message, PricingPlan, User } from '../types';
+import { Profile, Conversation, Message, User } from '../types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -30,9 +30,9 @@ export async function fetchProfilesFromSupabase(): Promise<Profile[]> {
       if (error.code === 'PGRST205') {
         isSupabaseTableMissing = true;
         console.warn('Supabase configuration active, but table "profiles" was not created yet in Supabase SQL Editor.');
-      } else if (error.code === '42501' || error.message?.includes('is_admin') || error.message?.includes('permission denied')) {
+      } else if (error.code === '42501' || error.message?.includes('permission denied')) {
         isSupabasePermissionIssue = true;
-        console.warn('Supabase RLS/Function permission notice (42501): function is_admin or table access needs execute grant. Fallback to local data active.');
+        console.warn('Supabase RLS permission notice (42501): table access needs grant. Fallback to local data active.');
       } else {
         console.warn('Notice fetching profiles from Supabase:', error.message || error);
       }
@@ -67,23 +67,12 @@ export async function fetchProfilesFromSupabase(): Promise<Profile[]> {
       likesCount: item.likes_count || 0,
     }));
 
-    // Deduplicate profiles by ID and filter out administrator profiles
+    // Deduplicate profiles by ID
     const seenIds = new Set<string>();
     const uniqueProfiles: Profile[] = [];
-    const ADMIN_EMAILS_LOWER = ['moutarioumar7@gmail.com', 'admin@zawaj.ne', 'contact@zawaj.ne'];
-    const ADMIN_USER_IDS = ['usr_admin_001', 'admin', 'super_admin'];
 
     for (const p of mapped) {
       if (seenIds.has(p.id)) continue;
-
-      // Filter out admin profile from general member listing
-      const isAdminProfile =
-        (p.userId && ADMIN_USER_IDS.includes(p.userId.toLowerCase())) ||
-        (p.userEmail && ADMIN_EMAILS_LOWER.includes(p.userEmail.toLowerCase())) ||
-        (p.name && (p.name.toLowerCase().includes('admin') || p.name.toLowerCase().includes('administrateur')));
-
-      if (isAdminProfile) continue;
-
       seenIds.add(p.id);
       uniqueProfiles.push(p);
     }
@@ -277,7 +266,7 @@ export async function fetchConversationsFromSupabase(): Promise<Conversation[]> 
       return {
         id: item.id,
         participantId: item.candidate_id || item.suitor_id,
-        participantName: partner.name || 'Membre Zawaj',
+        participantName: partner.name || 'Membre NASIBA',
         participantAvatar: partner.photo_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
         participantCity: partner.city || 'Niamey',
         lastMessage: item.last_message || 'Auncun message',
@@ -388,31 +377,3 @@ export async function sendMessageToSupabase(
   }
 }
 
-/**
- * Fetch Pricing Plans from Supabase
- */
-export async function fetchPricingPlansFromSupabase(): Promise<PricingPlan[]> {
-  if (!supabase) return [];
-
-  try {
-    const { data, error } = await supabase
-      .from('pricing_plans')
-      .select('*');
-
-    if (error || !data) return [];
-
-    return data.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      period: item.period,
-      description: item.description,
-      features: typeof item.features === 'string' ? JSON.parse(item.features) : item.features,
-      popular: Boolean(item.popular),
-      ctaText: item.cta_text,
-    }));
-  } catch (err) {
-    console.error('Supabase pricing plans error:', err);
-    return [];
-  }
-}

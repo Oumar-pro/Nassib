@@ -45,21 +45,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Welcome Header & Role Card */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Welcome Card */}
-        <div className="lg:col-span-2 glass-card rounded-[24px] p-6 sm:p-8 ambient-shadow relative overflow-hidden flex flex-col justify-between bg-gradient-to-br from-white via-[#f0f3ff] to-white border border-[#bec9c2]/40">
+        <div className="lg:col-span-2 rounded-[24px] p-6 sm:p-8 relative overflow-hidden flex flex-col justify-between bg-white border border-[#E8E3D7] shadow-sm">
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="inline-block px-3 py-1 bg-[#065f46]/10 text-[#004532] text-xs font-semibold rounded-full">
+                <span className="inline-block px-3 py-1 bg-[#8BAE9F]/20 text-[#0F5C4D] text-xs font-semibold rounded-full">
                   {isWali ? 'Espace Tuteur Légal (Wali)' : 'Tableau de bord membre'}
                 </span>
-                <span className="inline-block px-3 py-1 bg-[#fed65b]/20 text-[#745c00] text-xs font-semibold rounded-full border border-[#fed65b]/40">
+                <span className="inline-block px-3 py-1 bg-[#C9A45C]/15 text-[#735619] text-xs font-semibold rounded-full border border-[#C9A45C]/30">
                   Saison 2026
                 </span>
               </div>
-              <h2 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#151c27] mb-2 tracking-tight">
+              <h2 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#211E1A] mb-2 tracking-tight">
                 Bienvenue, {user.name}.
               </h2>
-              <p className="font-body text-sm sm:text-base text-[#3f4944] max-w-lg leading-relaxed">
+              <p className="font-body text-sm sm:text-base text-[#575147] max-w-lg leading-relaxed">
                 {isWali
                   ? "Suivi éthique, supervision bienveillante et validation des demandes d'accès aux informations de votre filleul(e)."
                   : "Votre recherche d'une union sincère et bénie se poursuit. Retrouvez ici le suivi complet de votre visibilité et vos statistiques de compatibilité."}
@@ -67,27 +67,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              {user.isPremium ? (
-                <div className="inline-flex items-center gap-2 bg-[#fed65b]/20 text-[#745c00] border border-[#fed65b] px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold shadow-2xs">
-                  <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    workspace_premium
-                  </span>
-                  <span>Formule Baraka (Premium Actif)</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onNavigateToTab('plans')}
-                  className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 border border-slate-300 px-3.5 py-1.5 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-slate-200 transition-colors cursor-pointer shadow-2xs"
-                  title="Voir les formules"
-                >
-                  <span className="material-symbols-outlined text-base">workspace_premium</span>
-                  <span>Formule Sadaq (Gratuit)</span>
-                </button>
-              )}
+              <div className="inline-flex items-center gap-2 bg-[#8BAE9F]/15 text-[#0F5C4D] border border-[#8BAE9F]/30 px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-[#C9A45C]"></span>
+                <span>Plateforme 100% Gratuite</span>
+              </div>
 
               {user.isVerifiedNNI ? (
-                <div className="inline-flex items-center gap-2 bg-[#065f46]/10 text-[#004532] px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold border border-[#004532]/20">
+                <div className="inline-flex items-center gap-2 bg-[#0F5C4D]/10 text-[#0F5C4D] px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold border border-[#0F5C4D]/20">
                   <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
                     verified
                   </span>
@@ -97,7 +83,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigateToTab('verification')}
-                  className="inline-flex items-center gap-2 bg-amber-50 text-amber-900 border border-amber-300 px-3.5 py-1.5 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs"
+                  className="inline-flex items-center gap-2 bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/40 px-3.5 py-1.5 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#C9A45C]/25 transition-colors cursor-pointer shadow-2xs"
                 >
                   <span className="material-symbols-outlined text-base">pending</span>
                   <span>Vérifier mon NNI</span>
@@ -105,7 +91,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               )}
 
               {user.isWaliApproved ? (
-                <div className="inline-flex items-center gap-2 bg-[#fed65b]/20 text-[#745c00] border border-[#fed65b]/50 px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold shadow-2xs">
+                <div className="inline-flex items-center gap-2 bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/40 px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold shadow-2xs">
                   <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
                     shield
                   </span>
@@ -115,7 +101,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigateToTab('verification')}
-                  className="inline-flex items-center gap-2 bg-[#004532]/10 text-[#004532] border border-[#004532]/30 px-3.5 py-1.5 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#004532]/20 transition-colors cursor-pointer shadow-2xs"
+                  className="inline-flex items-center gap-2 bg-[#8BAE9F]/15 text-[#0F5C4D] border border-[#8BAE9F]/30 px-3.5 py-1.5 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#8BAE9F]/25 transition-colors cursor-pointer shadow-2xs"
                 >
                   <span className="material-symbols-outlined text-base">family_restroom</span>
                   <span>Ajouter un Wali</span>
@@ -125,9 +111,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigateToTab('imam')}
-                className="inline-flex items-center gap-2 bg-[#004532] text-white px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#065f46] transition-all cursor-pointer shadow-sm"
+                className="inline-flex items-center gap-2 bg-[#0F5C4D] text-white px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#0c4a3e] transition-all cursor-pointer shadow-sm"
               >
-                <span className="material-symbols-outlined text-base">auto_awesome</span>
+                <span className="material-symbols-outlined text-base text-[#C9A45C]">auto_awesome</span>
                 <span>Consulter Imam Oumar IA</span>
               </button>
             </div>
@@ -135,18 +121,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Quick Actions Bento Banner */}
-        <div className="glass-card rounded-[24px] p-6 ambient-shadow bg-gradient-to-br from-[#004532] to-[#065f46] text-white flex flex-col justify-between">
+        <div className="rounded-[24px] p-6 bg-gradient-to-br from-[#0F5C4D] to-[#0c4a3e] text-white flex flex-col justify-between shadow-md">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="material-symbols-outlined text-[#fed65b] text-2xl">auto_awesome</span>
-              <span className="font-body text-xs font-bold text-[#fed65b] uppercase tracking-wider">
+              <span className="material-symbols-outlined text-[#C9A45C] text-2xl">auto_awesome</span>
+              <span className="font-body text-xs font-bold text-[#C9A45C] uppercase tracking-wider">
                 Conseiller Spirituel
               </span>
             </div>
             <h3 className="font-serif-display text-xl font-bold mb-2 text-white">
               Guide Matrimonial Imam Oumar
             </h3>
-            <p className="font-body text-xs text-emerald-100 leading-relaxed mb-4">
+            <p className="font-body text-xs text-emerald-100/90 leading-relaxed mb-4">
               Des interrogations sur le rôle du Wali, la fixation de la dot ou l'éthique des fiançailles ? Posez vos questions à tout moment.
             </p>
           </div>
@@ -154,7 +140,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             type="button"
             onClick={() => onNavigateToTab('imam')}
-            className="w-full py-3 px-4 rounded-xl bg-[#fed65b] text-[#574500] font-display font-bold text-xs sm:text-sm hover:bg-amber-300 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            className="w-full py-3 px-4 rounded-xl bg-[#C9A45C] text-[#211E1A] font-display font-bold text-xs sm:text-sm hover:bg-[#b8944f] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
           >
             <span>Poser une question à l'Imam</span>
             <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -166,18 +152,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="font-serif-display text-xl font-bold text-[#151c27] flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#004532]">analytics</span>
+            <h3 className="font-serif-display text-xl font-bold text-[#211E1A] flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#0F5C4D]">analytics</span>
               <span>Statistiques d'Activité &amp; Visibilité du Profil</span>
             </h3>
-            <p className="font-body text-xs text-[#3f4944]">
+            <p className="font-body text-xs text-[#575147]">
               {isWali
                 ? "Statistiques de supervision et d'interaction pour le profil sous votre tutelle."
                 : "Suivi en temps réel de votre portée, consultations et demandes d'interaction."}
             </p>
           </div>
 
-          <span className="px-3 py-1 rounded-full bg-[#004532]/10 text-[#004532] font-body text-xs font-bold self-start sm:self-auto">
+          <span className="px-3 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-body text-xs font-bold self-start sm:self-auto">
             Mise à jour en temps réel
           </span>
         </div>
@@ -185,133 +171,133 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* 6 Grid Metric Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {/* Card 1: Total Profile Views */}
-          <div className="glass-card rounded-[20px] p-4 ambient-shadow border border-[#bec9c2]/40 bg-white flex flex-col justify-between hover:border-[#004532]/40 transition-all">
+          <div className="rounded-[20px] p-4 border border-[#E8E3D7] bg-white flex flex-col justify-between hover:border-[#8BAE9F] transition-all shadow-2xs">
             <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-full bg-[#fed65b]/20 text-[#745c00] flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-[#C9A45C]/15 text-[#735619] flex items-center justify-center">
                 <span className="material-symbols-outlined text-lg">visibility</span>
               </div>
-              <span className="text-[#004532] font-body text-[10px] font-bold bg-[#065f46]/10 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+              <span className="text-[#0F5C4D] font-body text-[10px] font-bold bg-[#8BAE9F]/15 px-2 py-0.5 rounded-full flex items-center gap-0.5">
                 <span className="material-symbols-outlined text-[12px]">arrow_upward</span> +{stats.weeklyGrowthPercentage}%
               </span>
             </div>
             <div>
-              <p className="font-display text-2xl font-extrabold text-[#151c27]">{stats.profileViews}</p>
-              <p className="font-body text-[11px] text-[#3f4944] font-semibold mt-0.5">Vues du Profil</p>
-              <p className="font-body text-[10px] text-[#6f7973]">Générées ce mois</p>
+              <p className="font-display text-2xl font-extrabold text-[#211E1A]">{stats.profileViews}</p>
+              <p className="font-body text-[11px] text-[#575147] font-semibold mt-0.5">Vues du Profil</p>
+              <p className="font-body text-[10px] text-[#7D766C]">Générées ce mois</p>
             </div>
           </div>
 
           {/* Card 2: Detailed Consultations */}
-          <div className="glass-card rounded-[20px] p-4 ambient-shadow border border-[#bec9c2]/40 bg-white flex flex-col justify-between hover:border-[#004532]/40 transition-all">
+          <div className="rounded-[20px] p-4 border border-[#E8E3D7] bg-white flex flex-col justify-between hover:border-[#8BAE9F] transition-all shadow-2xs">
             <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-full bg-[#065f46]/10 text-[#004532] flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center">
                 <span className="material-symbols-outlined text-lg">person_search</span>
               </div>
-              <span className="text-[#004532] font-body text-[10px] font-bold bg-[#065f46]/10 px-2 py-0.5 rounded-full">
+              <span className="text-[#0F5C4D] font-body text-[10px] font-bold bg-[#8BAE9F]/15 px-2 py-0.5 rounded-full">
                 Lectures
               </span>
             </div>
             <div>
-              <p className="font-display text-2xl font-extrabold text-[#151c27]">{stats.profileConsultations}</p>
-              <p className="font-body text-[11px] text-[#3f4944] font-semibold mt-0.5">Visites Détaillées</p>
-              <p className="font-body text-[10px] text-[#6f7973]">Lectures complètes</p>
+              <p className="font-display text-2xl font-extrabold text-[#211E1A]">{stats.profileConsultations}</p>
+              <p className="font-body text-[11px] text-[#575147] font-semibold mt-0.5">Visites Détaillées</p>
+              <p className="font-body text-[10px] text-[#7D766C]">Lectures complètes</p>
             </div>
           </div>
 
           {/* Card 3: Photo Access Requests */}
-          <div className="glass-card rounded-[20px] p-4 ambient-shadow border border-[#bec9c2]/40 bg-white flex flex-col justify-between hover:border-[#004532]/40 transition-all">
+          <div className="rounded-[20px] p-4 border border-[#E8E3D7] bg-white flex flex-col justify-between hover:border-[#8BAE9F] transition-all shadow-2xs">
             <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-full bg-purple-100 text-purple-800 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center">
                 <span className="material-symbols-outlined text-lg">lock_open</span>
               </div>
-              <span className="text-purple-700 font-body text-[10px] font-bold bg-purple-50 px-2 py-0.5 rounded-full">
+              <span className="text-[#0F5C4D] font-body text-[10px] font-bold bg-[#8BAE9F]/15 px-2 py-0.5 rounded-full">
                 {stats.photoRequestsApproved}/{stats.photoRequests}
               </span>
             </div>
             <div>
-              <p className="font-display text-2xl font-extrabold text-[#151c27]">{stats.photoRequests}</p>
-              <p className="font-body text-[11px] text-[#3f4944] font-semibold mt-0.5">Demandes Photos</p>
-              <p className="font-body text-[10px] text-[#6f7973]">Accès sollicités</p>
+              <p className="font-display text-2xl font-extrabold text-[#211E1A]">{stats.photoRequests}</p>
+              <p className="font-body text-[11px] text-[#575147] font-semibold mt-0.5">Demandes Photos</p>
+              <p className="font-body text-[10px] text-[#7D766C]">Accès sollicités</p>
             </div>
           </div>
 
-          {/* Card 4: Favoris Reçus / Mes Fans (Ceux qui m'ont aimé) */}
-          <div className="glass-card rounded-[20px] p-4 ambient-shadow border border-[#bec9c2]/40 bg-white flex flex-col justify-between hover:border-pink-300 transition-all">
+          {/* Card 4: Favoris Reçus / Mes Fans */}
+          <div className="rounded-[20px] p-4 border border-[#E8E3D7] bg-white flex flex-col justify-between hover:border-[#C9A45C]/50 transition-all shadow-2xs">
             <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-[#C9A45C]/20 text-[#735619] flex items-center justify-center">
                 <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>
                   favorite
                 </span>
               </div>
-              <span className="text-pink-700 font-body text-[10px] font-bold bg-pink-50 px-2 py-0.5 rounded-full">
+              <span className="text-[#735619] font-body text-[10px] font-bold bg-[#C9A45C]/15 px-2 py-0.5 rounded-full">
                 Mes Fans
               </span>
             </div>
             <div>
-              <p className="font-display text-2xl font-extrabold text-[#151c27]">{actualFansCount}</p>
-              <p className="font-body text-[11px] text-[#3f4944] font-semibold mt-0.5">Favoris Reçus</p>
-              <p className="font-body text-[10px] text-[#6f7973]">Ont aimé votre profil</p>
+              <p className="font-display text-2xl font-extrabold text-[#211E1A]">{actualFansCount}</p>
+              <p className="font-body text-[11px] text-[#575147] font-semibold mt-0.5">Favoris Reçus</p>
+              <p className="font-body text-[10px] text-[#7D766C]">Ont aimé votre profil</p>
             </div>
           </div>
 
-          {/* Card 5: Mes Favoris / Envoyés (Ceux que j'ai aimés) */}
-          <div className="glass-card rounded-[20px] p-4 ambient-shadow border border-[#bec9c2]/40 bg-white flex flex-col justify-between hover:border-rose-300 transition-all">
+          {/* Card 5: Mes Favoris / Envoyés */}
+          <div className="rounded-[20px] p-4 border border-[#E8E3D7] bg-white flex flex-col justify-between hover:border-[#8BAE9F] transition-all shadow-2xs">
             <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center">
                 <span className="material-symbols-outlined text-lg">
                   bookmark_heart
                 </span>
               </div>
-              <span className="text-rose-700 font-body text-[10px] font-bold bg-rose-50 px-2 py-0.5 rounded-full">
+              <span className="text-[#0F5C4D] font-body text-[10px] font-bold bg-[#8BAE9F]/15 px-2 py-0.5 rounded-full">
                 Sauvegardés
               </span>
             </div>
             <div>
-              <p className="font-display text-2xl font-extrabold text-[#151c27]">{favoriteProfiles.length}</p>
-              <p className="font-body text-[11px] text-[#3f4944] font-semibold mt-0.5">Mes Favoris</p>
-              <p className="font-body text-[10px] text-[#6f7973]">Profils que vous suivez</p>
+              <p className="font-display text-2xl font-extrabold text-[#211E1A]">{favoriteProfiles.length}</p>
+              <p className="font-body text-[11px] text-[#575147] font-semibold mt-0.5">Mes Favoris</p>
+              <p className="font-body text-[10px] text-[#7D766C]">Profils que vous suivez</p>
             </div>
           </div>
 
           {/* Card 6: Matches / Correspondances */}
           <div 
             onClick={() => onNavigateToTab('browse')}
-            className="glass-card rounded-[20px] p-4 ambient-shadow border border-[#bec9c2]/40 bg-white flex flex-col justify-between hover:border-[#004532]/40 transition-all cursor-pointer"
+            className="rounded-[20px] p-4 border border-[#E8E3D7] bg-white flex flex-col justify-between hover:border-[#0F5C4D]/40 transition-all cursor-pointer shadow-2xs"
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-full bg-emerald-100 text-[#004532] flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center">
                 <span className="material-symbols-outlined text-lg">handshake</span>
               </div>
-              <span className="text-[#004532] font-body text-[10px] font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+              <span className="text-[#0F5C4D] font-body text-[10px] font-bold bg-[#0F5C4D]/10 px-2 py-0.5 rounded-full">
                 {stats.compatibilityRateAvg}% Mdn
               </span>
             </div>
             <div>
-              <p className="font-display text-2xl font-extrabold text-[#151c27]">{stats.matchesCount}</p>
-              <p className="font-body text-[11px] text-[#3f4944] font-semibold mt-0.5">Compatibles</p>
-              <p className="font-body text-[10px] text-[#6f7973]">Affinité élevée</p>
+              <p className="font-display text-2xl font-extrabold text-[#211E1A]">{stats.matchesCount}</p>
+              <p className="font-body text-[11px] text-[#575147] font-semibold mt-0.5">Compatibles</p>
+              <p className="font-body text-[10px] text-[#7D766C]">Affinité élevée</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* MES PROFILS FAVORIS SECTION */}
-      <div className="glass-card rounded-[24px] p-6 ambient-shadow bg-white border border-[#bec9c2]/40 space-y-4">
+      <div className="rounded-[24px] p-6 bg-white border border-[#E8E3D7] space-y-4 shadow-sm">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+            <div className="w-9 h-9 rounded-full bg-[#C9A45C]/15 text-[#735619] flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-xl text-[#C9A45C]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 favorite
               </span>
             </div>
             <div>
-              <h3 className="font-serif-display text-xl font-bold text-[#151c27] flex items-center gap-2">
+              <h3 className="font-serif-display text-xl font-bold text-[#211E1A] flex items-center gap-2">
                 <span>Mes Profils Favoris</span>
-                <span className="bg-rose-100 text-rose-700 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                <span className="bg-[#C9A45C]/15 text-[#735619] text-xs font-bold px-2.5 py-0.5 rounded-full">
                   {favoriteProfiles.length}
                 </span>
               </h3>
-              <p className="font-body text-xs text-[#3f4944]">
+              <p className="font-body text-xs text-[#575147]">
                 Profils que vous avez sauvegardés pour suivi ultérieur
               </p>
             </div>
@@ -319,7 +305,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {favoriteProfiles.length > 0 && (
             <button
               onClick={() => onNavigateToTab('browse')}
-              className="text-[#004532] font-display text-xs sm:text-sm font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-[#0F5C4D] font-display text-xs sm:text-sm font-semibold hover:underline flex items-center gap-1 cursor-pointer"
             >
               <span>Découvrir d'autres profils</span>
               <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -328,19 +314,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {favoriteProfiles.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-[#f0f3ff]/60 border border-dashed border-[#bec9c2]/50 text-center flex flex-col items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mb-2">
+          <div className="p-8 rounded-2xl bg-[#FAF8F2] border border-dashed border-[#E8E3D7] text-center flex flex-col items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[#C9A45C]/15 text-[#C9A45C] flex items-center justify-center mb-2">
               <span className="material-symbols-outlined text-2xl">favorite_border</span>
             </div>
-            <h4 className="font-display text-sm font-bold text-[#151c27] mb-1">
+            <h4 className="font-display text-sm font-bold text-[#211E1A] mb-1">
               Aucun profil enregistré dans vos favoris
             </h4>
-            <p className="font-body text-xs text-[#6f7973] max-w-md mb-4">
-              Cliquez sur l'icône de cœur ❤️ présente sur les cartes de profil pour les ajouter à cette liste et les retrouver facilement.
+            <p className="font-body text-xs text-[#7D766C] max-w-md mb-4">
+              Cliquez sur l'icône de cœur sur les cartes de profil pour les ajouter à cette liste et les retrouver facilement.
             </p>
             <button
               onClick={() => onNavigateToTab('browse')}
-              className="px-4 py-2 rounded-xl bg-[#004532] text-white font-display text-xs font-bold hover:bg-[#065f46] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#0F5C4D] text-white font-display text-xs font-bold hover:bg-[#0c4a3e] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <span className="material-symbols-outlined text-sm">search</span>
               <span>Parcourir les profils</span>
@@ -352,7 +338,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div
                 key={profile.id}
                 onClick={() => onSelectProfile(profile)}
-                className="rounded-2xl p-3 border border-[#bec9c2]/40 bg-[#f9f9ff] flex items-center gap-3 hover:border-[#004532]/40 transition-all cursor-pointer relative group"
+                className="rounded-2xl p-3 border border-[#E8E3D7] bg-[#FAF8F2] flex items-center gap-3 hover:border-[#8BAE9F] transition-all cursor-pointer relative group"
               >
                 <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-slate-100 relative">
                   <img
@@ -362,13 +348,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-display text-sm font-bold text-[#151c27] truncate">
+                  <h4 className="font-display text-sm font-bold text-[#211E1A] truncate">
                     {profile.name}, {profile.age} ans
                   </h4>
-                  <p className="font-body text-[11px] text-[#3f4944] truncate">
+                  <p className="font-body text-[11px] text-[#575147] truncate">
                     {profile.profession} • {profile.city}
                   </p>
-                  <span className="inline-block mt-0.5 text-[10px] font-semibold text-[#004532] bg-[#004532]/10 px-2 py-0.2 rounded-full">
+                  <span className="inline-block mt-0.5 text-[10px] font-semibold text-[#0F5C4D] bg-[#8BAE9F]/20 px-2 py-0.5 rounded-full">
                     {profile.matchPercentage}% Compatible
                   </span>
                 </div>
@@ -379,10 +365,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       e.stopPropagation();
                       onToggleFavorite(profile.id);
                     }}
-                    className="w-8 h-8 rounded-full bg-rose-100 text-rose-600 hover:bg-rose-200 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                    className="w-8 h-8 rounded-full bg-white hover:bg-slate-100 text-[#7D766C] hover:text-[#0F5C4D] border border-[#E8E3D7] flex items-center justify-center shrink-0 transition-colors cursor-pointer"
                     title="Retirer des favoris"
                   >
-                    <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    <span className="material-symbols-outlined text-base text-[#C9A45C]" style={{ fontVariationSettings: "'FILL' 1" }}>
                       favorite
                     </span>
                   </button>
@@ -399,12 +385,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="lg:col-span-2 space-y-6">
           <div className="flex justify-between items-end mb-2">
             <div>
-              <h3 className="font-serif-display text-xl font-bold text-[#151c27]">Profils Recommandés</h3>
-              <p className="font-body text-xs text-[#3f4944]">Sélectionnés selon vos critères d'âge, ville et valeurs</p>
+              <h3 className="font-serif-display text-xl font-bold text-[#211E1A]">Profils Recommandés</h3>
+              <p className="font-body text-xs text-[#575147]">Sélectionnés selon vos critères d'âge, ville et valeurs</p>
             </div>
             <button 
               onClick={() => onNavigateToTab('browse')}
-              className="text-[#004532] font-display text-sm font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-[#0F5C4D] font-display text-sm font-semibold hover:underline flex items-center gap-1 cursor-pointer"
             >
               Voir tout <span className="material-symbols-outlined text-base">arrow_forward</span>
             </button>
@@ -412,19 +398,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {recommendedProfiles.length === 0 ? (
-              <div className="col-span-full glass-card rounded-[24px] p-8 text-center border border-[#bec9c2]/30 bg-white">
-                <div className="w-12 h-12 rounded-full bg-[#004532]/10 text-[#004532] flex items-center justify-center mx-auto mb-3">
-                  <span className="material-symbols-outlined text-2xl">favorite</span>
+              <div className="col-span-full rounded-[24px] p-8 text-center border border-[#E8E3D7] bg-white shadow-2xs">
+                <div className="w-12 h-12 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center mx-auto mb-3">
+                  <span className="material-symbols-outlined text-2xl text-[#C9A45C]">favorite</span>
                 </div>
-                <h4 className="font-serif-display text-base font-bold text-[#151c27] mb-1">
+                <h4 className="font-serif-display text-base font-bold text-[#211E1A] mb-1">
                   Découvrez de nouvelles opportunités de rencontre
                 </h4>
-                <p className="font-body text-xs text-[#3f4944] mb-4">
+                <p className="font-body text-xs text-[#575147] mb-4">
                   Consultez les célibataires vérifiés sur la plateforme selon vos critères spirituels et personnels.
                 </p>
                 <button
                   onClick={() => onNavigateToTab('browse')}
-                  className="px-4 py-2 bg-[#004532] text-white rounded-xl font-display text-xs font-semibold hover:bg-[#065f46] cursor-pointer transition-all shadow-xs"
+                  className="px-4 py-2 bg-[#0F5C4D] text-white rounded-xl font-display text-xs font-semibold hover:bg-[#0c4a3e] cursor-pointer transition-all shadow-xs"
                 >
                   Explorer les profils
                 </button>
@@ -437,10 +423,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <div
                     key={profile.id}
                     onClick={() => onSelectProfile(profile)}
-                    className="glass-card rounded-[24px] overflow-hidden ambient-shadow flex flex-col group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border border-[#bec9c2]/30 bg-white"
+                    className="rounded-[24px] overflow-hidden shadow-sm flex flex-col group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md border border-[#E8E3D7] bg-white"
                   >
                     {/* Photo banner */}
-                    <div className="h-52 relative overflow-hidden bg-slate-100 flex items-center justify-center">
+                    <div className="h-52 relative overflow-hidden bg-[#FAF8F2] flex items-center justify-center">
                       {profile.photoUrl ? (
                         <img
                           src={profile.photoUrl}
@@ -450,28 +436,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           }`}
                         />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-slate-100 text-[#004532]">
-                          <span className="material-symbols-outlined text-4xl mb-1 text-[#004532]/40">person</span>
-                          <span className="font-display font-bold text-xs text-[#004532]/70">{profile.name}</span>
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF8F2] text-[#0F5C4D]">
+                          <span className="material-symbols-outlined text-4xl mb-1 text-[#8BAE9F]">person</span>
+                          <span className="font-display font-bold text-xs text-[#0F5C4D]">{profile.name}</span>
                         </div>
                       )}
-                      <div className="absolute top-3 right-3 bg-white/85 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1 text-xs font-semibold text-[#004532] shadow-sm">
-                        <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1 text-xs font-semibold text-[#0F5C4D] shadow-xs border border-[#E8E3D7]">
+                        <span className="material-symbols-outlined text-sm text-[#C9A45C]" style={{ fontVariationSettings: "'FILL' 1" }}>
                           verified
                         </span>
                         {profile.matchPercentage}% Compatible
                       </div>
-                      {profile.isPremium && (
-                        <div className="absolute top-3 left-3 gold-gradient text-[#574500] px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase">
-                          PREMIUM
-                        </div>
-                      )}
                     </div>
 
                     {/* Profile Details */}
                     <div className="p-5 flex flex-col flex-grow">
                       <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-display text-lg font-bold text-[#151c27]">
+                        <h4 className="font-display text-lg font-bold text-[#211E1A]">
                           {profile.name}, {profile.age}
                         </h4>
                         {onToggleFavorite && (
@@ -482,7 +463,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                               onToggleFavorite(profile.id);
                             }}
                             className={`p-1.5 rounded-full transition-colors cursor-pointer ${
-                              isFavorited ? 'text-rose-600 bg-rose-50' : 'text-[#6f7973] hover:text-rose-600'
+                              isFavorited ? 'text-[#C9A45C] bg-[#C9A45C]/15' : 'text-[#7D766C] hover:text-[#C9A45C]'
                             }`}
                             title={isFavorited ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                           >
@@ -496,16 +477,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         )}
                       </div>
 
-                    <p className="font-body text-xs text-[#3f4944] mb-3 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm text-[#004532]">location_on</span>
+                    <p className="font-body text-xs text-[#575147] mb-3 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm text-[#0F5C4D]">location_on</span>
                       {profile.profession} • {profile.city}
                     </p>
 
                     <div className="flex flex-wrap gap-1.5 mb-5">
-                      <span className="bg-[#dce2f3] px-2.5 py-1 rounded-full font-body text-xs text-[#3f4944]">
+                      <span className="bg-[#FAF8F2] border border-[#E8E3D7] px-2.5 py-1 rounded-full font-body text-xs text-[#575147]">
                         {profile.maritalStatus}
                       </span>
-                      <span className="bg-[#dce2f3] px-2.5 py-1 rounded-full font-body text-xs text-[#3f4944]">
+                      <span className="bg-[#FAF8F2] border border-[#E8E3D7] px-2.5 py-1 rounded-full font-body text-xs text-[#575147]">
                         {profile.religion}
                       </span>
                     </div>
@@ -515,11 +496,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         e.stopPropagation();
                         onSelectProfile(profile);
                       }}
-                      className={`mt-auto w-full font-display text-sm font-semibold py-2.5 rounded-xl transition-all shadow-sm cursor-pointer ${
-                        profile.isPremium 
-                          ? 'gold-gradient text-[#574500] hover:opacity-90' 
-                          : 'bg-[#004532] text-white hover:bg-[#065f46]'
-                      }`}
+                      className="mt-auto w-full font-display text-sm font-semibold py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer bg-[#0F5C4D] text-white hover:bg-[#0c4a3e]"
                     >
                       Voir le Profil
                     </button>
@@ -534,25 +511,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Sidebar Utilities */}
         <div className="space-y-6">
           {/* Privacy Controls */}
-          <div className="glass-card rounded-[24px] p-6 ambient-shadow bg-white border border-[#bec9c2]/40">
+          <div className="rounded-[24px] p-6 bg-white border border-[#E8E3D7] shadow-sm">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-[#065f46]/10 flex items-center justify-center text-[#004532]">
+              <div className="w-10 h-10 rounded-full bg-[#8BAE9F]/20 flex items-center justify-center text-[#0F5C4D]">
                 <span className="material-symbols-outlined">visibility_off</span>
               </div>
-              <h3 className="font-display text-lg font-bold text-[#151c27]">
+              <h3 className="font-display text-lg font-bold text-[#211E1A]">
                 Contrôle de Confidentialité
               </h3>
             </div>
-            <p className="font-body text-xs text-[#3f4944] mb-5 leading-relaxed">
+            <p className="font-body text-xs text-[#575147] mb-5 leading-relaxed">
               Gérez la visibilité et le floutage de vos photos vis-à-vis des membres non confirmés.
             </p>
 
-            <div className="flex items-center justify-between p-4 bg-[#f0f3ff] rounded-2xl border border-[#bec9c2]/30">
+            <div className="flex items-center justify-between p-4 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7]">
               <div>
-                <p className="font-display text-sm font-bold text-[#151c27]">
+                <p className="font-display text-sm font-bold text-[#211E1A]">
                   Floutage des Photos
                 </p>
-                <p className="font-body text-xs text-[#3f4944]">
+                <p className="font-body text-xs text-[#575147]">
                   {user.photoBlurringActive ? 'Actuellement actif' : 'Désactivé (Photos visibles)'}
                 </p>
               </div>
@@ -562,7 +539,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 type="button"
                 onClick={onTogglePhotoBlurring}
                 className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  user.photoBlurringActive ? 'bg-[#004532]' : 'bg-[#bec9c2]'
+                  user.photoBlurringActive ? 'bg-[#0F5C4D]' : 'bg-[#D6CFBE]'
                 }`}
                 role="switch"
                 aria-checked={user.photoBlurringActive}
@@ -578,22 +555,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Wali Profile Prompt Banner */}
-          <div className="glass-card rounded-[24px] p-6 ambient-shadow border border-[#004532]/20 bg-[#065f46]/5 relative overflow-hidden">
-            <div className="flex items-center gap-2 mb-2 text-[#745c00]">
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+          <div className="rounded-[24px] p-6 border border-[#8BAE9F]/30 bg-[#FAF8F2] relative overflow-hidden shadow-2xs">
+            <div className="flex items-center gap-2 mb-2 text-[#735619]">
+              <span className="material-symbols-outlined text-[#C9A45C]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 shield_person
               </span>
               <span className="font-body text-xs font-bold uppercase tracking-wide">Éthique &amp; Confiance</span>
             </div>
-            <h3 className="font-display text-lg font-bold text-[#151c27] mb-2">
+            <h3 className="font-display text-lg font-bold text-[#211E1A] mb-2">
               Complétez votre profil Wali
             </h3>
-            <p className="font-body text-xs text-[#3f4944] mb-4 leading-relaxed">
+            <p className="font-body text-xs text-[#575147] mb-4 leading-relaxed">
               Ajouter les coordonnées de votre tuteur légal (Père, Frère, Oncle) augmente la confiance des membres et la visibilité de votre profil de +40%.
             </p>
             <button
               onClick={() => onNavigateToTab('verification')}
-              className="text-[#004532] font-display text-sm font-bold flex items-center gap-1 hover:underline cursor-pointer"
+              className="text-[#0F5C4D] font-display text-sm font-bold flex items-center gap-1 hover:underline cursor-pointer"
             >
               Ajouter les détails du Wali <span className="material-symbols-outlined text-base">arrow_forward</span>
             </button>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { TabType } from '../../types';
-import { ZawajLogo } from '../ZawajLogo';
+import { NasibaLogo } from '../NasibaLogo';
 
 interface LandingViewProps {
   onEnterApp: () => void;
@@ -30,43 +30,43 @@ export const LandingView: React.FC<LandingViewProps> = ({
   const faqList = [
     {
       q: "L'inscription est-elle gratuite ?",
-      a: "Oui. Vous pouvez créer votre profil gratuitement et découvrir la plateforme."
+      a: "Oui. L'application est 100% gratuite pour tous. Toutes les fonctionnalités (recherche, profils, messagerie éthique, accompagnement IA) sont accessibles sans aucun frais, sans abonnement ni carte bancaire."
     },
     {
-      q: "Qui peut s'inscrire ?",
-      a: "La plateforme s'adresse aux musulmans majeurs qui recherchent une relation sérieuse avec l'objectif de construire un mariage."
+      q: "Qui peut s'inscrire sur NASIBA ?",
+      a: "La plateforme s'adresse aux musulmans majeurs qui recherchent une relation sérieuse avec l'objectif sacré de construire un foyer et un mariage pérenne."
     },
     {
-      q: "Mes informations sont-elles publiques ?",
-      a: "Nous accordons une grande importance à la confidentialité. Vous gardez le contrôle sur les informations que vous partagez."
+      q: "Mes informations sont-elles protégées et confidentielles ?",
+      a: "Absolument. Nous accordons une importance primordiale à la pudeur et à la confidentialité. Vous gardez le contrôle complet sur vos photos (floutage activable) et vos coordonnées personnelles."
     },
     {
-      q: "Puis-je rechercher quelqu'un dans ma ville ?",
-      a: "Oui. Vous pourrez découvrir des profils selon différents critères, notamment la localisation."
+      q: "Puis-je rechercher quelqu'un dans ma ville au Niger ?",
+      a: "Oui. Vous pouvez découvrir des profils selon la localisation (Niamey, Maradi, Zinder, Tahoua, Agadez, Dosso, etc.) et des critères d'affinité spirituelle et culturelle."
     },
     {
-      q: "Est-ce une application de rencontres classique ?",
-      a: "Non. La plateforme est conçue autour d'une démarche sérieuse et respectueuse, avec le mariage comme finalité."
+      q: "En quoi NASIBA se distingue d'une application de rencontres classique ?",
+      a: "NASIBA proscrit les dérives des applications de drague éphémère. Chaque compte est orienté vers le mariage halal, avec accompagnement bienveillant et supervision possible du tuteur légal (Wali)."
     }
   ];
 
   return (
-    <div className="min-h-screen bg-[#f9f9ff] text-[#151c27] font-body selection:bg-[#065f46]/20 selection:text-[#004532]">
+    <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] font-body selection:bg-[#8BAE9F]/25 selection:text-[#0F5C4D]">
       {/* Top Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#f9f9ff]/90 backdrop-blur-xl border-b border-[#bec9c2]/30 transition-all">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#FAF8F2]/90 backdrop-blur-xl border-b border-[#E8E3D7] transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex justify-between items-center">
           <div 
             onClick={() => onOpenAuth('register')}
             className="cursor-pointer"
           >
-            <ZawajLogo size="lg" />
+            <NasibaLogo size="md" />
           </div>
 
-          <nav className="hidden md:flex gap-8 text-sm font-medium text-[#3f4944]">
-            <button onClick={() => scrollToSection('accueil')} className="hover:text-[#004532] transition-colors cursor-pointer">Accueil</button>
-            <button onClick={() => scrollToSection('comment-ca-marche')} className="hover:text-[#004532] transition-colors cursor-pointer">Comment ça marche</button>
-            <button onClick={() => scrollToSection('valeurs')} className="hover:text-[#004532] transition-colors cursor-pointer">Nos Engagements</button>
-            <button onClick={() => scrollToSection('faq')} className="hover:text-[#004532] transition-colors cursor-pointer">FAQ</button>
+          <nav className="hidden md:flex gap-8 text-sm font-medium text-[#575147]">
+            <button onClick={() => scrollToSection('accueil')} className="hover:text-[#0F5C4D] transition-colors cursor-pointer">Accueil</button>
+            <button onClick={() => scrollToSection('comment-ca-marche')} className="hover:text-[#0F5C4D] transition-colors cursor-pointer">Comment ça marche</button>
+            <button onClick={() => scrollToSection('valeurs')} className="hover:text-[#0F5C4D] transition-colors cursor-pointer">Nos Engagements</button>
+            <button onClick={() => scrollToSection('faq')} className="hover:text-[#0F5C4D] transition-colors cursor-pointer">FAQ</button>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -74,17 +74,18 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => onOpenAuth('login')}
-              className="text-[#3f4944] hover:text-[#004532] font-display text-sm font-semibold px-4 py-2 transition-colors cursor-pointer"
+              className="text-[#575147] hover:text-[#0F5C4D] font-display text-sm font-semibold px-4 py-2 transition-colors cursor-pointer"
             >
               Connexion
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: '#065f46' }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.04, backgroundColor: '#0c4a3e' }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => onOpenAuth('register')}
-              className="bg-[#004532] text-white rounded-full px-6 py-2.5 font-display text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+              className="bg-[#0F5C4D] text-white rounded-full px-6 py-2.5 font-display text-sm font-semibold transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
             >
-              Créer mon profil
+              <span>Créer mon profil</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C9A45C]"></span>
             </motion.button>
           </div>
         </div>
@@ -98,44 +99,51 @@ export const LandingView: React.FC<LandingViewProps> = ({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#065f46]/10 text-[#004532] border border-[#004532]/20 font-body text-xs sm:text-sm font-semibold mb-8"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#8BAE9F]/15 text-[#0F5C4D] border border-[#8BAE9F]/35 font-body text-xs sm:text-sm font-semibold mb-6"
           >
-            <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
-              verified
-            </span>
-            Plateforme Matrimoniale Éthique &amp; Respectueuse
+            <span className="w-2 h-2 rounded-full bg-[#C9A45C]"></span>
+            <span>Matrimonial Éthique &amp; Moderne</span>
           </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-serif-display text-4xl sm:text-6xl md:text-7xl font-semibold text-[#004532] leading-tight tracking-tight mb-8"
+            className="font-serif-display text-5xl sm:text-7xl md:text-8xl font-bold text-[#0F5C4D] leading-none tracking-tight mb-4"
           >
-            Trouvez la personne avec qui construire votre avenir
+            NASIBA
           </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="font-serif-display text-2xl sm:text-3xl md:text-4xl text-[#211E1A] font-medium tracking-normal mb-8 max-w-3xl mx-auto"
+          >
+            Des rencontres avec une intention sérieuse.
+          </motion.p>
 
           {/* Quranic Verse Box */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 20 }}
+            initial={{ opacity: 0, scale: 0.97, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            whileHover={{ y: -4 }}
-            className="max-w-3xl mx-auto mb-10 p-6 sm:p-8 rounded-3xl bg-amber-50/80 border border-amber-200/80 shadow-sm text-center relative overflow-hidden transition-shadow hover:shadow-md"
+            whileHover={{ y: -3 }}
+            className="max-w-3xl mx-auto mb-10 p-6 sm:p-8 rounded-3xl bg-white border border-[#C9A45C]/40 shadow-sm text-center relative overflow-hidden transition-all hover:shadow-md"
           >
-            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none text-[#735c00]">
+            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none text-[#C9A45C]">
               <span className="material-symbols-outlined text-8xl">menu_book</span>
             </div>
             
-            <p dir="rtl" className="font-arabic text-xl sm:text-2xl text-[#004532] font-semibold mb-4 leading-relaxed">
+            <p dir="rtl" className="font-arabic text-xl sm:text-2xl text-[#0F5C4D] font-semibold mb-4 leading-relaxed">
               وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً
             </p>
 
-            <p className="font-serif-display text-base sm:text-lg md:text-xl italic font-medium text-[#5c4a00] leading-relaxed mb-3">
+            <p className="font-serif-display text-base sm:text-lg md:text-xl italic font-medium text-[#211E1A] leading-relaxed mb-3">
               « Et parmi Ses signes, Il a créé de vous, pour vous, des épouses afin que vous trouviez auprès d’elles tranquillité… »
             </p>
-            <p className="font-body text-xs sm:text-sm font-bold tracking-widest text-[#8a7200] uppercase">
-              Sourate Ar-Rum — 21
+            <p className="font-body text-xs sm:text-sm font-bold tracking-widest text-[#C9A45C] uppercase">
+              Sourate Ar-Rum — Verset 21
             </p>
           </motion.div>
 
@@ -143,65 +151,65 @@ export const LandingView: React.FC<LandingViewProps> = ({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="font-body text-base sm:text-lg text-[#3f4944] max-w-3xl mx-auto mb-6 leading-relaxed"
+            className="font-body text-base sm:text-lg text-[#575147] max-w-3xl mx-auto mb-4 leading-relaxed"
           >
-            Vous recherchez une personne sérieuse, partageant vos valeurs et votre vision du mariage ?
+            Vous recherchez une personne intègre, partageant vos valeurs spirituelles et votre vision du mariage ?
           </motion.p>
 
           <motion.p
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35 }}
-            className="font-body text-base sm:text-lg font-medium text-[#151c27] max-w-3xl mx-auto mb-8 leading-relaxed"
+            className="font-body text-base sm:text-lg font-medium text-[#211E1A] max-w-3xl mx-auto mb-8 leading-relaxed"
           >
-            Notre plateforme vous permet de faire des rencontres <strong className="text-[#004532]">respectueuses, confidentielles et orientées vers le mariage</strong>, au Niger et au-delà.
-          </motion.p>
-
-          <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="font-serif-display text-xl sm:text-2xl italic font-semibold text-[#065f46] mb-8"
-          >
-            Votre histoire peut commencer par une simple rencontre.
+            <strong className="text-[#0F5C4D]">NASIBA</strong> vous permet de réaliser des rencontres <strong className="text-[#0F5C4D]">pudiques, confidentielles et orientées vers le mariage</strong>, au Niger et en Afrique de l'Ouest.
           </motion.p>
 
           {/* Hero CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.45 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
             className="flex flex-col items-center gap-4 mb-6"
           >
             <motion.button
-              whileHover={{ scale: 1.04, backgroundColor: '#065f46', boxShadow: '0 12px 24px -6px rgba(0, 69, 50, 0.3)' }}
+              whileHover={{ scale: 1.04, backgroundColor: '#0c4a3e', boxShadow: '0 12px 24px -6px rgba(15, 92, 77, 0.25)' }}
               whileTap={{ scale: 0.96 }}
               onClick={() => onOpenAuth('register')}
-              className="bg-[#004532] text-white rounded-full px-9 py-4 font-display text-base sm:text-lg font-bold transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer"
+              className="bg-[#0F5C4D] text-white rounded-full px-9 py-4 font-display text-base sm:text-lg font-bold transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer"
             >
-              Créer mon profil gratuitement
-              <span className="material-symbols-outlined text-xl">arrow_forward</span>
+              <span>Créer mon profil gratuitement</span>
+              <span className="material-symbols-outlined text-xl text-[#C9A45C]">arrow_forward</span>
             </motion.button>
             
-            <p className="font-body text-xs sm:text-sm text-[#5a6560] font-medium flex flex-wrap justify-center gap-2 sm:gap-4">
-              <span>• Inscription gratuite</span>
-              <span>• Profils sérieux</span>
-              <span>• Respect de la vie privée</span>
-            </p>
+            <div className="font-body text-xs sm:text-sm text-[#7D766C] font-medium flex flex-wrap justify-center items-center gap-3 sm:gap-5">
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8BAE9F]"></span>
+                Plateforme 100% Gratuite
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#C9A45C]"></span>
+                Profils vérifiés &amp; sérieux
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8BAE9F]"></span>
+                Pudeur &amp; Confidentialité
+              </span>
+            </div>
           </motion.div>
         </section>
 
-        {/* Section: Une rencontre qui a du sens */}
-        <section className="bg-white border-y border-[#bec9c2]/30 py-16 sm:py-20">
+        {/* Section: Une démarche qui a du sens */}
+        <section className="bg-white border-y border-[#E8E3D7] py-16 sm:py-20">
           <div className="max-w-5xl mx-auto px-4 sm:px-8 text-center">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="font-serif-display text-3xl sm:text-5xl font-semibold text-[#004532] mb-6"
+              className="font-serif-display text-3xl sm:text-5xl font-semibold text-[#0F5C4D] mb-6"
             >
-              Une rencontre qui a du sens
+              Une démarche qui a du sens
             </motion.h2>
 
             <motion.p
@@ -209,10 +217,10 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="font-body text-base sm:text-lg text-[#3f4944] max-w-3xl mx-auto leading-relaxed mb-12"
+              className="font-body text-base sm:text-lg text-[#575147] max-w-3xl mx-auto leading-relaxed mb-12"
             >
-              Nous croyons qu'une rencontre ne devrait pas être basée uniquement sur une photo ou un simple « swipe ».
-              C'est pourquoi notre plateforme vous permet de découvrir des personnes qui correspondent réellement à <strong>vos valeurs, vos attentes et votre projet de vie</strong>.
+              Nous croyons qu'une rencontre sincère ne devrait pas dépendre d'un algorithme superficiel ou d'un défilement compulsif.
+              <strong className="text-[#211E1A]"> NASIBA</strong> met l'accent sur ce qui compte vraiment : <strong>vos valeurs religieuses, votre caractère et votre vision du foyer</strong>.
             </motion.p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -221,15 +229,16 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.15 }}
-                whileHover={{ y: -6, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.1)' }}
-                className="p-8 rounded-3xl bg-[#f9f9ff] border border-[#bec9c2]/30 shadow-sm text-center flex flex-col items-center transition-all cursor-default"
+                whileHover={{ y: -5 }}
+                className="p-8 rounded-3xl bg-[#FAF8F2] border border-[#E8E3D7] shadow-xs text-center flex flex-col items-center transition-all cursor-default"
               >
-                <div className="w-14 h-14 rounded-2xl bg-[#065f46]/10 text-[#004532] flex items-center justify-center mb-4">
-                  <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    favorite
+                <div className="w-14 h-14 rounded-2xl bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-3xl text-[#C9A45C]">
+                    verified
                   </span>
                 </div>
-                <h3 className="font-display text-lg font-bold text-[#004532]">Des intentions sérieuses</h3>
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D]">Des intentions sincères</h3>
+                <p className="font-body text-xs text-[#7D766C] mt-2">Chaque membre confirme sa volonté de construire un mariage dans le respect mutuel.</p>
               </motion.div>
 
               <motion.div
@@ -237,15 +246,16 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.25 }}
-                whileHover={{ y: -6, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.1)' }}
-                className="p-8 rounded-3xl bg-[#f9f9ff] border border-[#bec9c2]/30 shadow-sm text-center flex flex-col items-center transition-all cursor-default"
+                whileHover={{ y: -5 }}
+                className="p-8 rounded-3xl bg-[#FAF8F2] border border-[#E8E3D7] shadow-xs text-center flex flex-col items-center transition-all cursor-default"
               >
-                <div className="w-14 h-14 rounded-2xl bg-[#065f46]/10 text-[#004532] flex items-center justify-center mb-4">
-                  <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                <div className="w-14 h-14 rounded-2xl bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-3xl text-[#0F5C4D]">
                     handshake
                   </span>
                 </div>
-                <h3 className="font-display text-lg font-bold text-[#004532]">Des valeurs communes</h3>
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D]">Des valeurs partagées</h3>
+                <p className="font-body text-xs text-[#7D766C] mt-2">Affinité spirituelle, éducation et projet de vie au cœur de chaque profil.</p>
               </motion.div>
 
               <motion.div
@@ -253,15 +263,16 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.35 }}
-                whileHover={{ y: -6, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.1)' }}
-                className="p-8 rounded-3xl bg-[#f9f9ff] border border-[#bec9c2]/30 shadow-sm text-center flex flex-col items-center transition-all cursor-default"
+                whileHover={{ y: -5 }}
+                className="p-8 rounded-3xl bg-[#FAF8F2] border border-[#E8E3D7] shadow-xs text-center flex flex-col items-center transition-all cursor-default"
               >
-                <div className="w-14 h-14 rounded-2xl bg-[#065f46]/10 text-[#004532] flex items-center justify-center mb-4">
-                  <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                <div className="w-14 h-14 rounded-2xl bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-3xl text-[#C9A45C]">
                     home
                   </span>
                 </div>
-                <h3 className="font-display text-lg font-bold text-[#004532]">Un objectif : construire</h3>
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D]">Un objectif : bâtir un foyer</h3>
+                <p className="font-body text-xs text-[#7D766C] mt-2">Faire aboutir la démarche avec la bénédiction familiale et spirituelle.</p>
               </motion.div>
             </div>
           </div>
@@ -276,11 +287,11 @@ export const LandingView: React.FC<LandingViewProps> = ({
             transition={{ duration: 0.5 }}
             className="text-center mb-14"
           >
-            <h2 className="font-serif-display text-3xl sm:text-5xl font-semibold text-[#004532] mb-4">
+            <h2 className="font-serif-display text-3xl sm:text-5xl font-semibold text-[#0F5C4D] mb-4">
               Comment ça marche ?
             </h2>
-            <p className="font-body text-base text-[#3f4944] max-w-xl mx-auto">
-              Un processus simple, clair et transparent guidé par le respect de chacun.
+            <p className="font-body text-base text-[#575147] max-w-xl mx-auto">
+              Un parcours noble, transparent et guidé par la bienséance islamique.
             </p>
           </motion.div>
 
@@ -291,14 +302,14 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              whileHover={{ y: -6, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.12)' }}
-              className="bg-white rounded-3xl p-8 border border-[#bec9c2]/30 shadow-sm flex flex-col justify-between transition-all relative cursor-default"
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-3xl p-8 border border-[#E8E3D7] shadow-xs flex flex-col justify-between transition-all cursor-default"
             >
               <div>
-                <span className="font-display text-3xl font-extrabold text-[#065f46]/30 mb-4 block">01</span>
-                <h3 className="font-display text-lg font-bold text-[#004532] mb-3">Créez votre profil</h3>
-                <p className="font-body text-sm text-[#3f4944] leading-relaxed">
-                  Présentez-vous simplement et indiquez ce que vous recherchez chez votre futur(e) partenaire.
+                <span className="font-display text-3xl font-extrabold text-[#8BAE9F]/40 mb-4 block">01</span>
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D] mb-3">Créez votre profil</h3>
+                <p className="font-body text-sm text-[#575147] leading-relaxed">
+                  Présentez-vous avec pudeur et définissez les qualités et vertus que vous espérez chez votre futur(e) époux(se).
                 </p>
               </div>
             </motion.div>
@@ -309,14 +320,14 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              whileHover={{ y: -6, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.12)' }}
-              className="bg-white rounded-3xl p-8 border border-[#bec9c2]/30 shadow-sm flex flex-col justify-between transition-all relative cursor-default"
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-3xl p-8 border border-[#E8E3D7] shadow-xs flex flex-col justify-between transition-all cursor-default"
             >
               <div>
-                <span className="font-display text-3xl font-extrabold text-[#065f46]/30 mb-4 block">02</span>
-                <h3 className="font-display text-lg font-bold text-[#004532] mb-3">Découvrez des profils compatibles</h3>
-                <p className="font-body text-sm text-[#3f4944] leading-relaxed">
-                  Consultez des profils de personnes partageant vos valeurs et recherchant elles aussi une relation sérieuse.
+                <span className="font-display text-3xl font-extrabold text-[#8BAE9F]/40 mb-4 block">02</span>
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D] mb-3">Découvrez des profils</h3>
+                <p className="font-body text-sm text-[#575147] leading-relaxed">
+                  Consultez des profils sérieux partageant votre pratique, vos aspirations familiales et votre secteur géographique.
                 </p>
               </div>
             </motion.div>
@@ -327,14 +338,14 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              whileHover={{ y: -6, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.12)' }}
-              className="bg-white rounded-3xl p-8 border border-[#bec9c2]/30 shadow-sm flex flex-col justify-between transition-all relative cursor-default"
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-3xl p-8 border border-[#E8E3D7] shadow-xs flex flex-col justify-between transition-all cursor-default"
             >
               <div>
-                <span className="font-display text-3xl font-extrabold text-[#065f46]/30 mb-4 block">03</span>
-                <h3 className="font-display text-lg font-bold text-[#004532] mb-3">Échangez avec respect</h3>
-                <p className="font-body text-sm text-[#3f4944] leading-relaxed">
-                  Prenez le temps de faire connaissance dans un environnement conçu pour favoriser des échanges respectueux.
+                <span className="font-display text-3xl font-extrabold text-[#8BAE9F]/40 mb-4 block">03</span>
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D] mb-3">Échangez avec pudeur</h3>
+                <p className="font-body text-sm text-[#575147] leading-relaxed">
+                  Discutez en toute sérénité dans un cadre sain, avec l'intégration et la supervision optionnelle de votre Wali.
                 </p>
               </div>
             </motion.div>
@@ -345,14 +356,14 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              whileHover={{ y: -6, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.12)' }}
-              className="bg-white rounded-3xl p-8 border border-[#bec9c2]/30 shadow-sm flex flex-col justify-between transition-all relative cursor-default"
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-3xl p-8 border border-[#E8E3D7] shadow-xs flex flex-col justify-between transition-all cursor-default"
             >
               <div>
-                <span className="font-display text-3xl font-extrabold text-[#065f46]/30 mb-4 block">04</span>
-                <h3 className="font-display text-lg font-bold text-[#004532] mb-3">Faites avancer votre relation</h3>
-                <p className="font-body text-sm text-[#3f4944] leading-relaxed">
-                  Lorsque les intentions sont claires et que la compatibilité est réelle, vous pouvez avancer vers une démarche plus sérieuse, avec le mariage comme objectif.
+                <span className="font-display text-3xl font-extrabold text-[#8BAE9F]/40 mb-4 block">04</span>
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D] mb-3">Concrétisez l'union</h3>
+                <p className="font-body text-sm text-[#575147] leading-relaxed">
+                  Lorsque la confiance et l'accord mutuel sont scellés, passez à la rencontre formelle avec les familles pour le mariage.
                 </p>
               </div>
             </motion.div>
@@ -360,41 +371,38 @@ export const LandingView: React.FC<LandingViewProps> = ({
         </section>
 
         {/* Banner Section: On ne cherche pas simplement quelqu'un */}
-        <section className="bg-[#004532] text-white py-16 sm:py-20 my-8 relative overflow-hidden">
+        <section className="bg-[#0F5C4D] text-white py-16 sm:py-20 my-8 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#C9A45C_1px,transparent_1px)] [background-size:16px_16px]"></div>
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 0.97 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
             className="max-w-4xl mx-auto px-4 sm:px-8 text-center relative z-10"
           >
-            <h2 className="font-serif-display text-3xl sm:text-5xl font-semibold mb-3 text-emerald-100">
+            <h2 className="font-serif-display text-3xl sm:text-5xl font-semibold mb-3 text-[#FAF8F2]">
               Ici, on ne cherche pas simplement quelqu'un.
             </h2>
-            <p className="font-serif-display text-2xl sm:text-4xl italic font-semibold mb-8 text-[#fed65b]">
+            <p className="font-serif-display text-2xl sm:text-4xl italic font-semibold mb-8 text-[#C9A45C]">
               On cherche la bonne personne.
             </p>
 
             <p className="font-body text-base sm:text-lg text-white/90 max-w-2xl mx-auto leading-relaxed mb-8">
-              Que vous soyez à <strong>Niamey, Maradi, Zinder, Tahoua, Agadez, Dosso ou Diffa</strong>, vous pouvez rencontrer des personnes sérieuses qui souhaitent elles aussi construire leur avenir.
-            </p>
-
-            <p className="font-body text-base font-semibold text-white/95 mb-8">
-              Votre futur(e) partenaire est peut-être plus proche que vous ne le pensez.
+              Que vous soyez à <strong>Niamey, Maradi, Zinder, Tahoua, Agadez, Dosso ou Diffa</strong>, vous pouvez rencontrer des cœurs sincères qui souhaitent bâtir une vie de foi et de paix.
             </p>
 
             <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: '#fde047', boxShadow: '0 10px 25px -5px rgba(254, 214, 91, 0.4)' }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.04, backgroundColor: '#D6B26A' }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => onOpenAuth('register')}
-              className="bg-[#fed65b] text-[#004532] rounded-full px-8 py-3.5 font-display text-base font-bold transition-all shadow-lg cursor-pointer"
+              className="bg-[#C9A45C] text-[#211E1A] rounded-full px-8 py-3.5 font-display text-base font-bold transition-all shadow-md cursor-pointer"
             >
               Commencer gratuitement
             </motion.button>
           </motion.div>
         </section>
 
-        {/* Section: Pensé pour les musulmans qui recherchent le mariage */}
+        {/* Section: Engagements éthiques */}
         <section id="valeurs" className="max-w-5xl mx-auto px-4 sm:px-8 py-16 sm:py-20">
           <div className="text-center mb-12">
             <motion.h2
@@ -402,27 +410,27 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="font-serif-display text-3xl sm:text-5xl font-semibold text-[#004532] mb-6"
+              className="font-serif-display text-3xl sm:text-5xl font-semibold text-[#0F5C4D] mb-6"
             >
               Pensé pour les musulmans qui recherchent le mariage
             </motion.h2>
 
-            {/* Rejections list */}
+            {/* Dignified ethics tags (no harsh red dating cliches) */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.15 }}
-              className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-8"
+              className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-8"
             >
-              <span className="px-4 py-2 rounded-full bg-red-50 text-red-800 border border-red-200 font-body text-xs sm:text-sm font-semibold flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">close</span> Pas de rencontres sans lendemain
+              <span className="px-4 py-2 rounded-full bg-white text-[#575147] border border-[#E8E3D7] font-body text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0F5C4D]"></span> Pas de rencontres futiles sans lendemain
               </span>
-              <span className="px-4 py-2 rounded-full bg-red-50 text-red-800 border border-red-200 font-body text-xs sm:text-sm font-semibold flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">close</span> Pas de profils créés uniquement pour discuter
+              <span className="px-4 py-2 rounded-full bg-white text-[#575147] border border-[#E8E3D7] font-body text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0F5C4D]"></span> Pas de profils créés uniquement pour bavarder
               </span>
-              <span className="px-4 py-2 rounded-full bg-red-50 text-red-800 border border-red-200 font-body text-xs sm:text-sm font-semibold flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">close</span> Pas besoin de perdre votre temps
+              <span className="px-4 py-2 rounded-full bg-white text-[#575147] border border-[#E8E3D7] font-body text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0F5C4D]"></span> Respect absolu du temps et de la dignité
               </span>
             </motion.div>
 
@@ -431,9 +439,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.25 }}
-              className="font-body text-base sm:text-lg text-[#3f4944] max-w-2xl mx-auto leading-relaxed"
+              className="font-body text-base sm:text-lg text-[#575147] max-w-2xl mx-auto leading-relaxed"
             >
-              Notre plateforme est conçue pour les personnes qui souhaitent faire une rencontre avec <strong>une intention claire et sérieuse</strong>.
+              <strong className="text-[#0F5C4D]">NASIBA</strong> est conçue pour les personnes qui abordent le mariage avec <strong>une intention claire, sincère et responsable</strong>.
             </motion.p>
           </div>
 
@@ -444,18 +452,18 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              whileHover={{ y: -5, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.1)' }}
-              className="bg-white rounded-3xl p-8 border border-[#bec9c2]/30 shadow-sm flex items-start gap-5 transition-all cursor-default"
+              whileHover={{ y: -4 }}
+              className="bg-white rounded-3xl p-8 border border-[#E8E3D7] shadow-xs flex items-start gap-5 transition-all cursor-default"
             >
-              <div className="w-12 h-12 rounded-2xl bg-[#065f46]/10 text-[#004532] flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-2xl">lock</span>
               </div>
               <div>
-                <h3 className="font-display text-lg font-bold text-[#004532] mb-2 flex items-center gap-2">
-                  🔒 Confidentialité
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D] mb-2 flex items-center gap-2">
+                  Confidentialité &amp; Floutage
                 </h3>
-                <p className="font-body text-sm text-[#3f4944] leading-relaxed">
-                  Vos informations personnelles sont protégées et votre vie privée reste une priorité.
+                <p className="font-body text-sm text-[#575147] leading-relaxed">
+                  Vos informations et photos sont protégées selon votre volonté. Vous décidez qui peut voir votre portrait.
                 </p>
               </div>
             </motion.div>
@@ -466,18 +474,18 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              whileHover={{ y: -5, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.1)' }}
-              className="bg-white rounded-3xl p-8 border border-[#bec9c2]/30 shadow-sm flex items-start gap-5 transition-all cursor-default"
+              whileHover={{ y: -4 }}
+              className="bg-white rounded-3xl p-8 border border-[#E8E3D7] shadow-xs flex items-start gap-5 transition-all cursor-default"
             >
-              <div className="w-12 h-12 rounded-2xl bg-[#065f46]/10 text-[#004532] flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-2xl">handshake</span>
               </div>
               <div>
-                <h3 className="font-display text-lg font-bold text-[#004532] mb-2 flex items-center gap-2">
-                  🤝 Respect
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D] mb-2 flex items-center gap-2">
+                  Bienséance &amp; Respect
                 </h3>
-                <p className="font-body text-sm text-[#3f4944] leading-relaxed">
-                  Chaque membre s'engage à respecter les autres utilisateurs et les valeurs de la plateforme.
+                <p className="font-body text-sm text-[#575147] leading-relaxed">
+                  Chaque membre s'engage sur l'honneur à respecter les règles de politesse et les valeurs islamiques.
                 </p>
               </div>
             </motion.div>
@@ -488,18 +496,18 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              whileHover={{ y: -5, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.1)' }}
-              className="bg-white rounded-3xl p-8 border border-[#bec9c2]/30 shadow-sm flex items-start gap-5 transition-all cursor-default"
+              whileHover={{ y: -4 }}
+              className="bg-white rounded-3xl p-8 border border-[#E8E3D7] shadow-xs flex items-start gap-5 transition-all cursor-default"
             >
-              <div className="w-12 h-12 rounded-2xl bg-[#065f46]/10 text-[#004532] flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-2xl">workspace_premium</span>
+              <div className="w-12 h-12 rounded-2xl bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-2xl text-[#C9A45C]">verified_user</span>
               </div>
               <div>
-                <h3 className="font-display text-lg font-bold text-[#004532] mb-2 flex items-center gap-2">
-                  💍 Une intention sérieuse
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D] mb-2 flex items-center gap-2">
+                  Intention Matrimoniale
                 </h3>
-                <p className="font-body text-sm text-[#3f4944] leading-relaxed">
-                  La plateforme est pensée autour d'un objectif : faciliter les rencontres pouvant mener à un mariage.
+                <p className="font-body text-sm text-[#575147] leading-relaxed">
+                  L'unique finalité de la plateforme est de favoriser l'union sacrée du mariage, loin des dérives éphémères.
                 </p>
               </div>
             </motion.div>
@@ -510,58 +518,22 @@ export const LandingView: React.FC<LandingViewProps> = ({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              whileHover={{ y: -5, boxShadow: '0 15px 30px -10px rgba(0, 69, 50, 0.1)' }}
-              className="bg-white rounded-3xl p-8 border border-[#bec9c2]/30 shadow-sm flex items-start gap-5 transition-all cursor-default"
+              whileHover={{ y: -4 }}
+              className="bg-white rounded-3xl p-8 border border-[#E8E3D7] shadow-xs flex items-start gap-5 transition-all cursor-default"
             >
-              <div className="w-12 h-12 rounded-2xl bg-[#065f46]/10 text-[#004532] flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-2xl">flag</span>
+              <div className="w-12 h-12 rounded-2xl bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-2xl">public</span>
               </div>
               <div>
-                <h3 className="font-display text-lg font-bold text-[#004532] mb-2 flex items-center gap-2">
-                  🇳🇪 Pensé pour le Niger
+                <h3 className="font-display text-lg font-bold text-[#0F5C4D] mb-2 flex items-center gap-2">
+                  Adapté à nos réalités
                 </h3>
-                <p className="font-body text-sm text-[#3f4944] leading-relaxed">
-                  Une expérience adaptée aux réalités, aux habitudes et aux valeurs des utilisateurs nigériens.
+                <p className="font-body text-sm text-[#575147] leading-relaxed">
+                  Conçu pour le Niger et l'Afrique de l'Ouest, avec prise en compte des coutumes et de l'implication des familles.
                 </p>
               </div>
             </motion.div>
           </div>
-        </section>
-
-        {/* Section: Et si votre moitié était déjà ici ? */}
-        <section className="max-w-4xl mx-auto px-4 sm:px-8 py-12 text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97, y: 20 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="bg-amber-50/90 border border-amber-200 rounded-3xl p-8 sm:p-12 shadow-sm text-center"
-          >
-            <h2 className="font-serif-display text-3xl sm:text-4xl font-semibold text-[#5c4a00] mb-4">
-              Et si votre moitié était déjà ici ?
-            </h2>
-
-            <p className="font-body text-base text-[#3f4944] max-w-xl mx-auto leading-relaxed mb-6">
-              Vous n'avez pas besoin de savoir où cette rencontre vous mènera. Vous avez simplement besoin de faire <strong>le premier pas</strong>.
-            </p>
-
-            <p className="font-display text-lg font-semibold text-[#004532] mb-6">
-              Créez votre profil gratuitement et commencez à faire des rencontres sérieuses.
-            </p>
-
-            <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: '#065f46' }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onOpenAuth('register')}
-              className="bg-[#004532] text-white rounded-full px-8 py-3.5 font-display text-base font-bold transition-all shadow-md mb-6 cursor-pointer"
-            >
-              Créer mon profil
-            </motion.button>
-
-            <p className="font-display text-sm italic font-medium text-[#735c00]">
-              Que votre rencontre soit belle, respectueuse et porteuse de bien.
-            </p>
-          </motion.div>
         </section>
 
         {/* Section: Questions fréquentes (FAQ) */}
@@ -573,11 +545,11 @@ export const LandingView: React.FC<LandingViewProps> = ({
             transition={{ duration: 0.5 }}
             className="text-center mb-12"
           >
-            <h2 className="font-serif-display text-3xl sm:text-5xl font-semibold text-[#004532] mb-3">
+            <h2 className="font-serif-display text-3xl sm:text-5xl font-semibold text-[#0F5C4D] mb-3">
               Questions fréquentes
             </h2>
-            <p className="font-body text-sm sm:text-base text-[#3f4944]">
-              Tout ce que vous devez savoir avant d'entamer votre démarche.
+            <p className="font-body text-sm sm:text-base text-[#575147]">
+              Tout ce que vous devez savoir avant d'entamer votre démarche sur NASIBA.
             </p>
           </motion.div>
 
@@ -591,17 +563,17 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.08 }}
-                  className="bg-white rounded-2xl border border-[#bec9c2]/30 shadow-sm overflow-hidden transition-all"
+                  className="bg-white rounded-2xl border border-[#E8E3D7] shadow-xs overflow-hidden transition-all"
                 >
                   <button
                     onClick={() => toggleFaq(index)}
-                    className="w-full text-left p-6 font-display text-base sm:text-lg font-semibold text-[#004532] flex justify-between items-center gap-4 hover:bg-[#f9f9ff] transition-colors cursor-pointer"
+                    className="w-full text-left p-6 font-display text-base sm:text-lg font-semibold text-[#0F5C4D] flex justify-between items-center gap-4 hover:bg-[#FAF8F2] transition-colors cursor-pointer"
                   >
                     <span>{item.q}</span>
                     <motion.span 
                       animate={{ rotate: isOpen ? 180 : 0 }}
                       transition={{ duration: 0.2 }}
-                      className="material-symbols-outlined text-[#065f46]"
+                      className="material-symbols-outlined text-[#8BAE9F]"
                     >
                       expand_more
                     </motion.span>
@@ -614,7 +586,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                       >
-                        <div className="px-6 pb-6 pt-1 font-body text-sm sm:text-base text-[#3f4944] leading-relaxed border-t border-[#bec9c2]/20">
+                        <div className="px-6 pb-6 pt-1 font-body text-sm sm:text-base text-[#575147] leading-relaxed border-t border-[#E8E3D7]/60">
                           {item.a}
                         </div>
                       </motion.div>
@@ -629,26 +601,26 @@ export const LandingView: React.FC<LandingViewProps> = ({
         {/* Final CTA */}
         <section className="max-w-4xl mx-auto px-4 sm:px-8 py-12 text-center">
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 20 }}
+            initial={{ opacity: 0, scale: 0.97, y: 20 }}
             whileInView={{ opacity: 1, scale: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="bg-[#004532] text-white rounded-3xl p-10 sm:p-14 shadow-xl text-center space-y-6"
+            className="bg-[#0F5C4D] text-white rounded-3xl p-10 sm:p-14 shadow-lg text-center space-y-6"
           >
-            <h2 className="font-serif-display text-3xl sm:text-5xl font-semibold text-white">
+            <h2 className="font-serif-display text-3xl sm:text-5xl font-semibold text-[#FAF8F2]">
               Commencez votre nouvelle histoire.
             </h2>
 
-            <p className="font-serif-display text-xl sm:text-2xl italic font-semibold text-[#fed65b] max-w-xl mx-auto">
-              Une intention sincère. Une rencontre sérieuse. Peut-être un mariage.
+            <p className="font-serif-display text-xl sm:text-2xl italic font-semibold text-[#C9A45C] max-w-xl mx-auto">
+              Une intention sincère. Une rencontre sérieuse. Un mariage béni.
             </p>
 
             <div>
               <motion.button
-                whileHover={{ scale: 1.05, backgroundColor: '#fde047', boxShadow: '0 12px 25px -5px rgba(254, 214, 91, 0.4)' }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.04, backgroundColor: '#D6B26A' }}
+                whileTap={{ scale: 0.96 }}
                 onClick={() => onOpenAuth('register')}
-                className="bg-[#fed65b] text-[#004532] rounded-full px-9 py-4 font-display text-base font-bold transition-all shadow-md cursor-pointer"
+                className="bg-[#C9A45C] text-[#211E1A] rounded-full px-9 py-4 font-display text-base font-bold transition-all shadow-md cursor-pointer"
               >
                 Créer mon profil gratuitement
               </motion.button>
@@ -658,68 +630,69 @@ export const LandingView: React.FC<LandingViewProps> = ({
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-[#bec9c2]/30 pt-16 pb-12 text-[#3f4944] font-body text-sm">
+      <footer className="bg-white border-t border-[#E8E3D7] pt-16 pb-12 text-[#575147] font-body text-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           {/* Col 1: Brand */}
           <div className="space-y-4">
-            <ZawajLogo size="lg" />
-            <p className="text-xs text-[#5a6560] leading-relaxed">
-              Plateforme matrimoniale éthique, sécurisée et respectueuse dédiée aux personnes recherchant une union sérieuse.
+            <NasibaLogo size="md" />
+            <p className="text-xs text-[#7D766C] leading-relaxed">
+              Plateforme matrimoniale éthique, pudique et moderne au Niger. Des rencontres avec une intention sérieuse.
             </p>
           </div>
 
           {/* Col 2: Navigation */}
           <div>
-            <h4 className="font-display text-sm font-bold text-[#004532] uppercase tracking-wider mb-4">
+            <h4 className="font-display text-sm font-bold text-[#0F5C4D] uppercase tracking-wider mb-4">
               Navigation
             </h4>
-            <ul className="space-y-2.5 text-xs text-[#3f4944]">
-              <li><button onClick={() => scrollToSection('accueil')} className="hover:text-[#004532] transition-colors">Accueil</button></li>
-              <li><button onClick={() => scrollToSection('comment-ca-marche')} className="hover:text-[#004532] transition-colors">Comment ça marche</button></li>
-              <li><button onClick={() => onOpenAuth('register')} className="hover:text-[#004532] transition-colors">Créer un profil</button></li>
-              <li><button onClick={onEnterApp} className="hover:text-[#004532] transition-colors">Découvrir l'application</button></li>
-              <li><button onClick={() => scrollToSection('faq')} className="hover:text-[#004532] transition-colors">FAQ</button></li>
-              <li><button onClick={() => scrollToSection('valeurs')} className="hover:text-[#004532] transition-colors">Nos Engagements</button></li>
+            <ul className="space-y-2.5 text-xs text-[#575147]">
+              <li><button onClick={() => scrollToSection('accueil')} className="hover:text-[#0F5C4D] transition-colors">Accueil</button></li>
+              <li><button onClick={() => scrollToSection('comment-ca-marche')} className="hover:text-[#0F5C4D] transition-colors">Comment ça marche</button></li>
+              <li><button onClick={() => onOpenAuth('register')} className="hover:text-[#0F5C4D] transition-colors">Créer un profil</button></li>
+              <li><button onClick={onEnterApp} className="hover:text-[#0F5C4D] transition-colors">Découvrir l'application</button></li>
+              <li><button onClick={() => scrollToSection('faq')} className="hover:text-[#0F5C4D] transition-colors">FAQ</button></li>
+              <li><button onClick={() => scrollToSection('valeurs')} className="hover:text-[#0F5C4D] transition-colors">Nos Engagements</button></li>
             </ul>
           </div>
 
           {/* Col 3: Rencontres */}
           <div>
-            <h4 className="font-display text-sm font-bold text-[#004532] uppercase tracking-wider mb-4">
+            <h4 className="font-display text-sm font-bold text-[#0F5C4D] uppercase tracking-wider mb-4">
               Rencontres
             </h4>
-            <ul className="space-y-2 text-xs text-[#3f4944] flex flex-col">
+            <ul className="space-y-2 text-xs text-[#575147] flex flex-col">
               <span>Rencontre au Niger</span>
               <span>Rencontre Niamey</span>
               <span>Rencontre Maradi</span>
               <span>Rencontre Zinder</span>
               <span>Rencontre Tahoua</span>
               <span>Rencontre Agadez</span>
-              <span>Rencontre musulmane</span>
-              <span>Mariage halal</span>
+              <span>Mariage musulman éthique</span>
+              <span>Foyer béni</span>
             </ul>
           </div>
 
           {/* Col 4: Informations */}
           <div>
-            <h4 className="font-display text-sm font-bold text-[#004532] uppercase tracking-wider mb-4">
+            <h4 className="font-display text-sm font-bold text-[#0F5C4D] uppercase tracking-wider mb-4">
               Informations
             </h4>
-            <ul className="space-y-2.5 text-xs text-[#3f4944]">
-              <li><span className="hover:text-[#004532] cursor-pointer">Confidentialité</span></li>
-              <li><span className="hover:text-[#004532] cursor-pointer">Conditions d'utilisation</span></li>
-              <li><span className="hover:text-[#004532] cursor-pointer">Mentions légales</span></li>
-              <li><span className="hover:text-[#004532] cursor-pointer">Règlement de la plateforme</span></li>
-              <li><span className="hover:text-[#004532] cursor-pointer">Contact</span></li>
+            <ul className="space-y-2.5 text-xs text-[#575147]">
+              <li><span className="hover:text-[#0F5C4D] cursor-pointer">Confidentialité</span></li>
+              <li><span className="hover:text-[#0F5C4D] cursor-pointer">Conditions d'utilisation</span></li>
+              <li><span className="hover:text-[#0F5C4D] cursor-pointer">Mentions légales</span></li>
+              <li><span className="hover:text-[#0F5C4D] cursor-pointer">Charte Éthique NASIBA</span></li>
+              <li><span className="hover:text-[#0F5C4D] cursor-pointer">Contact</span></li>
             </ul>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 border-t border-[#bec9c2]/20 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-[#6f7973]">
-          <p>© 2026 — Zawaj. Tous droits réservés.</p>
-          <p className="font-medium text-[#004532]">Mariage Éthique &amp; Respectueux</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 border-t border-[#E8E3D7] flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-[#7D766C]">
+          <p>© 2026 — NASIBA. Tous droits réservés.</p>
+          <p className="font-medium text-[#0F5C4D]">Des rencontres avec une intention sérieuse.</p>
         </div>
       </footer>
     </div>
   );
 };
+

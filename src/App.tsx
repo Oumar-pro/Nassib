@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { TabType, Profile, Conversation, PricingPlan, Message, User, UserWaliInfo } from './types';
+import { TabType, Profile, Conversation, Message, User, UserWaliInfo } from './types';
 import {
   INITIAL_USER,
   MOCK_PROFILES,
@@ -20,27 +20,23 @@ import {
   getCurrentUserSession,
   logoutUserSession,
   AuthAccount,
-  isAdministratorUser,
   updateAccountPlanAndStatus,
   refreshCurrentSessionFromDB,
 } from './lib/auth';
 
 import { Sidebar } from './components/Navigation/Sidebar';
 import { MobileHeader } from './components/Navigation/MobileHeader';
-import { ZawajLogo } from './components/ZawajLogo';
+import { NasibaLogo } from './components/NasibaLogo';
 
 import { DashboardView } from './components/Dashboard/DashboardView';
 import { BrowseView } from './components/Browse/BrowseView';
 import { MessagesView } from './components/Messages/MessagesView';
-import { PlansView } from './components/Plans/PlansView';
 import { VerificationView } from './components/Verification/VerificationView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { LandingView } from './components/Landing/LandingView';
 import { ImamChatView } from './components/ImamOumar/ImamChatView';
-import { AdminDashboard } from './components/Admin/AdminDashboard';
 
 import { ProfileDetailModal } from './components/Profile/ProfileDetailModal';
-import { PaymentModal } from './components/Payment/PaymentModal';
 import { AuthModal } from './components/Auth/AuthModal';
 import { OnboardingModal, OnboardingData } from './components/Auth/OnboardingModal';
 
@@ -64,8 +60,8 @@ export default function App() {
         role: activeSession.role,
         email: activeSession.email,
         phone: activeSession.phone || prev.phone,
-        isPremium: Boolean(activeSession.isPremium),
-        planName: activeSession.planName || (activeSession.isPremium ? 'Baraka (Premium)' : 'Sadaq (Gratuit)'),
+        isPremium: true,
+        planName: activeSession.planName || 'Accès Gratuit & Illimité',
         isVerifiedNNI: Boolean(activeSession.isVerifiedNNI),
         isWaliApproved: Boolean(activeSession.isWaliApproved),
       }));
@@ -75,8 +71,8 @@ export default function App() {
       if (refreshed) {
         setUser((prev) => ({
           ...prev,
-          isPremium: Boolean(refreshed.isPremium),
-          planName: refreshed.planName || (refreshed.isPremium ? 'Baraka (Premium)' : 'Sadaq (Gratuit)'),
+          isPremium: true,
+          planName: refreshed.planName || 'Accès Gratuit & Illimité',
           isVerifiedNNI: Boolean(refreshed.isVerifiedNNI),
           isWaliApproved: Boolean(refreshed.isWaliApproved),
         }));
@@ -92,10 +88,12 @@ export default function App() {
       syncUserWithSession();
     };
 
+    window.addEventListener('nasiba_status_changed', handleStatusSync);
     window.addEventListener('zawaj_status_changed', handleStatusSync);
     window.addEventListener('storage', handleStatusSync);
 
     return () => {
+      window.removeEventListener('nasiba_status_changed', handleStatusSync);
       window.removeEventListener('zawaj_status_changed', handleStatusSync);
       window.removeEventListener('storage', handleStatusSync);
     };
@@ -120,7 +118,6 @@ export default function App() {
 
   // Modals & Sliders
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
-  const [selectedPlanPayment, setSelectedPlanPayment] = useState<PricingPlan | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
   const [onboardingOpen, setOnboardingOpen] = useState<boolean>(false);
@@ -141,10 +138,11 @@ export default function App() {
       setFavoriteProfileIds([]);
       return;
     }
-    const storageKey = `zawaj_favorites_${user.id}`;
+    const storageKey = `nasiba_favorites_${user.id}`;
+    const legacyKey = `zawaj_favorites_${user.id}`;
     let localSaved: string[] = [];
     try {
-      const saved = localStorage.getItem(storageKey);
+      const saved = localStorage.getItem(storageKey) || localStorage.getItem(legacyKey);
       if (saved) {
         localSaved = JSON.parse(saved);
       }
@@ -177,7 +175,7 @@ export default function App() {
 
     setFavoriteProfileIds(updated);
 
-    const storageKey = `zawaj_favorites_${user.id}`;
+    const storageKey = `nasiba_favorites_${user.id}`;
     try {
       localStorage.setItem(storageKey, JSON.stringify(updated));
     } catch (e) {
@@ -302,17 +300,6 @@ export default function App() {
     }, 1500);
   };
 
-  const handleConfirmPlanPayment = (planName: string) => {
-    setUser((prev) => ({
-      ...prev,
-      isPremium: true,
-      planName
-    }));
-    updateAccountPlanAndStatus(user.id, { isPremium: true, planName });
-    setSelectedPlanPayment(null);
-    showToast(`Félicitations ! Vous êtes désormais abonné(e) à la formule ${planName}.`);
-  };
-
   const handleStartMessageWithProfile = (profile: Profile) => {
     let targetConv = conversations.find(
       (c) => c.participantName === profile.name || c.id === `conv_${profile.id}`
@@ -384,36 +371,8 @@ export default function App() {
     } else {
       // Direct login bypasses onboarding
       setCurrentTab('dashboard');
-      showToast(`Ravi de vous revoir sur Zawaj, ${userAcc.name} !`);
+      showToast(`Ravi de vous revoir sur NASIBA, ${userAcc.name} !`);
     }
-  };
-
-  const handleAdminUpdateProfile = (profileId: string, updates: Partial<Profile>) => {
-    setProfiles((prev) =>
-      prev.map((p) => (p.id === profileId || p.userId === profileId ? { ...p, ...updates } : p))
-    );
-
-    // If the updated profile matches the active user session, apply immediately
-    setUser((prev) => {
-      const isMatch =
-        prev.id === profileId ||
-        (updates.userEmail && prev.email?.toLowerCase() === updates.userEmail.toLowerCase()) ||
-        (updates.name && prev.name?.toLowerCase() === updates.name.toLowerCase());
-
-      if (isMatch) {
-        const isPrem = updates.isPremium !== undefined ? updates.isPremium : prev.isPremium;
-        return {
-          ...prev,
-          isPremium: isPrem,
-          planName: updates.isPremium !== undefined
-            ? (isPrem ? 'Baraka (Premium)' : 'Sadaq (Gratuit)')
-            : prev.planName,
-          isVerifiedNNI: updates.isVerifiedNNI !== undefined ? updates.isVerifiedNNI : prev.isVerifiedNNI,
-          isWaliApproved: updates.isWaliApproved !== undefined ? updates.isWaliApproved : prev.isWaliApproved,
-        };
-      }
-      return prev;
-    });
   };
 
   const handleLogout = () => {
@@ -539,11 +498,11 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f9ff] text-[#151c27] flex flex-col font-body">
+    <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] flex flex-col font-body">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 left-4 sm:left-auto sm:right-6 z-50 bg-[#004532] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn border border-[#065f46]">
-          <span className="material-symbols-outlined text-[#8bd6b6]">check_circle</span>
+        <div className="fixed top-20 right-4 left-4 sm:left-auto sm:right-6 z-50 bg-[#0F5C4D] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn border border-[#8BAE9F]/40">
+          <span className="material-symbols-outlined text-[#C9A45C]">check_circle</span>
           <span className="font-display text-xs sm:text-sm font-semibold">{toastMessage}</span>
         </div>
       )}
@@ -565,7 +524,6 @@ export default function App() {
             currentTab={currentTab}
             onSelectTab={(tab) => setCurrentTab(tab)}
             user={user}
-            onOpenUpgradeModal={() => setCurrentTab('plans')}
             onOpenAuth={(mode) => {
               setAuthMode(mode);
               setAuthModalOpen(true);
@@ -583,20 +541,20 @@ export default function App() {
 
           {/* Mobile Overlay Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden fixed inset-0 z-50 bg-[#151c27]/50 backdrop-blur-sm flex justify-end">
-              <div className="w-4/5 max-w-xs bg-white h-full p-6 flex flex-col justify-between shadow-2xl animate-fadeIn">
+            <div className="md:hidden fixed inset-0 z-50 bg-[#211E1A]/60 backdrop-blur-sm flex justify-end">
+              <div className="w-4/5 max-w-xs bg-[#FAF8F2] h-full p-6 flex flex-col justify-between shadow-2xl animate-fadeIn border-l border-[#E8E3D7]">
                 <div>
-                  <div className="flex justify-between items-center pb-6 border-b border-[#bec9c2]/30 mb-6">
-                    <ZawajLogo size="md" />
+                  <div className="flex justify-between items-center pb-6 border-b border-[#E8E3D7] mb-6">
+                    <NasibaLogo size="sm" />
                     <button
                       onClick={() => setMobileMenuOpen(false)}
-                      className="p-1 text-[#6f7973]"
+                      className="p-1 text-[#7D766C] hover:text-[#0F5C4D]"
                     >
                       <span className="material-symbols-outlined">close</span>
                     </button>
                   </div>
 
-                  <nav className="space-y-2">
+                  <nav className="space-y-1.5">
                     {[
                       { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard' },
                       { id: 'browse', label: 'Parcourir', icon: 'search' },
@@ -604,9 +562,6 @@ export default function App() {
                       { id: 'messages', label: 'Messages', icon: 'chat_bubble' },
                       { id: 'verification', label: 'Vérification Wali', icon: 'verified_user' },
                       { id: 'settings', label: 'Paramètres', icon: 'settings' },
-                      ...(user.email?.toLowerCase() === 'moutarioumar7@gmail.com'
-                        ? [{ id: 'admin', label: 'Administration', icon: 'admin_panel_settings' }]
-                        : []),
                     ].map((m) => (
                       <button
                         key={m.id}
@@ -616,8 +571,8 @@ export default function App() {
                         }}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-display text-sm font-semibold transition-colors text-left ${
                           currentTab === m.id
-                            ? 'bg-[#065f46]/10 text-[#004532]'
-                            : 'text-[#3f4944] hover:bg-[#dce2f3]/40'
+                            ? 'bg-[#8BAE9F]/20 text-[#0F5C4D] font-bold'
+                            : 'text-[#575147] hover:bg-[#8BAE9F]/10'
                         }`}
                       >
                         <span className="material-symbols-outlined text-lg">{m.icon}</span>
@@ -627,13 +582,13 @@ export default function App() {
                   </nav>
                 </div>
 
-                <div className="pt-6 border-t border-[#bec9c2]/30 space-y-2">
+                <div className="pt-6 border-t border-[#E8E3D7] space-y-2">
                   {user.email || user.id ? (
                     <button
                       onClick={handleLogout}
-                      className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-display font-semibold py-2.5 rounded-xl text-xs text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full bg-white hover:bg-[#FAF8F2] text-[#575147] hover:text-[#211E1A] border border-[#E8E3D7] font-display font-semibold py-2.5 rounded-xl text-xs text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                     >
-                      <span className="material-symbols-outlined text-base">logout</span>
+                      <span className="material-symbols-outlined text-base text-[#7D766C]">logout</span>
                       Se déconnecter
                     </button>
                   ) : (
@@ -643,21 +598,16 @@ export default function App() {
                         setAuthModalOpen(true);
                         setMobileMenuOpen(false);
                       }}
-                      className="w-full bg-[#065f46]/10 text-[#004532] font-display font-semibold py-2.5 rounded-xl text-xs text-center flex items-center justify-center gap-1.5"
+                      className="w-full bg-[#0F5C4D] text-white hover:bg-[#0c4a3e] font-display font-semibold py-2.5 rounded-xl text-xs text-center flex items-center justify-center gap-1.5 shadow-xs"
                     >
                       <span className="material-symbols-outlined text-base">login</span>
-                      Connexion / Authentification
+                      Connexion / Inscription
                     </button>
                   )}
-                  <button
-                    onClick={() => {
-                      setCurrentTab('plans');
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full gold-gradient text-[#574500] font-display font-bold py-3 rounded-xl text-xs text-center"
-                  >
-                    Passer à Premium
-                  </button>
+                  <div className="w-full bg-[#8BAE9F]/15 border border-[#8BAE9F]/30 text-[#0F5C4D] font-display font-semibold py-2.5 px-3 rounded-xl text-xs text-center flex items-center justify-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C9A45C]"></span>
+                    <span>Plateforme 100% Gratuite</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -669,16 +619,6 @@ export default function App() {
               <DashboardView
                 user={user}
                 recommendedProfiles={profiles.filter((p) => {
-                  // The administrator profile must never appear in recommended profiles
-                  if (
-                    isAdministratorUser(p.userId) ||
-                    isAdministratorUser(p.userEmail) ||
-                    p.name?.toLowerCase().includes('admin') ||
-                    p.name?.toLowerCase().includes('administrateur')
-                  ) {
-                    return false;
-                  }
-
                   const hasPhoto = Boolean(
                     (p.photoUrl && p.photoUrl.trim() !== '') ||
                     (p.photos && p.photos.some((ph) => Boolean(ph) && ph.trim() !== ''))
@@ -724,13 +664,6 @@ export default function App() {
               />
             )}
 
-            {currentTab === 'plans' && (
-              <PlansView
-                user={user}
-                onSelectPlanForPayment={(plan) => setSelectedPlanPayment(plan)}
-              />
-            )}
-
             {currentTab === 'verification' && (
               <VerificationView
                 user={user}
@@ -747,20 +680,6 @@ export default function App() {
                 onLogout={handleLogout}
               />
             )}
-
-            {currentTab === 'admin' && (
-              <AdminDashboard
-                allProfiles={profiles}
-                onUpdateProfile={handleAdminUpdateProfile}
-                onShowToast={showToast}
-                onRefreshProfiles={async () => {
-                  const fetched = await fetchProfilesFromSupabase();
-                  if (fetched && fetched.length > 0) {
-                    setProfiles(fetched);
-                  }
-                }}
-              />
-            )}
           </main>
         </>
       )}
@@ -773,12 +692,6 @@ export default function App() {
         onRequestPhotoAccess={handleRequestPhotoAccess}
         isFavorited={selectedProfile ? favoriteProfileIds.includes(selectedProfile.id) : false}
         onToggleFavorite={handleToggleFavorite}
-      />
-
-      <PaymentModal
-        plan={selectedPlanPayment}
-        onClose={() => setSelectedPlanPayment(null)}
-        onConfirmSuccess={handleConfirmPlanPayment}
       />
 
       <AuthModal

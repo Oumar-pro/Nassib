@@ -97,45 +97,45 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <h2 className="font-display text-2xl font-bold text-[#151c27]">
           Paramètres du Compte &amp; Photos
         </h2>
-        <p className="font-body text-xs sm:text-sm text-[#3f4944] mt-1">
+        <p className="font-body text-xs sm:text-sm text-[#575147] mt-1">
           Gérez vos photos de profil, vos informations personnelles, votre sécurité et la visibilité de votre compte.
         </p>
       </div>
 
       {/* Main Settings Panel */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 ambient-shadow space-y-8 border border-[#bec9c2]/40 bg-white">
+      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm space-y-8 border border-[#E8E3D7]">
         {/* Profile Avatar Card */}
-        <div className="flex items-center gap-4 pb-6 border-b border-[#bec9c2]/30">
+        <div className="flex items-center gap-4 pb-6 border-b border-[#E8E3D7]">
           {user.photoUrl || photos[0] ? (
             <img
               src={user.photoUrl || photos[0]}
               alt={user.name}
-              className="w-16 h-16 rounded-full object-cover border-2 border-[#004532]"
+              className="w-16 h-16 rounded-full object-cover border-2 border-[#0F5C4D]"
             />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-[#004532]/10 text-[#004532] border-2 border-[#004532]/30 flex items-center justify-center font-display font-bold text-xl shrink-0">
+            <div className="w-16 h-16 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] border-2 border-[#8BAE9F]/40 flex items-center justify-center font-display font-bold text-xl shrink-0">
               {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </div>
           )}
           <div>
-            <h3 className="font-display text-lg font-bold text-[#151c27]">{user.name}</h3>
-            <p className="font-body text-xs text-[#3f4944]">{user.email}</p>
+            <h3 className="font-display text-lg font-bold text-[#211E1A]">{user.name}</h3>
+            <p className="font-body text-xs text-[#575147]">{user.email}</p>
             <div className="flex items-center gap-2 mt-1">
               {user.isVerifiedNNI ? (
-                <span className="bg-[#065f46]/10 text-[#004532] text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-[#004532]/20">
+                <span className="bg-[#8BAE9F]/20 text-[#0F5C4D] text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-[#8BAE9F]/30">
                   <span className="material-symbols-outlined text-xs">verified</span> Vérifié NNI
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={() => onNavigateTab('verification')}
-                  className="bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 hover:bg-amber-100 cursor-pointer"
+                  className="bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 hover:bg-[#C9A45C]/25 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-xs">pending</span> NNI Non Vérifié
                 </button>
               )}
-              <span className="bg-[#fed65b]/20 text-[#745c00] text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                Plan {user.planName}
+              <span className="bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                Accès Total Gratuit
               </span>
             </div>
           </div>
@@ -145,16 +145,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <div>
-              <h3 className="font-display text-base font-bold text-[#151c27] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#004532] text-xl">photo_library</span>
+              <h3 className="font-display text-base font-bold text-[#211E1A] flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#0F5C4D] text-xl">photo_library</span>
                 Photos de votre profil ({validPhotosCount}/3)
               </h3>
-              <p className="font-body text-xs text-[#3f4944] mt-0.5">
+              <p className="font-body text-xs text-[#575147] mt-0.5">
                 Vous pouvez ajouter jusqu'à 3 photos. La première photo sert de photo principale.
               </p>
             </div>
             {validPhotosCount === 0 && (
-              <span className="text-xs bg-amber-100 text-amber-900 font-bold px-2.5 py-1 rounded-full self-start">
+              <span className="text-xs bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/30 font-bold px-2.5 py-1 rounded-full self-start">
                 Profil masqué sans photo
               </span>
             )}
@@ -165,7 +165,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               const photo = photos[idx];
               return (
                 <div key={idx} className="relative flex flex-col items-center">
-                  <div className="w-full h-48 rounded-2xl border-2 border-dashed border-[#bec9c2]/60 bg-[#f0f3ff]/40 overflow-hidden flex flex-col items-center justify-center relative hover:border-[#004532]/50 transition-colors">
+                  <div className="w-full h-48 rounded-2xl border-2 border-dashed border-[#E8E3D7] bg-[#FAF8F2] overflow-hidden flex flex-col items-center justify-center relative hover:border-[#0F5C4D]/50 transition-colors">
                     {photo ? (
                       <>
                         <img
@@ -177,21 +177,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleRemovePhoto(idx)}
-                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-md hover:bg-rose-700 cursor-pointer"
+                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-[#211E1A]/80 text-white flex items-center justify-center shadow-md hover:bg-[#211E1A] cursor-pointer transition-colors"
                           title="Supprimer la photo"
                         >
                           <span className="material-symbols-outlined text-sm">delete</span>
                         </button>
                         {/* Primary Badge or Set Primary Action */}
                         {idx === 0 ? (
-                          <span className="absolute bottom-2 left-2 bg-[#004532] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                          <span className="absolute bottom-2 left-2 bg-[#0F5C4D] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
                             Principale
                           </span>
                         ) : (
                           <button
                             type="button"
                             onClick={() => handleSetPrimaryPhoto(idx)}
-                            className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-xs text-[#004532] hover:bg-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs cursor-pointer border border-[#004532]/20"
+                            className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-xs text-[#0F5C4D] hover:bg-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs cursor-pointer border border-[#0F5C4D]/20"
                             title="Définir comme photo principale"
                           >
                             Mettre en principale
@@ -201,17 +201,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     ) : (
                       <label
                         htmlFor={`settings-photo-${idx}`}
-                        className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-4 text-center hover:bg-[#f0f3ff]"
+                        className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-4 text-center hover:bg-[#8BAE9F]/10 transition-colors"
                       >
-                        <div className="w-10 h-10 rounded-full bg-[#004532]/10 text-[#004532] flex items-center justify-center mb-1.5">
+                        <div className="w-10 h-10 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center mb-1.5">
                           <span className="material-symbols-outlined text-xl">
                             add_a_photo
                           </span>
                         </div>
-                        <span className="font-display text-xs font-bold text-[#004532]">
+                        <span className="font-display text-xs font-bold text-[#0F5C4D]">
                           {idx === 0 ? 'Photo 1 (Principale)' : `Photo ${idx + 1}`}
                         </span>
-                        <span className="font-body text-[10px] text-[#6f7973] mt-0.5">
+                        <span className="font-body text-[10px] text-[#7D766C] mt-0.5">
                           Cliquez pour téléverser
                         </span>
                         <input
@@ -229,51 +229,51 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             })}
           </div>
 
-          <p className="font-body text-[11px] text-[#6f7973]">
+          <p className="font-body text-[11px] text-[#7D766C]">
             Format acceptés : JPG, PNG, WEBP. Les photos restent sous votre contrôle et peuvent être masquées avec le Mode Floutage.
           </p>
         </div>
 
         {/* Form: Account Info */}
-        <form onSubmit={handleSubmit} className="space-y-4 pt-6 border-t border-[#bec9c2]/30">
-          <h3 className="font-display text-base font-bold text-[#151c27]">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-6 border-t border-[#E8E3D7]">
+          <h3 className="font-display text-base font-bold text-[#211E1A]">
             Informations Personnelles
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="font-body text-xs font-semibold text-[#3f4944]">Nom complet</label>
+              <label className="font-body text-xs font-semibold text-[#575147]">Nom complet</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-11 bg-white border border-[#bec9c2]/50 rounded-xl px-3.5 text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532]"
+                className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3.5 text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="font-body text-xs font-semibold text-[#3f4944]">Adresse E-mail</label>
+              <label className="font-body text-xs font-semibold text-[#575147]">Adresse E-mail</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-11 bg-white border border-[#bec9c2]/50 rounded-xl px-3.5 text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532]"
+                className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3.5 text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="font-body text-xs font-semibold text-[#3f4944]">Téléphone (+227)</label>
+            <label className="font-body text-xs font-semibold text-[#575147]">Téléphone (+227)</label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full h-11 bg-white border border-[#bec9c2]/50 rounded-xl px-3.5 text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532]"
+              className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3.5 text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
             />
           </div>
 
           {savedNotice && (
-            <div className="p-3 bg-[#065f46]/10 text-[#004532] text-xs font-semibold rounded-xl flex items-center gap-2">
+            <div className="p-3 bg-[#8BAE9F]/20 text-[#0F5C4D] text-xs font-semibold rounded-xl flex items-center gap-2 border border-[#8BAE9F]/30">
               <span className="material-symbols-outlined text-sm">check_circle</span>
               Vos modifications et photos ont été enregistrées avec succès.
             </div>
@@ -281,22 +281,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <button
             type="submit"
-            className="bg-[#004532] text-white font-display text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-[#065f46] transition-colors cursor-pointer"
+            className="bg-[#0F5C4D] text-white font-display text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-[#0c4a3e] transition-colors cursor-pointer"
           >
             Enregistrer les modifications
           </button>
         </form>
 
         {/* Privacy & Photo Blurring Controls */}
-        <div className="pt-6 border-t border-[#bec9c2]/30 space-y-4">
-          <h3 className="font-display text-base font-bold text-[#151c27]">
+        <div className="pt-6 border-t border-[#E8E3D7] space-y-4">
+          <h3 className="font-display text-base font-bold text-[#211E1A]">
             Sécurité &amp; Visibilité des Photos
           </h3>
 
-          <div className="flex items-center justify-between p-4 bg-[#f9f9ff] rounded-2xl border border-[#bec9c2]/30">
+          <div className="flex items-center justify-between p-4 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7]">
             <div>
-              <p className="font-display text-sm font-bold text-[#151c27]">Mode Floutage de Photo</p>
-              <p className="font-body text-xs text-[#3f4944]">
+              <p className="font-display text-sm font-bold text-[#211E1A]">Mode Floutage de Photo</p>
+              <p className="font-body text-xs text-[#575147]">
                 Masque automatiquement votre photo de profil auprès des utilisateurs non vérifiés.
               </p>
             </div>
@@ -305,7 +305,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               type="button"
               onClick={() => onUpdateUser({ photoBlurringActive: !user.photoBlurringActive })}
               className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                user.photoBlurringActive ? 'bg-[#004532]' : 'bg-[#bec9c2]'
+                user.photoBlurringActive ? 'bg-[#0F5C4D]' : 'bg-[#E8E3D7]'
               }`}
             >
               <span
@@ -318,37 +318,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
 
         {/* Wali Info Summary */}
-        <div className="pt-6 border-t border-[#bec9c2]/30 space-y-3">
+        <div className="pt-6 border-t border-[#E8E3D7] space-y-3">
           <div className="flex justify-between items-center">
-            <h3 className="font-display text-base font-bold text-[#151c27]">Tuteur Légal (Wali)</h3>
+            <h3 className="font-display text-base font-bold text-[#211E1A]">Tuteur Légal (Wali)</h3>
             <button
               onClick={() => onNavigateTab('verification')}
-              className="text-[#004532] font-display text-xs font-bold hover:underline"
+              className="text-[#0F5C4D] font-display text-xs font-bold hover:underline cursor-pointer"
             >
               {user.isWaliApproved ? 'Modifier les coordonnées Wali' : 'Ajouter / Valider un Wali'}
             </button>
           </div>
 
-          <div className="p-4 bg-[#f0f3ff] rounded-2xl border border-[#bec9c2]/30 flex justify-between items-center text-xs">
+          <div className="p-4 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] flex justify-between items-center text-xs">
             {user.isWaliApproved && user.waliInfo?.name ? (
               <>
                 <div>
-                  <p className="font-bold text-[#151c27]">{user.waliInfo.name}</p>
-                  <p className="text-[#3f4944]">{user.waliInfo.relation} • {user.waliInfo.phone}</p>
+                  <p className="font-bold text-[#211E1A]">{user.waliInfo.name}</p>
+                  <p className="text-[#575147]">{user.waliInfo.relation} • {user.waliInfo.phone}</p>
                 </div>
-                <span className="bg-[#065f46]/10 text-[#004532] font-bold px-2.5 py-1 rounded-full border border-[#004532]/20">
+                <span className="bg-[#8BAE9F]/20 text-[#0F5C4D] font-bold px-2.5 py-1 rounded-full border border-[#8BAE9F]/30">
                   Wali Confirmé
                 </span>
               </>
             ) : (
               <>
                 <div>
-                  <p className="font-bold text-[#151c27]">Aucun tuteur validé</p>
-                  <p className="text-[#3f4944]">Ajoutez un Wali pour renforcer la confiance et la sécurité de votre profil.</p>
+                  <p className="font-bold text-[#211E1A]">Aucun tuteur validé</p>
+                  <p className="text-[#575147]">Ajoutez un Wali pour renforcer la confiance et la sécurité de votre profil.</p>
                 </div>
                 <button
                   onClick={() => onNavigateTab('verification')}
-                  className="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-3 py-1 rounded-full shrink-0 hover:bg-amber-200"
+                  className="bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/30 font-bold px-3 py-1 rounded-full shrink-0 hover:bg-[#C9A45C]/25 cursor-pointer"
                 >
                   Ajouter
                 </button>
@@ -359,17 +359,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         {/* Déconnexion */}
         {onLogout && (
-          <div className="pt-6 border-t border-[#bec9c2]/30 flex justify-between items-center">
+          <div className="pt-6 border-t border-[#E8E3D7] flex justify-between items-center">
             <div>
-              <p className="font-display text-sm font-bold text-rose-950">Déconnexion du compte</p>
-              <p className="font-body text-xs text-[#6f7973]">
+              <p className="font-display text-sm font-bold text-[#211E1A]">Déconnexion du compte</p>
+              <p className="font-body text-xs text-[#7D766C]">
                 Se déconnecter de cette session sécurisée sur cet appareil.
               </p>
             </div>
             <button
               type="button"
               onClick={onLogout}
-              className="px-5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-display text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+              className="px-5 py-2.5 bg-[#FAF8F2] hover:bg-[#E8E3D7] text-[#211E1A] border border-[#E8E3D7] font-display text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
             >
               <span className="material-symbols-outlined text-base">logout</span>
               Se déconnecter

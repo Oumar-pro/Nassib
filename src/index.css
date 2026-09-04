@@ -11,8 +11,8 @@ html, body {
   min-height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
-  background-color: #f9f9ff;
-  color: #151c27;
+  background-color: #FAF8F2;
+  color: #211E1A;
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -40,23 +40,37 @@ h3, h4, h5, h6 {
   font-family: 'Noto Naskh Arabic', serif;
 }
 
+/* NASIBA Color Helpers */
+:root {
+  --nasiba-emeraude: #0F5C4D;
+  --nasiba-sauge: #8BAE9F;
+  --nasiba-or: #C9A45C;
+  --nasiba-ivoire: #FAF8F2;
+  --nasiba-ebene: #211E1A;
+  --nasiba-card-border: #E8E3D7;
+}
+
 .ambient-shadow {
-  box-shadow: 0 4px 24px -2px rgba(6, 95, 70, 0.06), 0 0 3px rgba(6, 95, 70, 0.02);
+  box-shadow: 0 4px 20px -2px rgba(15, 92, 77, 0.06), 0 2px 6px -1px rgba(33, 30, 26, 0.04);
 }
 
 .glass-card, .glass-panel {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(190, 201, 194, 0.35);
+  border: 1px solid rgba(232, 227, 215, 0.9);
 }
 
-.gold-gradient {
-  background: linear-gradient(135deg, #ffe088 0%, #e9c349 100%);
+.gold-gradient, .champagne-gradient {
+  background: linear-gradient(135deg, #D4B36D 0%, #C9A45C 100%);
 }
 
 .gold-gradient-hover:hover {
-  background: linear-gradient(135deg, #fdd243 0%, #d8b233 100%);
+  background: linear-gradient(135deg, #DFBE77 0%, #BE984E 100%);
+}
+
+.emeraude-gradient {
+  background: linear-gradient(135deg, #136F5D 0%, #0F5C4D 100%);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -66,9 +80,9 @@ h3, h4, h5, h6 {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(111, 121, 115, 0.25);
+  background-color: rgba(139, 174, 159, 0.35);
   border-radius: 20px;
 }
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(111, 121, 115, 0.4);
+  background-color: rgba(139, 174, 159, 0.6);
 }

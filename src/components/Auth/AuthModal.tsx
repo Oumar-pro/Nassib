@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ZawajLogo } from '../ZawajLogo';
+import { NasibaLogo } from '../NasibaLogo';
 import { registerAccount, loginAccount, AuthAccount } from '../../lib/auth';
 
 interface AuthModalProps {
@@ -82,83 +82,83 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#151c27]/70 backdrop-blur-md animate-fadeIn overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#211E1A]/60 backdrop-blur-md animate-fadeIn overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 10 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative w-full max-w-2xl overflow-hidden rounded-3xl shadow-2xl border border-[#bec9c2]/40 bg-white grid grid-cols-1 md:grid-cols-12 my-auto"
+          className="relative w-full max-w-2xl overflow-hidden rounded-3xl shadow-2xl border border-[#E8E3D7] bg-white grid grid-cols-1 md:grid-cols-12 my-auto"
         >
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-20 p-2 text-[#6f7973] hover:text-[#004532] hover:bg-[#f0f3ff] rounded-full transition-colors cursor-pointer"
+            className="absolute top-4 right-4 z-20 p-2 text-[#7D766C] hover:text-[#0F5C4D] hover:bg-[#FAF8F2] rounded-full transition-colors cursor-pointer"
             title="Fermer"
           >
             <span className="material-symbols-outlined text-xl">close</span>
           </button>
 
           {/* Left Decorative Branding Side (5 cols) */}
-          <div className="hidden md:flex md:col-span-5 flex-col justify-between p-8 bg-gradient-to-b from-[#004532]/5 via-[#f0f3ff] to-[#004532]/10 border-r border-[#bec9c2]/30 relative overflow-hidden">
+          <div className="hidden md:flex md:col-span-5 flex-col justify-between p-8 bg-[#FAF8F2] border-r border-[#E8E3D7] relative overflow-hidden">
             {/* Subtle decorative glow */}
-            <div className="absolute -top-12 -left-12 w-40 h-40 bg-[#004532]/10 rounded-full blur-2xl pointer-events-none"></div>
-            <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-[#fed65b]/20 rounded-full blur-2xl pointer-events-none"></div>
+            <div className="absolute -top-12 -left-12 w-40 h-40 bg-[#0F5C4D]/8 rounded-full blur-2xl pointer-events-none"></div>
+            <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-[#C9A45C]/15 rounded-full blur-2xl pointer-events-none"></div>
 
             <div className="relative z-10">
               <div className="mb-4">
-                <ZawajLogo size="md" />
+                <NasibaLogo size="md" />
               </div>
-              <p className="font-body text-xs text-[#3f4944] leading-relaxed">
-                La plateforme matrimoniale éthique &amp; sécurisée dédiée à l'union sérieuse.
+              <p className="font-body text-xs text-[#575147] leading-relaxed">
+                Des rencontres avec une intention sérieuse. Pudeur, respect et transparence.
               </p>
             </div>
 
             {/* Feature Pills */}
             <div className="space-y-3.5 my-auto py-6 relative z-10">
-              <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/80 border border-[#bec9c2]/30 shadow-2xs backdrop-blur-xs">
-                <div className="w-8 h-8 rounded-xl bg-[#004532]/10 text-[#004532] flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white border border-[#E8E3D7] shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
                     shield_lock
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-display text-xs font-bold text-[#151c27]">Vérification NNI</h4>
-                  <p className="font-body text-[10px] text-[#6f7973]">Identités réelles authentifiées</p>
+                  <h4 className="font-display text-xs font-bold text-[#211E1A]">Vérification NNI</h4>
+                  <p className="font-body text-[10px] text-[#7D766C]">Profils réels et authentifiés</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/80 border border-[#bec9c2]/30 shadow-2xs backdrop-blur-xs">
-                <div className="w-8 h-8 rounded-xl bg-[#fed65b]/30 text-[#745c00] flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white border border-[#E8E3D7] shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    security
+                    family_restroom
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-display text-xs font-bold text-[#151c27]">Supervision Wali</h4>
-                  <p className="font-body text-[10px] text-[#6f7973]">Cadre familial et éthique</p>
+                  <h4 className="font-display text-xs font-bold text-[#211E1A]">Supervision Wali</h4>
+                  <p className="font-body text-[10px] text-[#7D766C]">Bénédiction et cadre familial</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/80 border border-[#bec9c2]/30 shadow-2xs backdrop-blur-xs">
-                <div className="w-8 h-8 rounded-xl bg-[#004532]/10 text-[#004532] flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white border border-[#E8E3D7] shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-base text-[#C9A45C]" style={{ fontVariationSettings: "'FILL' 1" }}>
                     favorite
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-display text-xs font-bold text-[#151c27]">Interactions Sereines</h4>
-                  <p className="font-body text-[10px] text-[#6f7973]">Respect et confidentialité</p>
+                  <h4 className="font-display text-xs font-bold text-[#211E1A]">Échanges Éthiques</h4>
+                  <p className="font-body text-[10px] text-[#7D766C]">Respect et pudeur</p>
                 </div>
               </div>
             </div>
 
-            <div className="relative z-10 pt-2 border-t border-[#bec9c2]/20 flex items-center justify-between text-[10px] font-body text-[#6f7973]">
-              <span className="flex items-center gap-1 font-semibold text-[#004532]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#065f46]"></span>
+            <div className="relative z-10 pt-2 border-t border-[#E8E3D7] flex items-center justify-between text-[10px] font-body text-[#7D766C]">
+              <span className="flex items-center gap-1 font-semibold text-[#0F5C4D]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0F5C4D]"></span>
                 Données Chiffrées
               </span>
-              <span>Zawaj © 2026</span>
+              <span>NASIBA © 2026</span>
             </div>
           </div>
 
@@ -167,18 +167,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div>
               {/* Header Logo for Mobile */}
               <div className="md:hidden mb-4">
-                <ZawajLogo size="sm" />
+                <NasibaLogo size="sm" />
               </div>
 
               {/* Mode Toggle Switcher */}
-              <div className="flex bg-[#f0f3ff] p-1 rounded-2xl border border-[#bec9c2]/30 mb-6 max-w-xs">
+              <div className="flex bg-[#FAF8F2] p-1 rounded-2xl border border-[#E8E3D7] mb-6 max-w-xs">
                 <button
                   type="button"
                   onClick={() => setMode('register')}
                   className={`flex-1 py-2 text-xs font-body font-bold rounded-xl transition-all cursor-pointer ${
                     mode === 'register'
-                      ? 'bg-[#004532] text-white shadow-xs'
-                      : 'text-[#3f4944] hover:text-[#004532]'
+                      ? 'bg-[#0F5C4D] text-white shadow-xs'
+                      : 'text-[#575147] hover:text-[#0F5C4D]'
                   }`}
                 >
                   Créer un compte
@@ -188,8 +188,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   onClick={() => setMode('login')}
                   className={`flex-1 py-2 text-xs font-body font-bold rounded-xl transition-all cursor-pointer ${
                     mode === 'login'
-                      ? 'bg-[#004532] text-white shadow-xs'
-                      : 'text-[#3f4944] hover:text-[#004532]'
+                      ? 'bg-[#0F5C4D] text-white shadow-xs'
+                      : 'text-[#575147] hover:text-[#0F5C4D]'
                   }`}
                 >
                   Se connecter
@@ -197,20 +197,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               <div className="mb-5">
-                <h3 className="font-serif-display text-2xl font-bold text-[#004532]">
-                  {mode === 'register' ? 'Rejoindre Zawaj' : 'Bon retour parmi nous'}
+                <h3 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
+                  {mode === 'register' ? 'Rejoindre NASIBA' : 'Bon retour parmi nous'}
                 </h3>
-                <p className="font-body text-xs text-[#3f4944] mt-1">
+                <p className="font-body text-xs text-[#575147] mt-1">
                   {mode === 'register'
-                    ? 'Inscrivez-vous pour débuter votre démarche matrimoniale.'
-                    : 'Accédez à vos discussions et profil sécurisé.'}
+                    ? 'Inscrivez-vous gratuitement pour débuter votre démarche matrimoniale.'
+                    : 'Accédez à vos discussions et à votre profil sécurisé.'}
                 </p>
               </div>
 
               {errorMessage && (
-                <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2.5 text-rose-900 text-xs font-body animate-fadeIn">
-                  <span className="material-symbols-outlined text-rose-600 text-lg shrink-0 mt-0.5">
-                    error
+                <div className="mb-4 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-[#211E1A] text-xs font-body animate-fadeIn">
+                  <span className="material-symbols-outlined text-[#C9A45C] text-lg shrink-0 mt-0.5">
+                    info
                   </span>
                   <p className="leading-relaxed font-medium">{errorMessage}</p>
                 </div>
@@ -221,7 +221,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {mode === 'register' && (
                   <>
                     <div className="space-y-1.5">
-                      <label className="font-body text-[11px] font-bold text-[#3f4944] uppercase tracking-wider">
+                      <label className="font-body text-[11px] font-bold text-[#575147] uppercase tracking-wider">
                         Je m'inscris en tant que :
                       </label>
                       <div className="grid grid-cols-2 gap-2.5">
@@ -230,20 +230,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           onClick={() => setRole('candidate')}
                           className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
                             role === 'candidate'
-                              ? 'border-[#004532] bg-[#004532]/5 ring-2 ring-[#004532]/20 text-[#004532]'
-                              : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#004532]/30'
+                              ? 'border-[#0F5C4D] bg-[#8BAE9F]/15 ring-2 ring-[#0F5C4D]/20 text-[#0F5C4D]'
+                              : 'border-[#E8E3D7] bg-[#FAF8F2] text-[#575147] hover:border-[#0F5C4D]/30'
                           }`}
                         >
                           <div
                             className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
-                              role === 'candidate' ? 'bg-[#004532] text-white' : 'bg-[#bec9c2]/30 text-[#3f4944]'
+                              role === 'candidate' ? 'bg-[#0F5C4D] text-white' : 'bg-[#E8E3D7] text-[#575147]'
                             }`}
                           >
                             <span className="material-symbols-outlined text-sm">person</span>
                           </div>
                           <div>
                             <div className="font-display text-xs font-bold leading-tight">Candidat(e)</div>
-                            <div className="font-body text-[10px] text-[#6f7973] font-normal">Recherche mariage</div>
+                            <div className="font-body text-[10px] text-[#7D766C] font-normal">Recherche mariage</div>
                           </div>
                         </button>
 
@@ -252,20 +252,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           onClick={() => setRole('wali')}
                           className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
                             role === 'wali'
-                              ? 'border-[#745c00] bg-[#fed65b]/20 ring-2 ring-[#745c00]/20 text-[#745c00]'
-                              : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#745c00]/30'
+                              ? 'border-[#C9A45C] bg-[#C9A45C]/15 ring-2 ring-[#C9A45C]/30 text-[#211E1A]'
+                              : 'border-[#E8E3D7] bg-[#FAF8F2] text-[#575147] hover:border-[#C9A45C]/40'
                           }`}
                         >
                           <div
                             className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
-                              role === 'wali' ? 'bg-[#745c00] text-white' : 'bg-[#bec9c2]/30 text-[#3f4944]'
+                              role === 'wali' ? 'bg-[#C9A45C] text-white' : 'bg-[#E8E3D7] text-[#575147]'
                             }`}
                           >
                             <span className="material-symbols-outlined text-sm">family_restroom</span>
                           </div>
                           <div>
                             <div className="font-display text-xs font-bold leading-tight">Wali (Tuteur)</div>
-                            <div className="font-body text-[10px] text-[#6f7973] font-normal">Accompagnateur</div>
+                            <div className="font-body text-[10px] text-[#7D766C] font-normal">Accompagnateur</div>
                           </div>
                         </button>
                       </div>
@@ -273,7 +273,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                     {/* Gender Selector */}
                     <div className="space-y-1.5">
-                      <label className="font-body text-[11px] font-bold text-[#3f4944] uppercase tracking-wider">
+                      <label className="font-body text-[11px] font-bold text-[#575147] uppercase tracking-wider">
                         Sexe / Genre :
                       </label>
                       <div className="grid grid-cols-2 gap-2.5">
@@ -282,8 +282,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           onClick={() => setGender('male')}
                           className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center gap-2 ${
                             gender === 'male'
-                              ? 'border-[#004532] bg-[#004532]/10 ring-2 ring-[#004532]/20 font-bold text-[#004532]'
-                              : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#004532]/30'
+                              ? 'border-[#0F5C4D] bg-[#8BAE9F]/15 ring-2 ring-[#0F5C4D]/20 font-bold text-[#0F5C4D]'
+                              : 'border-[#E8E3D7] bg-[#FAF8F2] text-[#575147] hover:border-[#0F5C4D]/30'
                           }`}
                         >
                           <span className="text-base">👨</span>
@@ -295,8 +295,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           onClick={() => setGender('female')}
                           className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center gap-2 ${
                             gender === 'female'
-                              ? 'border-[#004532] bg-[#004532]/10 ring-2 ring-[#004532]/20 font-bold text-[#004532]'
-                              : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#004532]/30'
+                              ? 'border-[#0F5C4D] bg-[#8BAE9F]/15 ring-2 ring-[#0F5C4D]/20 font-bold text-[#0F5C4D]'
+                              : 'border-[#E8E3D7] bg-[#FAF8F2] text-[#575147] hover:border-[#0F5C4D]/30'
                           }`}
                         >
                           <span className="text-base">👩</span>
@@ -310,9 +310,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* Full Name Input (Register mode) */}
                 {mode === 'register' && (
                   <div className="space-y-1">
-                    <label className="font-body text-xs font-semibold text-[#151c27]">Nom complet</label>
+                    <label className="font-body text-xs font-semibold text-[#211E1A]">Nom complet</label>
                     <div className="relative">
-                      <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6f7973] text-lg">
+                      <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7D766C] text-lg">
                         badge
                       </span>
                       <input
@@ -321,7 +321,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Ex: Aminata Seydou"
-                        className="w-full h-11 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl pl-10 pr-4 text-xs sm:text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532] focus:ring-2 focus:ring-[#004532]/15 transition-all placeholder:text-[#6f7973]"
+                        className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-2xl pl-10 pr-4 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#0F5C4D]/15 transition-all placeholder:text-[#7D766C]"
                       />
                     </div>
                   </div>
@@ -329,9 +329,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 {/* Email Input */}
                 <div className="space-y-1">
-                  <label className="font-body text-xs font-semibold text-[#151c27]">Adresse email</label>
+                  <label className="font-body text-xs font-semibold text-[#211E1A]">Adresse email</label>
                   <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6f7973] text-lg">
+                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7D766C] text-lg">
                       mail
                     </span>
                     <input
@@ -340,7 +340,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="nom@exemple.ne"
-                      className="w-full h-11 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl pl-10 pr-4 text-xs sm:text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532] focus:ring-2 focus:ring-[#004532]/15 transition-all placeholder:text-[#6f7973]"
+                      className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-2xl pl-10 pr-4 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#0F5C4D]/15 transition-all placeholder:text-[#7D766C]"
                     />
                   </div>
                 </div>
@@ -348,9 +348,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* Phone Input (Register mode) */}
                 {mode === 'register' && (
                   <div className="space-y-1">
-                    <label className="font-body text-xs font-semibold text-[#151c27]">Téléphone (+227)</label>
+                    <label className="font-body text-xs font-semibold text-[#211E1A]">Téléphone (+227)</label>
                     <div className="relative">
-                      <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6f7973] text-lg">
+                      <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7D766C] text-lg">
                         call
                       </span>
                       <input
@@ -359,7 +359,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="90 12 34 56"
-                        className="w-full h-11 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl pl-10 pr-4 text-xs sm:text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532] focus:ring-2 focus:ring-[#004532]/15 transition-all placeholder:text-[#6f7973]"
+                        className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-2xl pl-10 pr-4 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#0F5C4D]/15 transition-all placeholder:text-[#7D766C]"
                       />
                     </div>
                   </div>
@@ -368,18 +368,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* Password Input */}
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <label className="font-body text-xs font-semibold text-[#151c27]">Mot de passe</label>
+                    <label className="font-body text-xs font-semibold text-[#211E1A]">Mot de passe</label>
                     {mode === 'login' && (
                       <button
                         type="button"
-                        className="font-body text-[11px] text-[#004532] font-semibold hover:underline"
+                        className="font-body text-[11px] text-[#0F5C4D] font-semibold hover:underline"
                       >
                         Oublié ?
                       </button>
                     )}
                   </div>
                   <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6f7973] text-lg">
+                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7D766C] text-lg">
                       lock
                     </span>
                     <input
@@ -388,12 +388,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full h-11 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl pl-10 pr-10 text-xs sm:text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532] focus:ring-2 focus:ring-[#004532]/15 transition-all placeholder:text-[#6f7973]"
+                      className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-2xl pl-10 pr-10 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#0F5C4D]/15 transition-all placeholder:text-[#7D766C]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#6f7973] hover:text-[#004532] cursor-pointer"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7D766C] hover:text-[#0F5C4D] cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-lg">
                         {showPassword ? 'visibility_off' : 'visibility'}
@@ -408,7 +408,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   whileTap={{ scale: loading ? 1 : 0.99 }}
                   type="submit"
                   disabled={loading}
-                  className={`w-full py-3.5 bg-[#004532] text-white font-display text-xs sm:text-sm font-bold rounded-2xl hover:bg-[#065f46] transition-all shadow-md shadow-[#004532]/20 mt-3 flex items-center justify-center gap-2 ${
+                  className={`w-full py-3.5 bg-[#0F5C4D] text-white font-display text-xs sm:text-sm font-bold rounded-2xl hover:bg-[#0c4a3e] transition-all shadow-md shadow-[#0F5C4D]/15 mt-3 flex items-center justify-center gap-2 ${
                     loading ? 'opacity-70 cursor-wait' : 'cursor-pointer'
                   }`}
                 >
@@ -420,7 +420,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   ) : (
                     <>
                       <span>{mode === 'register' ? "Créer mon compte éthique" : 'Se connecter'}</span>
-                      <span className="material-symbols-outlined text-base">arrow_forward</span>
+                      <span className="material-symbols-outlined text-base text-[#C9A45C]">arrow_forward</span>
                     </>
                   )}
                 </motion.button>
@@ -428,14 +428,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
 
             {/* Footer switcher notice */}
-            <div className="mt-6 text-center pt-4 border-t border-[#bec9c2]/20">
-              <span className="font-body text-xs text-[#3f4944]">
+            <div className="mt-6 text-center pt-4 border-t border-[#E8E3D7]">
+              <span className="font-body text-xs text-[#575147]">
                 {mode === 'register' ? 'Déjà inscrit ? ' : 'Pas encore de profil ? '}
               </span>
               <button
                 type="button"
                 onClick={() => setMode(mode === 'register' ? 'login' : 'register')}
-                className="font-body text-xs text-[#004532] font-bold hover:underline cursor-pointer ml-1"
+                className="font-body text-xs text-[#0F5C4D] font-bold hover:underline cursor-pointer ml-1"
               >
                 {mode === 'register' ? 'Se connecter' : "S'inscrire maintenant"}
               </button>
@@ -446,4 +446,5 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     </AnimatePresence>
   );
 };
+
 

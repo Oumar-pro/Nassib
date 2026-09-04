@@ -2,12 +2,10 @@ export type TabType =
   | 'dashboard' 
   | 'browse' 
   | 'messages' 
-  | 'plans' 
   | 'verification' 
   | 'settings' 
   | 'landing'
-  | 'imam'
-  | 'admin';
+  | 'imam';
 
 export type MaritalStatus = 'Jamais marié(e)' | 'Divorcé(e)' | 'Veuf/Veuve';
 
@@ -72,17 +70,6 @@ export interface Conversation {
   isSupervised: boolean;
   isVerifiedNNI: boolean;
   onlineStatus: boolean;
-}
-
-export interface PricingPlan {
-  id: string;
-  name: string;
-  price: string;
-  period: string;
-  description: string;
-  features: string[];
-  popular?: boolean;
-  ctaText: string;
 }
 
 export interface UserWaliInfo {

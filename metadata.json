@@ -1,6 +1,6 @@
 {
-  "name": "Zawaj",
-  "description": "Plateforme matrimoniale éthique, sécurisée et premium au Niger.",
+  "name": "NASIBA",
+  "description": "Des rencontres avec une intention sérieuse. Plateforme matrimoniale éthique et moderne au Niger.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

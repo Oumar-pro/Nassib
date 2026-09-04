@@ -15,29 +15,10 @@ export interface AuthAccount {
   photoUrl?: string;
 }
 
-const STORAGE_ACCOUNTS_KEY = 'zawaj_registered_accounts';
-const STORAGE_SESSION_KEY = 'zawaj_current_session';
-
-export const ADMIN_EMAILS = [
-  'moutarioumar7@gmail.com',
-  'admin@zawaj.ne',
-  'contact@zawaj.ne',
-];
-
-export const ADMIN_USER_IDS = [
-  'usr_admin_001',
-  'admin',
-  'super_admin',
-];
-
-export function isAdministratorUser(identifier?: string | null): boolean {
-  if (!identifier) return false;
-  const clean = identifier.trim().toLowerCase();
-  if (ADMIN_EMAILS.some((adm) => adm.toLowerCase() === clean)) return true;
-  if (ADMIN_USER_IDS.some((adm) => adm.toLowerCase() === clean)) return true;
-  if (import.meta.env.VITE_ADMIN_EMAIL && clean === import.meta.env.VITE_ADMIN_EMAIL.toLowerCase()) return true;
-  return false;
-}
+const STORAGE_ACCOUNTS_KEY = 'nasiba_registered_accounts';
+const STORAGE_SESSION_KEY = 'nasiba_current_session';
+const LEGACY_ACCOUNTS_KEY = 'zawaj_registered_accounts';
+const LEGACY_SESSION_KEY = 'zawaj_current_session';
 
 /**
  * Fetch authoritative user profile status directly from Supabase DB table `profiles`
@@ -59,12 +40,12 @@ export async function fetchProfileStatusFromDB(userId: string): Promise<{
 
     if (error || !data) return null;
 
-    const isPrem = Boolean(data.is_premium);
+    const isPrem = true;
     return {
-      isPremium: isPrem,
+      isPremium: true,
       isVerifiedNNI: Boolean(data.is_verified_nni),
       isWaliApproved: Boolean(data.is_wali_approved),
-      planName: isPrem ? 'Baraka (Premium)' : 'Sadaq (Gratuit)',
+      planName: 'Accès Gratuit & Illimité',
     };
   } catch (err) {
     console.warn('Could not fetch authoritative profile status from DB:', err);
@@ -95,8 +76,8 @@ export function updateAccountPlanAndStatus(
         updated = true;
         return {
           ...acc,
-          isPremium: updates.isPremium !== undefined ? updates.isPremium : acc.isPremium,
-          planName: updates.planName !== undefined ? updates.planName : (updates.isPremium ? 'Baraka (Premium)' : 'Sadaq (Gratuit)'),
+          isPremium: updates.isPremium !== undefined ? updates.isPremium : true,
+          planName: updates.planName || 'Accès Gratuit & Illimité',
           isVerifiedNNI: updates.isVerifiedNNI !== undefined ? updates.isVerifiedNNI : acc.isVerifiedNNI,
           isWaliApproved: updates.isWaliApproved !== undefined ? updates.isWaliApproved : acc.isWaliApproved,
         };
@@ -122,8 +103,8 @@ export function updateAccountPlanAndStatus(
     ) {
       const nextSession: AuthAccount = {
         ...current,
-        isPremium: updates.isPremium !== undefined ? updates.isPremium : current.isPremium,
-        planName: updates.planName !== undefined ? updates.planName : (updates.isPremium ? 'Baraka (Premium)' : 'Sadaq (Gratuit)'),
+        isPremium: updates.isPremium !== undefined ? updates.isPremium : true,
+        planName: updates.planName || 'Accès Gratuit & Illimité',
         isVerifiedNNI: updates.isVerifiedNNI !== undefined ? updates.isVerifiedNNI : current.isVerifiedNNI,
         isWaliApproved: updates.isWaliApproved !== undefined ? updates.isWaliApproved : current.isWaliApproved,
       };
@@ -136,6 +117,11 @@ export function updateAccountPlanAndStatus(
   // Dispatch real-time global event
   try {
     if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('nasiba_status_changed', {
+          detail: { identifier, updates },
+        })
+      );
       window.dispatchEvent(
         new CustomEvent('zawaj_status_changed', {
           detail: { identifier, updates },
@@ -150,7 +136,7 @@ export function updateAccountPlanAndStatus(
  */
 export function getRegisteredAccounts(): AuthAccount[] {
   try {
-    const raw = localStorage.getItem(STORAGE_ACCOUNTS_KEY);
+    const raw = localStorage.getItem(STORAGE_ACCOUNTS_KEY) || localStorage.getItem(LEGACY_ACCOUNTS_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch (err) {
     console.error('Error reading registered accounts:', err);
@@ -173,36 +159,6 @@ export async function registerAccount(data: {
 
   if (!normalizedEmail || !data.password) {
     return { user: null, error: 'Veuillez saisir une adresse email et un mot de passe valides.' };
-  }
-
-  // Check backend admin login
-  try {
-    const adminRes = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: normalizedEmail, password: data.password }),
-    });
-
-    if (adminRes.ok) {
-      const adminData = await adminRes.json();
-      if (adminData.success && adminData.user) {
-        const adminAccount: AuthAccount = {
-          id: adminData.user.id || 'usr_admin_001',
-          email: adminData.user.email,
-          name: data.name || adminData.user.name || 'Administrateur',
-          role: 'wali',
-          phone: data.phone || '+227 90 00 00 00',
-          createdAt: new Date().toISOString(),
-        };
-        if (adminData.token) {
-          localStorage.setItem('zawaj_admin_token', adminData.token);
-        }
-        localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(adminAccount));
-        return { user: adminAccount, error: null };
-      }
-    }
-  } catch (err) {
-    // Backend offline or non-admin
   }
 
   // 1. Primary: Native Supabase Auth Sign Up
@@ -243,7 +199,7 @@ export async function registerAccount(data: {
               match_percentage: 90,
               is_verified_nni: false,
               is_wali_approved: false,
-              is_premium: false,
+              is_premium: true,
               gender: data.gender || 'female',
               wali_reference: data.phone || 'Non renseigné',
               bio: `Bienvenue sur le profil de ${data.name}. Démarche sérieuse avec intention de mariage éthique.`,
@@ -261,8 +217,8 @@ export async function registerAccount(data: {
           phone: data.phone,
           gender: data.gender || 'female',
           createdAt: sbData.user.created_at || new Date().toISOString(),
-          isPremium: false,
-          planName: 'Sadaq (Gratuit)',
+          isPremium: true,
+          planName: 'Accès Gratuit & Illimité',
           isVerifiedNNI: false,
           isWaliApproved: false,
         };
@@ -302,8 +258,8 @@ export async function registerAccount(data: {
     phone: data.phone || '+227 90 12 34 56',
     gender: data.gender || 'female',
     createdAt: new Date().toISOString(),
-    isPremium: false,
-    planName: 'Sadaq (Gratuit)',
+    isPremium: true,
+    planName: 'Accès Gratuit & Illimité',
     isVerifiedNNI: false,
     isWaliApproved: false,
   };
@@ -328,37 +284,7 @@ export async function loginAccount(data: {
     return { user: null, error: 'Veuillez saisir votre adresse email et mot de passe.' };
   }
 
-  // 1. Attempt backend admin authentication
-  try {
-    const adminRes = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: normalizedEmail, password: data.password }),
-    });
-
-    if (adminRes.ok) {
-      const adminData = await adminRes.json();
-      if (adminData.success && adminData.user) {
-        const adminAccount: AuthAccount = {
-          id: adminData.user.id || 'usr_admin_001',
-          email: adminData.user.email,
-          name: adminData.user.name || 'Administrateur',
-          role: 'wali',
-          phone: '+227 90 00 00 00',
-          createdAt: new Date().toISOString(),
-        };
-        if (adminData.token) {
-          localStorage.setItem('zawaj_admin_token', adminData.token);
-        }
-        localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(adminAccount));
-        return { user: adminAccount, error: null };
-      }
-    }
-  } catch (err) {
-    // Non-admin or backend unreachable
-  }
-
-  // 2. Primary: Native Supabase Auth login
+  // 1. Primary: Native Supabase Auth login
   if (isSupabaseConfigured && supabase) {
     try {
       const { data: sbData, error: sbError } = await supabase.auth.signInWithPassword({
@@ -384,8 +310,8 @@ export async function loginAccount(data: {
           phone: sbData.user.user_metadata?.phone || '+227 90 12 34 56',
           gender: sbData.user.user_metadata?.gender || 'female',
           createdAt: sbData.user.created_at || new Date().toISOString(),
-          isPremium: dbStatus ? dbStatus.isPremium : Boolean(sbData.user.user_metadata?.is_premium),
-          planName: dbStatus ? dbStatus.planName : (sbData.user.user_metadata?.planName || 'Sadaq (Gratuit)'),
+          isPremium: true,
+          planName: 'Accès Gratuit & Illimité',
           isVerifiedNNI: dbStatus ? dbStatus.isVerifiedNNI : Boolean(sbData.user.user_metadata?.is_verified_nni),
           isWaliApproved: dbStatus ? dbStatus.isWaliApproved : Boolean(sbData.user.user_metadata?.is_wali_approved),
         };
@@ -420,7 +346,7 @@ export async function loginAccount(data: {
  */
 export function getCurrentUserSession(): AuthAccount | null {
   try {
-    const raw = localStorage.getItem(STORAGE_SESSION_KEY);
+    const raw = localStorage.getItem(STORAGE_SESSION_KEY) || localStorage.getItem(LEGACY_SESSION_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch (err) {
@@ -459,7 +385,7 @@ export async function refreshCurrentSessionFromDB(): Promise<AuthAccount | null>
  */
 export function logoutUserSession() {
   localStorage.removeItem(STORAGE_SESSION_KEY);
-  localStorage.removeItem('zawaj_admin_token');
+  localStorage.removeItem(LEGACY_SESSION_KEY);
   if (isSupabaseConfigured && supabase) {
     supabase.auth.signOut().catch(() => {});
   }

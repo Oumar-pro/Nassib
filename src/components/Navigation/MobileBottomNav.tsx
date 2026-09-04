@@ -21,7 +21,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#f9f9ff]/90 backdrop-blur-xl border-t border-[#bec9c2]/30 px-3 py-1.5 flex justify-around items-center z-50 shadow-lg">
+    <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#FAF8F2]/95 backdrop-blur-xl border-t border-[#E8E3D7] px-3 py-1.5 flex justify-around items-center z-50 shadow-md">
       {tabs.map((tab) => {
         const isActive = currentTab === tab.id;
         return (
@@ -29,11 +29,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             key={tab.id}
             onClick={() => onSelectTab(tab.id)}
             className={`flex flex-col items-center p-1.5 transition-colors relative ${
-              isActive ? 'text-[#004532]' : 'text-[#3f4944] hover:text-[#004532]'
+              isActive ? 'text-[#0F5C4D]' : 'text-[#575147] hover:text-[#0F5C4D]'
             }`}
           >
             {tab.badge && tab.badge > 0 ? (
-              <div className="absolute top-1 right-2 w-2 h-2 bg-[#ba1a1a] rounded-full" />
+              <div className="absolute top-1 right-2 w-2 h-2 bg-[#C9A45C] rounded-full" />
             ) : null}
             <span
               className="material-symbols-outlined text-2xl"
@@ -41,7 +41,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             >
               {tab.icon}
             </span>
-            <span className={`font-body text-[10px] mt-0.5 ${isActive ? 'font-bold' : 'font-normal'}`}>
+            <span className={`font-body text-[10px] mt-0.5 ${isActive ? 'font-bold text-[#0F5C4D]' : 'font-normal'}`}>
               {tab.label}
             </span>
           </button>
@@ -50,3 +50,4 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     </nav>
   );
 };
+

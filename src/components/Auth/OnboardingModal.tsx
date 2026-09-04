@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ZawajLogo } from '../ZawajLogo';
+import { NasibaLogo } from '../NasibaLogo';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -261,31 +261,31 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#151c27]/80 backdrop-blur-md overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#211E1A]/75 backdrop-blur-md overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25 }}
-          className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-[#bec9c2]/40 overflow-hidden my-auto flex flex-col min-h-[540px]"
+          className="relative w-full max-w-xl bg-[#FAF8F2] rounded-3xl shadow-2xl border border-[#E8E3D7] overflow-hidden my-auto flex flex-col min-h-[540px]"
         >
           {/* Header Bar */}
-          <div className="p-4 sm:p-6 pb-3 border-b border-[#bec9c2]/20 flex items-center justify-between bg-gradient-to-r from-white via-[#f0f3ff] to-white">
+          <div className="p-4 sm:p-6 pb-3 border-b border-[#E8E3D7] flex items-center justify-between bg-white">
             <div className="flex items-center gap-3">
-              <ZawajLogo size="sm" />
-              <div className="hidden sm:block h-5 w-px bg-[#bec9c2]/40"></div>
-              <span className="hidden sm:inline font-body text-xs font-semibold text-[#004532]">
+              <NasibaLogo size="sm" />
+              <div className="hidden sm:block h-5 w-px bg-[#E8E3D7]"></div>
+              <span className="hidden sm:inline font-body text-xs font-semibold text-[#0F5C4D]">
                 Onboarding Éthique &amp; Personnalisé
               </span>
             </div>
 
             <div className="flex items-center gap-2.5">
               {!isLoadingAnalysis && (
-                <span className="font-body text-xs font-bold text-[#004532] bg-[#004532]/10 px-3 py-1 rounded-full border border-[#004532]/20">
+                <span className="font-body text-xs font-bold text-[#0F5C4D] bg-[#8BAE9F]/20 px-3 py-1 rounded-full border border-[#8BAE9F]/30">
                   Étape {currentStep}/{totalSteps}
                 </span>
               )}
-              <span className="font-body text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-full border border-amber-300 flex items-center gap-1 shadow-2xs">
+              <span className="font-body text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-full border border-amber-300 flex items-center gap-1 shadow-2xs">
                 <span className="material-symbols-outlined text-xs">lock</span>
                 <span>Obligatoire</span>
               </span>
@@ -294,9 +294,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
           {/* Step Progress Indicator Bar */}
           {!isLoadingAnalysis && (
-            <div className="w-full bg-[#f0f3ff] h-1.5 overflow-hidden">
+            <div className="w-full bg-[#E8E3D7] h-1.5 overflow-hidden">
               <motion.div
-                className="bg-[#004532] h-full"
+                className="bg-[#0F5C4D] h-full"
                 animate={{ width: `${(currentStep / totalSteps) * 100}%` }}
                 transition={{ duration: 0.3 }}
               />
@@ -304,7 +304,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
           )}
 
           {/* Main Content Body */}
-          <div className="flex-grow p-6 sm:p-8 flex flex-col justify-between">
+          <div className="flex-grow p-6 sm:p-8 flex flex-col justify-between bg-[#FAF8F2]">
             {isLoadingAnalysis ? (
               /* FINAL LOADING & COMPATIBILITY CALCULATION ANIMATION */
               <motion.div
@@ -318,7 +318,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       cx="48"
                       cy="48"
                       r="40"
-                      stroke="#f0f3ff"
+                      stroke="#E8E3D7"
                       strokeWidth="8"
                       fill="transparent"
                     />
@@ -326,7 +326,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       cx="48"
                       cy="48"
                       r="40"
-                      stroke="#004532"
+                      stroke="#0F5C4D"
                       strokeWidth="8"
                       strokeDasharray="251.2"
                       strokeDashoffset={251.2 - (251.2 * loadingProgress) / 100}
@@ -335,21 +335,21 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       className="transition-all duration-150 ease-out"
                     />
                   </svg>
-                  <span className="absolute font-display text-lg font-bold text-[#004532]">
+                  <span className="absolute font-display text-lg font-bold text-[#0F5C4D]">
                     {loadingProgress}%
                   </span>
                 </div>
 
-                <h3 className="font-serif-display text-2xl font-bold text-[#004532] mb-2">
-                  Finalisation de votre profil Zawaj
+                <h3 className="font-serif-display text-2xl font-bold text-[#0F5C4D] mb-2">
+                  Finalisation de votre profil NASIBA
                 </h3>
 
-                <p className="font-body text-xs sm:text-sm text-[#3f4944] max-w-md h-12 flex items-center justify-center leading-relaxed">
+                <p className="font-body text-xs sm:text-sm text-[#575147] max-w-md h-12 flex items-center justify-center leading-relaxed">
                   « {loadingMessages[loadingMessageIndex]} »
                 </p>
 
-                <div className="mt-6 flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#fed65b]/20 border border-[#fed65b]/40 text-[#745c00] text-xs font-semibold">
-                  <span className="material-symbols-outlined text-base">verified</span>
+                <div className="mt-6 flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#C9A45C]/15 border border-[#C9A45C]/30 text-[#735619] text-xs font-semibold">
+                  <span className="material-symbols-outlined text-base text-[#C9A45C]">verified</span>
                   <span>Communauté 100% vérifiée et éthique au Niger</span>
                 </div>
               </motion.div>
@@ -366,20 +366,20 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className="space-y-6"
                   >
                     <div>
-                      <span className="inline-block px-3 py-1 rounded-full bg-[#004532]/10 text-[#004532] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
                         Étape 1 : Identité &amp; Âge
                       </span>
-                      <h2 className="font-serif-display text-2xl font-bold text-[#004532]">
+                      <h2 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
                         Quelle est votre date de naissance ?
                       </h2>
-                      <p className="font-body text-xs text-[#3f4944] mt-1">
+                      <p className="font-body text-xs text-[#575147] mt-1">
                         Sélectionnez simplement votre genre et votre date de naissance.
                       </p>
                     </div>
 
                     {/* Gender Selector */}
                     <div className="space-y-2">
-                      <label className="font-body text-[11px] font-bold uppercase tracking-wider text-[#6f7973] block">
+                      <label className="font-body text-[11px] font-bold uppercase tracking-wider text-[#7D766C] block">
                         Je suis :
                       </label>
                       <div className="grid grid-cols-2 gap-3">
@@ -388,8 +388,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                           onClick={() => setGender('male')}
                           className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center gap-2 ${
                             gender === 'male'
-                              ? 'border-[#004532] bg-[#004532]/10 ring-2 ring-[#004532]/20 font-bold text-[#004532]'
-                              : 'border-[#bec9c2]/40 bg-[#f0f3ff] text-[#3f4944] hover:border-[#004532]/30'
+                              ? 'border-[#0F5C4D] bg-[#0F5C4D]/10 ring-2 ring-[#0F5C4D]/20 font-bold text-[#0F5C4D]'
+                              : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
                           }`}
                         >
                           <span className="text-lg">👨</span>
@@ -401,8 +401,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                           onClick={() => setGender('female')}
                           className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center gap-2 ${
                             gender === 'female'
-                              ? 'border-[#004532] bg-[#004532]/10 ring-2 ring-[#004532]/20 font-bold text-[#004532]'
-                              : 'border-[#bec9c2]/40 bg-[#f0f3ff] text-[#3f4944] hover:border-[#004532]/30'
+                              ? 'border-[#0F5C4D] bg-[#0F5C4D]/10 ring-2 ring-[#0F5C4D]/20 font-bold text-[#0F5C4D]'
+                              : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
                           }`}
                         >
                           <span className="text-lg">👩</span>
@@ -416,13 +416,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
                         {/* Jour */}
                         <div>
-                          <label className="font-body text-[11px] font-bold uppercase tracking-wider text-[#6f7973] block mb-1.5 text-center">
+                          <label className="font-body text-[11px] font-bold uppercase tracking-wider text-[#7D766C] block mb-1.5 text-center">
                             Jour
                           </label>
                           <select
                             value={birthDay}
                             onChange={(e) => setBirthDay(Number(e.target.value))}
-                            className="w-full h-12 bg-[#f0f3ff] border border-[#bec9c2]/50 rounded-2xl px-2 text-center text-sm font-display font-bold text-[#151c27] focus:outline-none focus:border-[#004532] focus:ring-2 focus:ring-[#004532]/15 cursor-pointer hover:border-[#004532]/40 transition-colors"
+                            className="w-full h-12 bg-white border border-[#E8E3D7] rounded-2xl px-2 text-center text-sm font-display font-bold text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#8BAE9F]/20 cursor-pointer hover:border-[#8BAE9F] transition-colors"
                           >
                             {daysArray.map((d) => (
                               <option key={d} value={d}>
@@ -434,13 +434,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
                         {/* Mois */}
                         <div>
-                          <label className="font-body text-[11px] font-bold uppercase tracking-wider text-[#6f7973] block mb-1.5 text-center">
+                          <label className="font-body text-[11px] font-bold uppercase tracking-wider text-[#7D766C] block mb-1.5 text-center">
                             Mois
                           </label>
                           <select
                             value={birthMonth}
                             onChange={(e) => setBirthMonth(Number(e.target.value))}
-                            className="w-full h-12 bg-[#f0f3ff] border border-[#bec9c2]/50 rounded-2xl px-2 text-center text-xs sm:text-sm font-display font-bold text-[#151c27] focus:outline-none focus:border-[#004532] focus:ring-2 focus:ring-[#004532]/15 cursor-pointer hover:border-[#004532]/40 transition-colors"
+                            className="w-full h-12 bg-white border border-[#E8E3D7] rounded-2xl px-2 text-center text-xs sm:text-sm font-display font-bold text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#8BAE9F]/20 cursor-pointer hover:border-[#8BAE9F] transition-colors"
                           >
                             {MONTHS_LIST.map((monthName, idx) => (
                               <option key={monthName} value={idx + 1}>
@@ -452,13 +452,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
                         {/* Année */}
                         <div>
-                          <label className="font-body text-[11px] font-bold uppercase tracking-wider text-[#6f7973] block mb-1.5 text-center">
+                          <label className="font-body text-[11px] font-bold uppercase tracking-wider text-[#7D766C] block mb-1.5 text-center">
                             Année
                           </label>
                           <select
                             value={birthYear}
                             onChange={(e) => setBirthYear(Number(e.target.value))}
-                            className="w-full h-12 bg-[#f0f3ff] border border-[#bec9c2]/50 rounded-2xl px-2 text-center text-sm font-display font-bold text-[#151c27] focus:outline-none focus:border-[#004532] focus:ring-2 focus:ring-[#004532]/15 cursor-pointer hover:border-[#004532]/40 transition-colors"
+                            className="w-full h-12 bg-white border border-[#E8E3D7] rounded-2xl px-2 text-center text-sm font-display font-bold text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#8BAE9F]/20 cursor-pointer hover:border-[#8BAE9F] transition-colors"
                           >
                             {yearsArray.map((y) => (
                               <option key={y} value={y}>
@@ -470,28 +470,28 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       </div>
 
                       {/* Display live calculated age */}
-                      <div className="p-4 rounded-2xl bg-[#004532]/5 border border-[#004532]/20 flex items-center justify-between">
+                      <div className="p-4 rounded-2xl bg-[#8BAE9F]/10 border border-[#8BAE9F]/30 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#004532]/10 flex items-center justify-center text-[#004532]">
+                          <div className="w-10 h-10 rounded-full bg-[#0F5C4D]/10 flex items-center justify-center text-[#0F5C4D]">
                             <span className="material-symbols-outlined text-xl">cake</span>
                           </div>
                           <div>
-                            <span className="font-body text-[11px] font-semibold uppercase tracking-wide text-[#6f7973] block">
+                            <span className="font-body text-[11px] font-semibold uppercase tracking-wide text-[#7D766C] block">
                               Âge calculé
                             </span>
-                            <span className="font-display text-xl font-extrabold text-[#004532]">
+                            <span className="font-display text-xl font-extrabold text-[#0F5C4D]">
                               {calculatedAge} ans
                             </span>
                           </div>
                         </div>
 
                         {calculatedAge >= 18 ? (
-                          <span className="px-3 py-1.5 rounded-full bg-[#065f46]/10 text-[#004532] font-body text-xs font-bold border border-[#004532]/20 flex items-center gap-1.5">
+                          <span className="px-3 py-1.5 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] font-body text-xs font-bold border border-[#0F5C4D]/20 flex items-center gap-1.5">
                             <span className="material-symbols-outlined text-sm">check_circle</span>
                             <span>Éligible</span>
                           </span>
                         ) : (
-                          <span className="px-3 py-1.5 rounded-full bg-red-100 text-red-700 font-body text-xs font-bold">
+                          <span className="px-3 py-1.5 rounded-full bg-[#C9A45C]/15 text-[#8E6D29] border border-[#C9A45C]/30 font-body text-xs font-bold">
                             Âge minimum : 18 ans
                           </span>
                         )}
@@ -511,26 +511,26 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className="space-y-6"
                   >
                     <div>
-                      <span className="inline-block px-3 py-1 rounded-full bg-[#004532]/10 text-[#004532] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
                         Étape 2 : Localisation
                       </span>
-                      <h2 className="font-serif-display text-2xl font-bold text-[#004532]">
+                      <h2 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
                         Où vivez-vous actuellement ?
                       </h2>
-                      <p className="font-body text-xs text-[#3f4944] mt-1">
+                      <p className="font-body text-xs text-[#575147] mt-1">
                         Pour favoriser les rencontres et faciliter les démarches familiales.
                       </p>
                     </div>
 
                     <div className="space-y-4">
                       <div>
-                        <label className="font-body text-xs font-semibold text-[#151c27] block mb-1.5">
+                        <label className="font-body text-xs font-semibold text-[#211E1A] block mb-1.5">
                           Pays de résidence
                         </label>
                         <select
                           value={country}
                           onChange={(e) => setCountry(e.target.value)}
-                          className="w-full h-12 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl px-4 text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532]"
+                          className="w-full h-12 bg-white border border-[#E8E3D7] rounded-2xl px-4 text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#8BAE9F]/20"
                         >
                           <option value="Niger 🇳🇪">Niger 🇳🇪</option>
                           <option value="Diaspora - France 🇫🇷">Diaspora - France 🇫🇷</option>
@@ -540,13 +540,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       </div>
 
                       <div>
-                        <label className="font-body text-xs font-semibold text-[#151c27] block mb-1.5">
+                        <label className="font-body text-xs font-semibold text-[#211E1A] block mb-1.5">
                           Région / Ville principale
                         </label>
                         <select
                           value={region}
                           onChange={(e) => setRegion(e.target.value)}
-                          className="w-full h-12 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl px-4 text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532]"
+                          className="w-full h-12 bg-white border border-[#E8E3D7] rounded-2xl px-4 text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#8BAE9F]/20"
                         >
                           {['Niamey', 'Maradi', 'Zinder', 'Tahoua', 'Agadez', 'Tillabéri', 'Dosso', 'Diffa'].map(
                             (r) => (
@@ -559,7 +559,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       </div>
 
                       <div>
-                        <label className="font-body text-xs font-semibold text-[#151c27] block mb-1.5">
+                        <label className="font-body text-xs font-semibold text-[#211E1A] block mb-1.5">
                           Quartier (Optionnel)
                         </label>
                         <input
@@ -567,7 +567,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                           value={neighborhood}
                           onChange={(e) => setNeighborhood(e.target.value)}
                           placeholder="Ex: Plateau, Ryad, Bobiel, Dar-Es-Salam..."
-                          className="w-full h-12 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl px-4 text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532]"
+                          className="w-full h-12 bg-white border border-[#E8E3D7] rounded-2xl px-4 text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#8BAE9F]/20"
                         />
                       </div>
                     </div>
@@ -585,13 +585,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className="space-y-6"
                   >
                     <div>
-                      <span className="inline-block px-3 py-1 rounded-full bg-[#004532]/10 text-[#004532] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
                         Étape 3 : Statut Matrimonial &amp; Polygamie
                       </span>
-                      <h2 className="font-serif-display text-2xl font-bold text-[#004532]">
+                      <h2 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
                         Votre situation et vision matrimoniale
                       </h2>
-                      <p className="font-body text-xs text-[#3f4944] mt-1">
+                      <p className="font-body text-xs text-[#575147] mt-1">
                         Précisez si vous avez déjà été marié(e) et votre position sur la polygamie.
                       </p>
                     </div>
@@ -599,7 +599,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     <div className="space-y-5">
                       {/* Statut matrimonial */}
                       <div>
-                        <label className="font-body text-xs font-bold text-[#151c27] block mb-2">
+                        <label className="font-body text-xs font-bold text-[#211E1A] block mb-2">
                           1. Êtes-vous ou avez-vous déjà été marié(e) ?
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -614,12 +614,12 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                               onClick={() => setMaritalStatus(item.val)}
                               className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                                 maritalStatus === item.val
-                                  ? 'border-[#004532] bg-[#004532]/10 ring-2 ring-[#004532]/20 font-bold text-[#004532]'
-                                  : 'border-[#bec9c2]/40 bg-[#f0f3ff]/60 text-[#3f4944] hover:border-[#004532]/30'
+                                  ? 'border-[#0F5C4D] bg-[#0F5C4D]/10 ring-2 ring-[#0F5C4D]/20 font-bold text-[#0F5C4D]'
+                                  : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
                               }`}
                             >
                               <div className="font-display text-xs font-bold">{item.label}</div>
-                              <div className="font-body text-[10px] text-[#6f7973] mt-0.5">{item.sub}</div>
+                              <div className="font-body text-[10px] text-[#7D766C] mt-0.5">{item.sub}</div>
                             </button>
                           ))}
                         </div>
@@ -627,7 +627,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
                       {/* Position sur la Polygamie */}
                       <div>
-                        <label className="font-body text-xs font-bold text-[#151c27] block mb-2">
+                        <label className="font-body text-xs font-bold text-[#211E1A] block mb-2">
                           2. Votre position sur la Polygamie :
                         </label>
                         <div className="space-y-2">
@@ -649,16 +649,16 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                               onClick={() => setPolygamyPreference(opt.val)}
                               className={`w-full p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                                 polygamyPreference === opt.val
-                                  ? 'border-[#004532] bg-[#004532]/5 ring-2 ring-[#004532]/20 text-[#004532]'
-                                  : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#004532]/30'
+                                  ? 'border-[#0F5C4D] bg-[#0F5C4D]/10 ring-2 ring-[#0F5C4D]/20 text-[#0F5C4D]'
+                                  : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
                               }`}
                             >
                               <div>
                                 <div className="font-display text-xs sm:text-sm font-bold">{opt.label}</div>
-                                <div className="font-body text-[11px] text-[#6f7973]">{opt.desc}</div>
+                                <div className="font-body text-[11px] text-[#7D766C]">{opt.desc}</div>
                               </div>
                               {polygamyPreference === opt.val && (
-                                <span className="material-symbols-outlined text-[#004532] text-lg">check_circle</span>
+                                <span className="material-symbols-outlined text-[#0F5C4D] text-lg">check_circle</span>
                               )}
                             </button>
                           ))}
@@ -679,13 +679,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className="space-y-6"
                   >
                     <div>
-                      <span className="inline-block px-3 py-1 rounded-full bg-[#004532]/10 text-[#004532] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
                         Étape 4 : Religion &amp; Spiritualité
                       </span>
-                      <h2 className="font-serif-display text-2xl font-bold text-[#004532]">
+                      <h2 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
                         Quelle est votre pratique religieuse ?
                       </h2>
-                      <p className="font-body text-xs text-[#3f4944] mt-1">
+                      <p className="font-body text-xs text-[#575147] mt-1">
                         Pour vous orienter vers des partenaires partageant votre vision de la foi.
                       </p>
                     </div>
@@ -693,7 +693,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     <div className="space-y-4">
                       {/* Choix de la religion / courant */}
                       <div>
-                        <label className="font-body text-xs font-bold text-[#151c27] block mb-2">
+                        <label className="font-body text-xs font-bold text-[#211E1A] block mb-2">
                           1. Courant / Appartenance religieuse :
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -709,12 +709,12 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                               onClick={() => setReligion(item.val)}
                               className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                                 religion === item.val
-                                  ? 'border-[#004532] bg-[#004532]/5 ring-2 ring-[#004532]/20 text-[#004532]'
-                                  : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#004532]/30'
+                                  ? 'border-[#0F5C4D] bg-[#0F5C4D]/10 ring-2 ring-[#0F5C4D]/20 text-[#0F5C4D]'
+                                  : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
                               }`}
                             >
                               <div className="font-display text-xs sm:text-sm font-bold">{item.label}</div>
-                              <div className="font-body text-[10px] text-[#6f7973] mt-0.5">{item.desc}</div>
+                              <div className="font-body text-[10px] text-[#7D766C] mt-0.5">{item.desc}</div>
                             </button>
                           ))}
                         </div>
@@ -722,7 +722,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
                       {/* Niveau de pratique */}
                       <div>
-                        <label className="font-body text-xs font-bold text-[#151c27] block mb-2">
+                        <label className="font-body text-xs font-bold text-[#211E1A] block mb-2">
                           2. Intensité de la pratique quotidienne :
                         </label>
                         <div className="space-y-2">
@@ -737,13 +737,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                               onClick={() => setReligiousPractice(item.val)}
                               className={`w-full p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                                 religiousPractice === item.val
-                                  ? 'border-[#004532] bg-[#004532]/5 ring-2 ring-[#004532]/20 text-[#004532] font-bold'
-                                  : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#004532]/30'
+                                  ? 'border-[#0F5C4D] bg-[#0F5C4D]/10 ring-2 ring-[#0F5C4D]/20 text-[#0F5C4D] font-bold'
+                                  : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
                               }`}
                             >
                               <span className="font-display text-xs sm:text-sm">{item.title}</span>
                               {religiousPractice === item.val && (
-                                <span className="material-symbols-outlined text-[#004532] text-lg">check_circle</span>
+                                <span className="material-symbols-outlined text-[#0F5C4D] text-lg">check_circle</span>
                               )}
                             </button>
                           ))}
@@ -764,13 +764,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className="space-y-6"
                   >
                     <div>
-                      <span className="inline-block px-3 py-1 rounded-full bg-[#004532]/10 text-[#004532] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
                         Étape 5 : Études &amp; Profession
                       </span>
-                      <h2 className="font-serif-display text-2xl font-bold text-[#004532]">
+                      <h2 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
                         Niveau d'études et activité professionnelle
                       </h2>
-                      <p className="font-body text-xs text-[#3f4944] mt-1">
+                      <p className="font-body text-xs text-[#575147] mt-1">
                         Sélectionnez vos qualifications et votre domaine d'activité.
                       </p>
                     </div>
@@ -778,13 +778,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     <div className="space-y-5">
                       {/* Niveau d'études */}
                       <div>
-                        <label className="font-body text-xs font-bold text-[#151c27] block mb-2">
+                        <label className="font-body text-xs font-bold text-[#211E1A] block mb-2">
                           1. Niveau d'études :
                         </label>
                         <select
                           value={education}
                           onChange={(e) => setEducation(e.target.value)}
-                          className="w-full h-12 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl px-4 text-xs sm:text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532]"
+                          className="w-full h-12 bg-white border border-[#E8E3D7] rounded-2xl px-4 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#8BAE9F]/20"
                         >
                           <option value="Études Islamiques / Medersa">Études Islamiques / Medersa</option>
                           <option value="Secondaire / Collège">Secondaire / Collège</option>
@@ -798,7 +798,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
                       {/* Profession / Travail */}
                       <div>
-                        <label className="font-body text-xs font-bold text-[#151c27] block mb-2">
+                        <label className="font-body text-xs font-bold text-[#211E1A] block mb-2">
                           2. Situation professionnelle / Travail :
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -817,11 +817,11 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                               onClick={() => setProfession(job.val)}
                               className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
                                 profession === job.val
-                                  ? 'border-[#004532] bg-[#004532]/5 ring-2 ring-[#004532]/20 text-[#004532] font-bold'
-                                  : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#004532]/30'
+                                  ? 'border-[#0F5C4D] bg-[#0F5C4D]/10 ring-2 ring-[#0F5C4D]/20 text-[#0F5C4D] font-bold'
+                                  : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
                               }`}
                             >
-                              <span className="material-symbols-outlined text-lg text-[#004532]">{job.icon}</span>
+                              <span className="material-symbols-outlined text-lg text-[#0F5C4D]">{job.icon}</span>
                               <span className="font-display text-xs">{job.label}</span>
                             </button>
                           ))}
@@ -842,20 +842,20 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className="space-y-5"
                   >
                     <div>
-                      <span className="inline-block px-3 py-1 rounded-full bg-[#004532]/10 text-[#004532] font-body text-[11px] font-bold uppercase tracking-wider mb-1.5">
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-body text-[11px] font-bold uppercase tracking-wider mb-1.5">
                         Étape 6 : Personnalité &amp; Valeurs
                       </span>
-                      <h2 className="font-serif-display text-2xl font-bold text-[#004532]">
+                      <h2 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
                         Vos piliers et tempérament
                       </h2>
-                      <p className="font-body text-xs text-[#3f4944]">
+                      <p className="font-body text-xs text-[#575147]">
                         Pour définir votre profil de compatibilité harmonieuse.
                       </p>
                     </div>
 
                     <div className="space-y-4 max-h-[340px] overflow-y-auto pr-1">
                       <div>
-                        <label className="font-body text-xs font-bold text-[#151c27] block mb-2">
+                        <label className="font-body text-xs font-bold text-[#211E1A] block mb-2">
                           1. Votre trait de caractère dominant :
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -871,8 +871,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                               onClick={() => setPersonalityTrait(t.val)}
                               className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                                 personalityTrait === t.val
-                                  ? 'border-[#004532] bg-[#004532]/5 ring-2 ring-[#004532]/20 text-[#004532] font-bold'
-                                  : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#004532]/30'
+                                  ? 'border-[#0F5C4D] bg-[#0F5C4D]/10 ring-2 ring-[#0F5C4D]/20 text-[#0F5C4D] font-bold'
+                                  : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
                               }`}
                             >
                               <div className="font-display text-xs">{t.title}</div>
@@ -882,7 +882,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       </div>
 
                       <div>
-                        <label className="font-body text-xs font-bold text-[#151c27] block mb-2">
+                        <label className="font-body text-xs font-bold text-[#211E1A] block mb-2">
                           2. Importance accordée au foyer familial :
                         </label>
                         <div className="space-y-2">
@@ -897,13 +897,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                               onClick={() => setFamilyImportance(f.val)}
                               className={`w-full p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                                 familyImportance === f.val
-                                  ? 'border-[#004532] bg-[#004532]/5 ring-2 ring-[#004532]/20 text-[#004532] font-bold'
-                                  : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#004532]/30'
+                                  ? 'border-[#0F5C4D] bg-[#0F5C4D]/10 ring-2 ring-[#0F5C4D]/20 text-[#0F5C4D] font-bold'
+                                  : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
                               }`}
                             >
                               <span className="font-display text-xs sm:text-sm">{f.title}</span>
                               {familyImportance === f.val && (
-                                <span className="material-symbols-outlined text-[#004532] text-lg">check_circle</span>
+                                <span className="material-symbols-outlined text-[#0F5C4D] text-lg">check_circle</span>
                               )}
                             </button>
                           ))}
@@ -924,13 +924,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className="space-y-6"
                   >
                     <div>
-                      <span className="inline-block px-3 py-1 rounded-full bg-[#004532]/10 text-[#004532] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
                         Étape 7 : Horizon &amp; Découverte
                       </span>
-                      <h2 className="font-serif-display text-2xl font-bold text-[#004532]">
+                      <h2 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
                         Votre horizon d'union
                       </h2>
-                      <p className="font-body text-xs text-[#3f4944] mt-1">
+                      <p className="font-body text-xs text-[#575147] mt-1">
                         Définissez à quelle échéance vous souhaitez concrétiser votre mariage.
                       </p>
                     </div>
@@ -947,12 +947,12 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                           onClick={() => setMarriageHorizon(item.val)}
                           className={`w-full p-4 rounded-2xl border text-left transition-all cursor-pointer ${
                             marriageHorizon === item.val
-                              ? 'border-[#004532] bg-[#004532]/5 ring-2 ring-[#004532]/20 text-[#004532]'
-                              : 'border-[#bec9c2]/40 bg-[#f0f3ff]/50 text-[#3f4944] hover:border-[#004532]/30'
+                              ? 'border-[#0F5C4D] bg-[#0F5C4D]/10 ring-2 ring-[#0F5C4D]/20 text-[#0F5C4D]'
+                              : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
                           }`}
                         >
                           <div className="font-display text-sm font-bold">{item.title}</div>
-                          <div className="font-body text-xs text-[#6f7973] mt-0.5">{item.desc}</div>
+                          <div className="font-body text-xs text-[#7D766C] mt-0.5">{item.desc}</div>
                         </button>
                       ))}
                     </div>
@@ -971,26 +971,26 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <span className="inline-block px-3 py-1 rounded-full bg-[#fed65b]/30 text-[#745c00] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
+                        <span className="inline-block px-3 py-1 rounded-full bg-[#C9A45C]/20 text-[#8E6D29] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
                           Étape 8 : Supervision du Wali (Facultatif)
                         </span>
-                        <h2 className="font-serif-display text-2xl font-bold text-[#004532]">
+                        <h2 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
                           Coordonnées du Tuteur (Wali)
                         </h2>
-                        <p className="font-body text-xs text-[#3f4944] mt-1">
+                        <p className="font-body text-xs text-[#575147] mt-1">
                           Étape facultative. Vous pouvez la renseigner ultérieurement.
                         </p>
                       </div>
 
-                      <span className="px-3 py-1 rounded-full bg-slate-100 text-[#6f7973] font-body text-xs font-bold shrink-0 border border-slate-200">
+                      <span className="px-3 py-1 rounded-full bg-[#FAF8F2] text-[#7D766C] font-body text-xs font-bold shrink-0 border border-[#E8E3D7]">
                         Facultatif
                       </span>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-[#f0f3ff] border border-[#bec9c2]/30 flex items-center justify-between">
+                    <div className="p-3.5 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[#004532] text-xl">info</span>
-                        <span className="font-body text-xs text-[#151c27]">
+                        <span className="material-symbols-outlined text-[#0F5C4D] text-xl">info</span>
+                        <span className="font-body text-xs text-[#211E1A]">
                           Pas sous la main ? Vous pouvez passer cette étape.
                         </span>
                       </div>
@@ -1001,7 +1001,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                           setSkipWaliInfo(true);
                           handleNext();
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-white border border-[#bec9c2]/50 text-[#004532] font-body text-xs font-bold hover:bg-[#004532] hover:text-white transition-all cursor-pointer shadow-sm"
+                        className="px-3 py-1.5 rounded-xl bg-white border border-[#E8E3D7] text-[#0F5C4D] font-body text-xs font-bold hover:bg-[#0F5C4D] hover:text-white transition-all cursor-pointer shadow-xs"
                       >
                         Passer cette étape
                       </button>
@@ -1009,7 +1009,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
                     <div className="space-y-3.5 pt-1">
                       <div>
-                        <label className="font-body text-xs font-semibold text-[#151c27] block mb-1">
+                        <label className="font-body text-xs font-semibold text-[#211E1A] block mb-1">
                           Nom complet du Wali (Optionnel)
                         </label>
                         <input
@@ -1020,13 +1020,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                             setSkipWaliInfo(false);
                           }}
                           placeholder="Ex: Mamadou Seydou"
-                          className="w-full h-11 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl px-4 text-xs sm:text-sm font-body text-[#151c27] focus:outline-none focus:border-[#004532]"
+                          className="w-full h-11 bg-white border border-[#E8E3D7] rounded-2xl px-4 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#8BAE9F]/20"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="font-body text-xs font-semibold text-[#151c27] block mb-1">
+                          <label className="font-body text-xs font-semibold text-[#211E1A] block mb-1">
                             Lien de parenté
                           </label>
                           <select
@@ -1035,7 +1035,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                               setWaliRelation(e.target.value);
                               setSkipWaliInfo(false);
                             }}
-                            className="w-full h-11 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl px-3 text-xs font-body text-[#151c27] focus:outline-none focus:border-[#004532]"
+                            className="w-full h-11 bg-white border border-[#E8E3D7] rounded-2xl px-3 text-xs font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#8BAE9F]/20"
                           >
                             <option value="Père">Père</option>
                             <option value="Oncle">Oncle</option>
@@ -1045,7 +1045,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                         </div>
 
                         <div>
-                          <label className="font-body text-xs font-semibold text-[#151c27] block mb-1">
+                          <label className="font-body text-xs font-semibold text-[#211E1A] block mb-1">
                             Téléphone (+227)
                           </label>
                           <input
@@ -1056,7 +1056,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                               setSkipWaliInfo(false);
                             }}
                             placeholder="+227 96 12 34 56"
-                            className="w-full h-11 bg-[#f0f3ff] border border-[#bec9c2]/40 rounded-2xl px-3 text-xs font-body text-[#151c27] focus:outline-none focus:border-[#004532]"
+                            className="w-full h-11 bg-white border border-[#E8E3D7] rounded-2xl px-3 text-xs font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#8BAE9F]/20"
                           />
                         </div>
                       </div>
@@ -1075,37 +1075,37 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className="space-y-6"
                   >
                     <div>
-                      <span className="inline-block px-3 py-1 rounded-full bg-[#004532]/10 text-[#004532] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
                         Étape 9 : Engagement
                       </span>
-                      <h2 className="font-serif-display text-2xl font-bold text-[#004532]">
+                      <h2 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
                         Charte de respect &amp; Sincérité
                       </h2>
-                      <p className="font-body text-xs text-[#3f4944] mt-1">
+                      <p className="font-body text-xs text-[#575147] mt-1">
                         Garantir une communauté honnête, bienveillante et conforme aux valeurs.
                       </p>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-[#004532]/5 border border-[#004532]/20 space-y-3">
+                    <div className="p-4 rounded-2xl bg-[#0F5C4D]/5 border border-[#0F5C4D]/20 space-y-3">
                       <div className="flex items-start gap-3">
-                        <span className="material-symbols-outlined text-[#004532] text-xl shrink-0 mt-0.5">
+                        <span className="material-symbols-outlined text-[#0F5C4D] text-xl shrink-0 mt-0.5">
                           verified_user
                         </span>
-                        <p className="font-body text-xs text-[#151c27] leading-relaxed">
+                        <p className="font-body text-xs text-[#211E1A] leading-relaxed">
                           Je certifie sur l'honneur l'exactitude des informations transmises et m'engage à chercher le mariage dans le respect total des préceptes islamiques et des traditions nigériennes.
                         </p>
                       </div>
 
-                      <div className="pt-2 border-t border-[#bec9c2]/30 flex items-center gap-3">
+                      <div className="pt-2 border-t border-[#E8E3D7] flex items-center gap-3">
                         <input
                           type="checkbox"
                           id="termsCheck"
                           checked={agreedToTerms}
                           onChange={(e) => setAgreedToTerms(e.target.checked)}
-                          className="w-5 h-5 accent-[#004532] rounded-md cursor-pointer"
+                          className="w-5 h-5 accent-[#0F5C4D] rounded-md cursor-pointer"
                         />
-                        <label htmlFor="termsCheck" className="font-body text-xs font-bold text-[#004532] cursor-pointer">
-                          J'accepte la Charte Éthique &amp; d'Engagement Zawaj
+                        <label htmlFor="termsCheck" className="font-body text-xs font-bold text-[#0F5C4D] cursor-pointer">
+                          J'accepte la Charte Éthique &amp; d'Engagement NASIBA
                         </label>
                       </div>
                     </div>
@@ -1123,13 +1123,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     className="space-y-6"
                   >
                     <div>
-                      <span className="inline-block px-3 py-1 rounded-full bg-[#004532]/10 text-[#004532] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-body text-[11px] font-bold uppercase tracking-wider mb-2">
                         Étape 10 : Photos de Profil (Optionnel)
                       </span>
-                      <h2 className="font-serif-display text-2xl font-bold text-[#004532]">
+                      <h2 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
                         Téléversez jusqu'à 3 photos de vous
                       </h2>
-                      <p className="font-body text-xs text-[#3f4944] mt-1">
+                      <p className="font-body text-xs text-[#575147] mt-1">
                         Les photos facilitent la rencontre et inspirent confiance. Seuls les profils comportant au moins 1 photo sont visibles sur l'application.
                       </p>
                     </div>
@@ -1140,7 +1140,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                         const photo = uploadedPhotos[idx];
                         return (
                           <div key={idx} className="relative flex flex-col items-center">
-                            <div className="w-full h-44 rounded-2xl border-2 border-dashed border-[#bec9c2]/60 bg-[#f0f3ff]/40 overflow-hidden flex flex-col items-center justify-center relative hover:border-[#004532]/50 transition-colors">
+                            <div className="w-full h-44 rounded-2xl border-2 border-dashed border-[#E8E3D7] bg-[#FAF8F2] overflow-hidden flex flex-col items-center justify-center relative hover:border-[#8BAE9F] transition-colors">
                               {photo ? (
                                 <>
                                   <img
@@ -1151,13 +1151,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleRemovePhoto(idx)}
-                                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-md hover:bg-rose-700 cursor-pointer"
+                                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-[#211E1A]/80 text-white flex items-center justify-center shadow-md hover:bg-[#211E1A] cursor-pointer"
                                     title="Supprimer la photo"
                                   >
                                     <span className="material-symbols-outlined text-sm">delete</span>
                                   </button>
                                   {idx === 0 && (
-                                    <span className="absolute bottom-2 left-2 bg-[#004532] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
+                                    <span className="absolute bottom-2 left-2 bg-[#0F5C4D] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
                                       Principale
                                     </span>
                                   )}
@@ -1167,15 +1167,15 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                                   htmlFor={`onboarding-photo-${idx}`}
                                   className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-3 text-center"
                                 >
-                                  <div className="w-10 h-10 rounded-full bg-[#004532]/10 text-[#004532] flex items-center justify-center mb-1.5">
+                                  <div className="w-10 h-10 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center mb-1.5">
                                     <span className="material-symbols-outlined text-xl">
                                       add_a_photo
                                     </span>
                                   </div>
-                                  <span className="font-display text-xs font-bold text-[#004532]">
+                                  <span className="font-display text-xs font-bold text-[#0F5C4D]">
                                     {idx === 0 ? 'Photo 1 (Principale)' : `Photo ${idx + 1}`}
                                   </span>
-                                  <span className="font-body text-[10px] text-[#6f7973] mt-0.5">
+                                  <span className="font-body text-[10px] text-[#7D766C] mt-0.5">
                                     Cliquez pour choisir
                                   </span>
                                   <input
@@ -1197,15 +1197,15 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     <div
                       className={`p-4 rounded-2xl border ${
                         uploadedPhotos.filter((p) => Boolean(p) && p.trim() !== '').length > 0
-                          ? 'bg-[#004532]/5 border-[#004532]/20'
-                          : 'bg-amber-50 border-amber-200'
+                          ? 'bg-[#0F5C4D]/5 border-[#0F5C4D]/20'
+                          : 'bg-[#C9A45C]/10 border-[#C9A45C]/30'
                       } flex items-start gap-3`}
                     >
                       <span
                         className={`material-symbols-outlined text-xl shrink-0 mt-0.5 ${
                           uploadedPhotos.filter((p) => Boolean(p) && p.trim() !== '').length > 0
-                            ? 'text-[#004532]'
-                            : 'text-amber-700'
+                            ? 'text-[#0F5C4D]'
+                            : 'text-[#8E6D29]'
                         }`}
                       >
                         {uploadedPhotos.filter((p) => Boolean(p) && p.trim() !== '').length > 0
@@ -1215,8 +1215,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       <p
                         className={`font-body text-xs leading-relaxed ${
                           uploadedPhotos.filter((p) => Boolean(p) && p.trim() !== '').length > 0
-                            ? 'text-[#151c27]'
-                            : 'text-amber-900'
+                            ? 'text-[#211E1A]'
+                            : 'text-[#211E1A]'
                         }`}
                       >
                         {uploadedPhotos.filter((p) => Boolean(p) && p.trim() !== '').length > 0
@@ -1233,12 +1233,12 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
             {/* Bottom Navigation Control Buttons */}
             {!isLoadingAnalysis && (
-              <div className="mt-8 pt-4 border-t border-[#bec9c2]/20 flex items-center justify-between">
+              <div className="mt-8 pt-4 border-t border-[#E8E3D7] flex items-center justify-between">
                 <button
                   type="button"
                   onClick={handlePrev}
                   disabled={currentStep === 1}
-                  className="px-4 py-2.5 rounded-2xl bg-[#f0f3ff] text-[#3f4944] font-body text-xs font-bold hover:bg-[#bec9c2]/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-2xl bg-[#FAF8F2] text-[#575147] font-body text-xs font-bold hover:bg-[#E8E3D7] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   <span className="material-symbols-outlined text-base">arrow_back</span>
                   <span>Précédent</span>
@@ -1250,7 +1250,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   type="button"
                   onClick={handleNext}
                   disabled={currentStep === 9 && !agreedToTerms}
-                  className="px-6 py-2.5 rounded-2xl bg-[#004532] text-white font-display text-xs sm:text-sm font-bold hover:bg-[#065f46] disabled:opacity-40 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                  className="px-6 py-2.5 rounded-2xl bg-[#0F5C4D] text-white font-display text-xs sm:text-sm font-bold hover:bg-[#0A4035] disabled:opacity-40 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
                 >
                   <span>
                     {currentStep === totalSteps
