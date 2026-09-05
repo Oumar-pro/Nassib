@@ -124,6 +124,8 @@ export default function App() {
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
   const [registeredUserData, setRegisteredUserData] = useState<{
+    id?: string;
+    email?: string;
     name: string;
     role: 'candidate' | 'wali';
     phone: string;
@@ -432,7 +434,13 @@ export default function App() {
     }));
     if (isRegister) {
       // Trigger dedicated Onboarding PAGE directly after registration
-      setRegisteredUserData({ name: userAcc.name, role: userAcc.role, phone: userAcc.phone });
+      setRegisteredUserData({
+        id: userAcc.id,
+        email: userAcc.email,
+        name: userAcc.name,
+        role: userAcc.role,
+        phone: userAcc.phone || '',
+      });
       setCurrentTab('onboarding');
       showToast(`Compte créé ! Veuillez maintenant compléter votre profil.`);
     } else {
@@ -455,34 +463,55 @@ export default function App() {
     const mainPhoto = userPhotos.length > 0 ? userPhotos[0] : '';
 
     const hasWaliInfo = !!(data.waliName?.trim() && data.waliPhone?.trim());
+    const effectiveUserId = registeredUserData.id || user.id || getCurrentUserSession()?.id;
+    const effectiveEmail = registeredUserData.email || user.email || getCurrentUserSession()?.email;
+    const effectivePhone = registeredUserData.phone || user.phone || getCurrentUserSession()?.phone;
+
+    const locationText = data.neighborhood ? `${data.region} (${data.neighborhood})` : (data.region || 'Niamey');
+    const waliRef = hasWaliInfo
+      ? `${data.waliRelation} : ${data.waliName} (${data.waliPhone})`
+      : (effectivePhone || 'Non renseigné');
 
     const newProfileData: Partial<Profile> = {
       name: registeredUserData.name || user.name || 'Nouveau Membre',
+      email: effectiveEmail,
       age: data.age || 25,
       profession: data.profession || 'Salarié(e) Secteur Privé',
-      city: (data.region as any) || 'Niamey',
+      city: locationText,
       maritalStatus: (data.maritalStatus as any) || 'Célibataire (Jamais marié/e)',
       religion: data.religion || 'Musulman(e) Sunnite',
       education: (data.education as any) || 'Licence / Bac+3',
-      matchPercentage: 90,
+      matchPercentage: 92,
       isVerifiedNNI: false,
       isWaliApproved: hasWaliInfo,
-      isPremium: false,
+      isPremium: true,
       photoUrl: mainPhoto,
       photoPrivate: false,
-      bio: `Membre inscrit (${data.gender === 'male' ? 'Homme' : 'Femme'}). ${data.polygamyPreference ? `Position : ${data.polygamyPreference}. ` : ''}Priorité : ${data.familyImportance || 'Famille'}.`,
-      waliReference: hasWaliInfo ? `${data.waliRelation} (${data.waliName})` : 'Non renseigné',
+      bio: `Membre inscrit (${data.gender === 'male' ? 'Homme' : 'Femme'}). ${data.polygamyPreference ? `Position polygamie : ${data.polygamyPreference}. ` : ''}Priorité : ${data.familyImportance || 'Famille'}.`,
+      waliReference: waliRef,
       gender: data.gender || 'female',
       photos: userPhotos,
+      personality: data.personalityTrait,
+      familyImportance: data.familyImportance,
+      presentation: data.marriageHorizon ? `Horizon mariage envisagé : ${data.marriageHorizon}. ${data.discoverySource ? `Découverte : ${data.discoverySource}` : ''}` : '',
     };
 
     let createdProf: Profile | null = null;
     if (isSupabaseConfigured) {
-      createdProf = await createProfileInSupabase(newProfileData, user.id);
+      createdProf = await createProfileInSupabase(newProfileData, effectiveUserId, data);
+    }
+
+    // Refresh entire profiles directory from Supabase DB to guarantee 100% database source
+    if (isSupabaseConfigured) {
+      const dbProfiles = await fetchProfilesFromSupabase();
+      if (dbProfiles && dbProfiles.length > 0) {
+        setProfiles(dbProfiles);
+      }
     }
 
     const finalProf: Profile = createdProf || {
-      id: `prof_${Date.now()}`,
+      id: effectiveUserId || `prof_${Date.now()}`,
+      userId: effectiveUserId,
       name: newProfileData.name!,
       age: newProfileData.age!,
       profession: newProfileData.profession!,
@@ -490,10 +519,10 @@ export default function App() {
       maritalStatus: newProfileData.maritalStatus!,
       religion: newProfileData.religion!,
       education: newProfileData.education!,
-      matchPercentage: 90,
+      matchPercentage: 92,
       isVerifiedNNI: false,
       isWaliApproved: hasWaliInfo,
-      isPremium: false,
+      isPremium: true,
       photoUrl: mainPhoto,
       photoPrivate: false,
       bio: newProfileData.bio!,
@@ -501,41 +530,31 @@ export default function App() {
       gender: newProfileData.gender!,
       photos: userPhotos,
       viewsCount: 0,
-      likesCount: 0
+      likesCount: 0,
     };
-
-    // Strict deduplication: check if profile already exists in state before adding
-    setProfiles((prev) => {
-      const existsIndex = prev.findIndex(
-        (p) => p.id === finalProf.id || p.name.trim().toLowerCase() === finalProf.name.trim().toLowerCase()
-      );
-      if (existsIndex >= 0) {
-        const updated = [...prev];
-        updated[existsIndex] = finalProf;
-        return updated;
-      }
-      return [finalProf, ...prev];
-    });
 
     setUser((prev) => ({
       ...prev,
-      id: finalProf.id,
+      id: createdProf?.userId || effectiveUserId || prev.id,
       name: finalProf.name,
       gender: finalProf.gender,
       photoUrl: mainPhoto,
       photos: userPhotos,
       isVerifiedNNI: false,
       isWaliApproved: hasWaliInfo,
+      isPremium: true,
+      planName: 'Accès Gratuit & Illimité',
       waliInfo: hasWaliInfo
         ? {
             name: data.waliName,
             relation: data.waliRelation,
-            phone: data.waliPhone
+            phone: data.waliPhone,
           }
-        : { name: '', relation: '', phone: '' }
+        : { name: '', relation: '', phone: '' },
     }));
 
-    setCurrentTab('dashboard');
+    setCurrentTab('browse');
+    showToast('Profil et informations enregistrés avec succès dans la base de données NASSIB !');
     if (userPhotos.length > 0) {
       showToast(`Profil enregistré avec ${userPhotos.length} photo(s) ! Bienvenue, ${registeredUserData.name || user.name} !`);
     } else {

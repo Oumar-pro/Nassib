@@ -26,6 +26,7 @@ export interface Profile {
   id: string; // uuid
   userId?: string; // uuid -> auth.users(id)
   userEmail?: string;
+  email?: string;
   name: string;
   age: number;
   profession: string;

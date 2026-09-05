@@ -142,9 +142,29 @@ export async function fetchProfilesFromSupabase(): Promise<Profile[]> {
       uniqueProfiles.push(p);
     }
 
-    return uniqueProfiles;
+    if (uniqueProfiles.length > 0) {
+      return uniqueProfiles;
+    }
+
+    // Fallback to server endpoint /api/profiles
+    try {
+      const apiRes = await fetch('/api/profiles');
+      const apiData = await apiRes.json();
+      if (apiRes.ok && apiData.profiles && apiData.profiles.length > 0) {
+        return apiData.profiles;
+      }
+    } catch (_) {}
+
+    return [];
   } catch (err) {
-    console.warn('Supabase fetch profiles exception:', err);
+    console.warn('Supabase fetch profiles exception, trying server API:', err);
+    try {
+      const apiRes = await fetch('/api/profiles');
+      const apiData = await apiRes.json();
+      if (apiRes.ok && apiData.profiles) {
+        return apiData.profiles;
+      }
+    } catch (_) {}
     return [];
   }
 }
@@ -152,16 +172,40 @@ export async function fetchProfilesFromSupabase(): Promise<Profile[]> {
 /**
  * 2. PROFILES TABLE:
  * Save or update profile in Supabase using upsert on user_id (matches UNIQUE user_id constraint)
- * Also syncs with public.profile_photos and public.profile_private
+ * Also syncs with auth.users, public.profile_photos and public.profile_private
  */
 export async function createProfileInSupabase(
   profile: Partial<Profile>,
-  userId?: string
+  userId?: string,
+  onboardingData?: any
 ): Promise<Profile | null> {
+  const validUserId = isValidUuid(userId) ? userId! : (isValidUuid(profile.userId) ? profile.userId! : null);
+
+  // 1. Primary: Server-side API with Service Role for guaranteed Supabase DB upsert & auth.users metadata sync
+  try {
+    const apiRes = await fetch('/api/auth/save-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: validUserId,
+        email: profile.email,
+        profileData: profile,
+        onboardingData,
+        photos: profile.photos,
+      }),
+    });
+
+    const apiData = await apiRes.json();
+    if (apiRes.ok && apiData.success && apiData.profile) {
+      return apiData.profile;
+    }
+  } catch (apiErr) {
+    console.warn('Server save-profile notice, trying direct client:', apiErr);
+  }
+
   if (!supabase) return null;
 
   try {
-    const validUserId = isValidUuid(userId) ? userId! : (isValidUuid(profile.userId) ? profile.userId! : null);
     if (!validUserId) {
       console.warn('createProfileInSupabase: user_id is required and must be a valid UUID');
       return null;
