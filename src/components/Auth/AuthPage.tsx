@@ -42,9 +42,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         email,
         password,
         name,
-        role,
+        role: 'candidate',
         phone,
-        gender,
       });
 
       setLoading(false);
@@ -76,39 +75,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] font-body flex flex-col selection:bg-[#8BAE9F]/25 selection:text-[#0F5C4D]">
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-30 bg-[#FAF8F2]/95 backdrop-blur-md border-b border-[#E8E3D7]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onBack}
-              className="p-2 -ml-2 text-[#575147] hover:text-[#0F5C4D] hover:bg-white rounded-full transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer border border-transparent hover:border-[#E8E3D7]"
-              title="Retour à l'accueil"
-            >
-              <span className="material-symbols-outlined text-lg">arrow_back</span>
-              <span className="hidden sm:inline">Retour à l'accueil</span>
-            </button>
-            <div className="h-5 w-px bg-[#E8E3D7] hidden sm:block"></div>
-            <NasibaLogo size="md" />
-          </div>
+      {/* Main Dedicated Page Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 sm:py-12 flex flex-col justify-center">
+        {/* Top Floating Back & Brand Link */}
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E8E3D7] text-xs font-semibold text-[#575147] hover:text-[#0F5C4D] hover:border-[#8BAE9F] shadow-2xs transition-all cursor-pointer"
+            title="Retour à l'accueil"
+          >
+            <span className="material-symbols-outlined text-base">arrow_back</span>
+            <span>Retour à l'accueil</span>
+          </button>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#E8E3D7] text-xs text-[#575147]">
-              <span className="w-2 h-2 rounded-full bg-[#0F5C4D]"></span>
-              <span>Plateforme Matrimoniale Halal • Niger</span>
-            </div>
-            <button
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-              className="text-xs font-bold text-[#0F5C4D] hover:underline cursor-pointer px-3 py-1.5 rounded-xl hover:bg-[#8BAE9F]/10 transition-colors"
-            >
-              {mode === 'login' ? 'Créer un compte' : 'Déjà inscrit ?'}
-            </button>
+            <NasibaLogo size="sm" />
           </div>
         </div>
-      </header>
 
-      {/* Main Dedicated Page Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 sm:py-12 flex items-center justify-center">
         <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
           
           {/* Left Column: Brand Story, Sacred Vision & Reassurance */}
@@ -247,80 +231,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
                 <>
-                  {/* Role Selector: Candidat vs Wali */}
-                  <div className="space-y-1.5">
-                    <label className="font-display text-xs font-bold text-[#575147] block">
-                      Vous vous inscrivez en tant que :
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setRole('candidate')}
-                        className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
-                          role === 'candidate'
-                            ? 'border-[#0F5C4D] bg-[#0F5C4D]/5 text-[#0F5C4D]'
-                            : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-xl">person</span>
-                        <div>
-                          <div className="font-display text-xs font-bold">Candidat(e)</div>
-                          <div className="text-[10px] text-[#7D766C]">Je cherche un(e) époux(se)</div>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setRole('wali')}
-                        className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
-                          role === 'wali'
-                            ? 'border-[#0F5C4D] bg-[#0F5C4D]/5 text-[#0F5C4D]'
-                            : 'border-[#E8E3D7] bg-white text-[#575147] hover:border-[#8BAE9F]'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-xl text-[#C9A45C]">shield_person</span>
-                        <div>
-                          <div className="font-display text-xs font-bold">Tuteur (Wali)</div>
-                          <div className="text-[10px] text-[#7D766C]">Pour ma fille / sœur / proche</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Gender Selector */}
-                  <div className="space-y-1.5 pt-1">
-                    <label className="font-display text-xs font-bold text-[#575147] block">
-                      Civilité :
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setGender('female')}
-                        className={`p-3 rounded-2xl border text-center font-display text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                          gender === 'female'
-                            ? 'border-[#0F5C4D] bg-[#0F5C4D] text-white shadow-2xs'
-                            : 'border-[#E8E3D7] bg-[#FAF8F2] text-[#575147] hover:border-[#8BAE9F]'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-base">woman</span>
-                        <span>Femme (Candidature)</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setGender('male')}
-                        className={`p-3 rounded-2xl border text-center font-display text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                          gender === 'male'
-                            ? 'border-[#0F5C4D] bg-[#0F5C4D] text-white shadow-2xs'
-                            : 'border-[#E8E3D7] bg-[#FAF8F2] text-[#575147] hover:border-[#8BAE9F]'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-base">man</span>
-                        <span>Homme (Candidature)</span>
-                      </button>
-                    </div>
-                  </div>
-
                   {/* Full Name */}
                   <div className="space-y-1.5">
                     <label className="font-display text-xs font-bold text-[#575147] block">

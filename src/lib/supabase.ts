@@ -204,15 +204,30 @@ export async function createProfileInSupabase(
     };
 
     // Use upsert on conflict user_id
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('profiles')
       .upsert([payload], { onConflict: 'user_id' })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
-      console.warn('Notice upserting profile in Supabase:', error?.message || error);
-      return null;
+      console.warn('Notice upserting profile in Supabase direct client, trying server API fallback:', error?.message || error);
+      try {
+        const fallbackRes = await fetch('/api/auth/update-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: validUserId, updates: payload }),
+        });
+        const fallbackData = await fallbackRes.json();
+        if (fallbackRes.ok && fallbackData.profile) {
+          data = fallbackData.profile;
+        } else {
+          return null;
+        }
+      } catch (fErr) {
+        console.warn('Server update-profile error:', fErr);
+        return null;
+      }
     }
 
     const savedProfileId = data.id;

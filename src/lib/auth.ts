@@ -151,7 +151,7 @@ export async function registerAccount(data: {
   email: string;
   password?: string;
   name: string;
-  role: 'candidate' | 'wali';
+  role?: 'candidate' | 'wali';
   phone: string;
   gender?: 'male' | 'female';
 }): Promise<{ user: AuthAccount | null; error: string | null }> {
@@ -161,7 +161,56 @@ export async function registerAccount(data: {
     return { user: null, error: 'Veuillez saisir une adresse email et un mot de passe valides.' };
   }
 
-  // 1. Primary: Native Supabase Auth Sign Up
+  const effectiveRole = data.role || 'candidate';
+  const effectiveGender = data.gender || 'female';
+
+  // 1. Primary: Server-side API with Service Role for guaranteed Supabase creation
+  try {
+    const apiRes = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: normalizedEmail,
+        password: data.password,
+        name: data.name,
+        phone: data.phone,
+        role: effectiveRole,
+        gender: effectiveGender,
+      }),
+    });
+
+    const apiData = await apiRes.json();
+
+    if (apiRes.ok && apiData.success && apiData.user) {
+      const regUser: AuthAccount = apiData.user;
+
+      // Also sign in on client Supabase client if available to establish client JWT session
+      if (isSupabaseConfigured && supabase) {
+        try {
+          await supabase.auth.signInWithPassword({
+            email: normalizedEmail,
+            password: data.password,
+          });
+        } catch (_) {}
+      }
+
+      // Cache session locally
+      localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(regUser));
+      const accounts = getRegisteredAccounts();
+      if (!accounts.some((a) => a.email.toLowerCase() === normalizedEmail)) {
+        accounts.push(regUser);
+        localStorage.setItem(STORAGE_ACCOUNTS_KEY, JSON.stringify(accounts));
+      }
+
+      return { user: regUser, error: null };
+    } else if (apiData.error) {
+      return { user: null, error: apiData.error };
+    }
+  } catch (apiErr) {
+    console.warn('Server register endpoint unreachable or failed, trying direct client:', apiErr);
+  }
+
+  // 2. Direct client-side Supabase Auth fallback
   if (isSupabaseConfigured && supabase) {
     try {
       const { data: sbData, error: sbError } = await supabase.auth.signUp({
@@ -170,9 +219,9 @@ export async function registerAccount(data: {
         options: {
           data: {
             name: data.name,
-            role: data.role,
+            role: effectiveRole,
             phone: data.phone,
-            gender: data.gender || 'female',
+            gender: effectiveGender,
           },
         },
       });
@@ -184,23 +233,23 @@ export async function registerAccount(data: {
       if (sbData?.user) {
         const userId = sbData.user.id;
 
-        // Automatically create initial profile in public.profiles table
+        // Create initial profile in public.profiles
         try {
-          await supabase.from('profiles').insert([
+          await supabase.from('profiles').upsert([
             {
               user_id: userId,
               name: data.name,
               age: 25,
-              profession: data.role === 'wali' ? 'Wali (Tuteur)' : 'Membre inscrit',
+              profession: effectiveRole === 'wali' ? 'Wali (Tuteur)' : 'Non renseigné',
               city: 'Niamey',
-              marital_status: 'Jamais marié(e)',
+              marital_status: 'Célibataire',
               religion: 'Sunnite',
               education: 'Licence / Bac+3',
               match_percentage: 90,
               is_verified_nni: false,
               is_wali_approved: false,
               is_premium: true,
-              gender: data.gender || 'female',
+              gender: effectiveGender,
               wali_reference: data.phone || 'Non renseigné',
               bio: `Bienvenue sur le profil de ${data.name}. Démarche sérieuse avec intention de mariage éthique.`,
             },
@@ -213,9 +262,9 @@ export async function registerAccount(data: {
           id: userId,
           email: normalizedEmail,
           name: data.name,
-          role: data.role,
+          role: effectiveRole,
           phone: data.phone,
-          gender: data.gender || 'female',
+          gender: effectiveGender,
           createdAt: sbData.user.created_at || new Date().toISOString(),
           isPremium: true,
           planName: 'Accès Gratuit & Illimité',
@@ -223,9 +272,7 @@ export async function registerAccount(data: {
           isWaliApproved: false,
         };
 
-        // Cache session (NEVER store password!)
         localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(sbAccount));
-
         const accounts = getRegisteredAccounts();
         if (!accounts.some((a) => a.email.toLowerCase() === normalizedEmail)) {
           accounts.push(sbAccount);
@@ -240,7 +287,7 @@ export async function registerAccount(data: {
     }
   }
 
-  // 2. Demo fallback if Supabase is not yet configured in .env
+  // 3. Offline demo fallback
   const accounts = getRegisteredAccounts();
   const existing = accounts.find((a) => a.email.toLowerCase() === normalizedEmail);
   if (existing) {
@@ -253,10 +300,10 @@ export async function registerAccount(data: {
   const newAccount: AuthAccount = {
     id: `usr_${Date.now()}`,
     email: normalizedEmail,
-    name: data.name || (data.role === 'wali' ? 'Elhadj Mamane' : 'Aminata S.'),
-    role: data.role,
+    name: data.name || 'Membre NASSIB',
+    role: effectiveRole,
     phone: data.phone || '+227 90 12 34 56',
-    gender: data.gender || 'female',
+    gender: effectiveGender,
     createdAt: new Date().toISOString(),
     isPremium: true,
     planName: 'Accès Gratuit & Illimité',
@@ -284,7 +331,42 @@ export async function loginAccount(data: {
     return { user: null, error: 'Veuillez saisir votre adresse email et mot de passe.' };
   }
 
-  // 1. Primary: Native Supabase Auth login
+  // 1. Try server login API
+  try {
+    const apiRes = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: normalizedEmail,
+        password: data.password,
+      }),
+    });
+
+    const apiData = await apiRes.json();
+
+    if (apiRes.ok && apiData.success && apiData.user) {
+      const loggedUser: AuthAccount = apiData.user;
+
+      // Sync client-side session if client client exists
+      if (isSupabaseConfigured && supabase) {
+        try {
+          await supabase.auth.signInWithPassword({
+            email: normalizedEmail,
+            password: data.password,
+          });
+        } catch (_) {}
+      }
+
+      localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(loggedUser));
+      return { user: loggedUser, error: null };
+    } else if (apiRes.status === 401 || (apiData.error && apiData.error.includes('incorrect'))) {
+      return { user: null, error: 'Adresse email ou mot de passe incorrect.' };
+    }
+  } catch (apiErr) {
+    console.warn('Server login endpoint unreachable, trying direct client:', apiErr);
+  }
+
+  // 2. Direct client-side Supabase Auth login
   if (isSupabaseConfigured && supabase) {
     try {
       const { data: sbData, error: sbError } = await supabase.auth.signInWithPassword({
@@ -298,8 +380,6 @@ export async function loginAccount(data: {
 
       if (sbData?.user) {
         const userId = sbData.user.id;
-
-        // Fetch real status directly from DB
         const dbStatus = await fetchProfileStatusFromDB(userId);
 
         const sbUser: AuthAccount = {
@@ -316,7 +396,6 @@ export async function loginAccount(data: {
           isWaliApproved: dbStatus ? dbStatus.isWaliApproved : Boolean(sbData.user.user_metadata?.is_wali_approved),
         };
 
-        // Save session (NEVER store password!)
         localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(sbUser));
         return { user: sbUser, error: null };
       }
@@ -326,7 +405,7 @@ export async function loginAccount(data: {
     }
   }
 
-  // 3. Demo fallback if Supabase is not configured
+  // 3. Offline demo fallback
   const accounts = getRegisteredAccounts();
   const matched = accounts.find((a) => a.email.toLowerCase() === normalizedEmail);
 
