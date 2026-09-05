@@ -12,18 +12,18 @@ export const NasibaLogo: React.FC<NasibaLogoProps> = ({
   showText = true,
   className = '',
 }) => {
-  // Dimensions for the vector emblem
+  // Dimensions for the vector emblem & typographic logo
   const dimMap = {
-    sm: { icon: 34, title: 'text-xl', sub: 'text-[9px]', tracking: 'tracking-[0.16em]' },
-    md: { icon: 44, title: 'text-2xl', sub: 'text-[10px]', tracking: 'tracking-[0.18em]' },
-    lg: { icon: 52, title: 'text-3xl', sub: 'text-[11px]', tracking: 'tracking-[0.2em]' },
-    xl: { icon: 68, title: 'text-4xl', sub: 'text-[12px]', tracking: 'tracking-[0.22em]' },
+    sm: { icon: 28, title: 'text-[17px]' },
+    md: { icon: 34, title: 'text-xl' },
+    lg: { icon: 44, title: 'text-2xl' },
+    xl: { icon: 56, title: 'text-3xl' },
   };
 
   const currentDim = dimMap[size] || dimMap.md;
 
   return (
-    <div className={`inline-flex items-center gap-3 shrink-0 select-none group ${className}`}>
+    <div className={`inline-flex items-center gap-2 sm:gap-2.5 shrink-0 select-none group ${className}`}>
       {/* Pristine Emerald & Champagne Gold Vector Emblem */}
       <div 
         className="relative shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
@@ -33,9 +33,9 @@ export const NasibaLogo: React.FC<NasibaLogoProps> = ({
           viewBox="0 0 100 100"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full drop-shadow-sm"
+          className="w-full h-full drop-shadow-xs"
         >
-          {/* Subtle Outer Soft Glow / Ring */}
+          {/* Subtle Outer Soft Glow */}
           <circle cx="50" cy="50" r="46" fill="#0F5C4D" fillOpacity="0.08" />
           
           {/* Main Emerald Outer Medallion */}
@@ -51,7 +51,7 @@ export const NasibaLogo: React.FC<NasibaLogoProps> = ({
             strokeOpacity="0.45"
           />
 
-          {/* Delicate Champagne Gold Inner Ring / Frame */}
+          {/* Delicate Champagne Gold Inner Ring */}
           <rect
             x="20"
             y="20"
@@ -64,7 +64,7 @@ export const NasibaLogo: React.FC<NasibaLogoProps> = ({
             strokeOpacity="0.6"
           />
 
-          {/* Interlocking Halal Union Motif (Two Harmonious Curved Arcs / Rings in Emerald & Gold) */}
+          {/* Interlocking Halal Union Motif */}
           {/* Ring 1 - Left Partner */}
           <circle
             cx="44"
@@ -90,7 +90,7 @@ export const NasibaLogo: React.FC<NasibaLogoProps> = ({
             fill="#C9A45C"
           />
 
-          {/* Precious Champagne Gold Center Spark / Star (Divine blessing / Destiny) */}
+          {/* Precious Champagne Gold Center Spark */}
           <path
             d="M50 26L51.8 31.2L57 33L51.8 34.8L50 40L48.2 34.8L43 33L48.2 31.2L50 26Z"
             fill="#C9A45C"
@@ -103,23 +103,15 @@ export const NasibaLogo: React.FC<NasibaLogoProps> = ({
         </svg>
       </div>
 
-      {/* Brand Typography */}
+      {/* Refined Brand Text Logo (Title Case, Clean Serif & Dot, No Clutter) */}
       {showText && (
-        <div className="flex flex-col justify-center">
-          <div className="flex items-center gap-1.5 leading-none">
-            <span
-              className={`font-serif-display font-bold text-[#0F5C4D] ${currentDim.title} ${currentDim.tracking} uppercase`}
-              style={{ letterSpacing: '0.14em' }}
-            >
-              NASSIB
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A45C] shrink-0 translate-y-[-2px]"></span>
-          </div>
+        <div className="flex items-center gap-1 leading-none">
           <span
-            className={`font-body font-semibold text-[#8BAE9F] ${currentDim.sub} uppercase tracking-[0.24em] mt-1`}
+            className={`font-serif-display font-bold text-[#0F5C4D] ${currentDim.title} tracking-normal`}
           >
-            Intention Sérieuse
+            Nassib
           </span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#C9A45C] shrink-0 translate-y-[-1px]"></span>
         </div>
       )}
     </div>

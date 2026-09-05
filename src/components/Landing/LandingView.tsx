@@ -53,11 +53,11 @@ export const LandingView: React.FC<LandingViewProps> = ({
   return (
     <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] font-body selection:bg-[#8BAE9F]/25 selection:text-[#0F5C4D]">
       {/* Top Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#FAF8F2]/90 backdrop-blur-xl border-b border-[#E8E3D7] transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex justify-between items-center">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#FAF8F2]/95 backdrop-blur-xl border-b border-[#E8E3D7] transition-all">
+        <div className="max-w-7xl mx-auto px-3.5 sm:px-8 h-16 sm:h-20 flex justify-between items-center">
           <div 
             onClick={() => onOpenAuth('register')}
-            className="cursor-pointer"
+            className="cursor-pointer active:scale-95 transition-transform flex items-center shrink-0"
           >
             <NasibaLogo size="md" />
           </div>
@@ -69,32 +69,31 @@ export const LandingView: React.FC<LandingViewProps> = ({
             <button onClick={() => scrollToSection('faq')} className="hover:text-[#0F5C4D] transition-colors cursor-pointer">FAQ</button>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <motion.button
-              whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => onOpenAuth('login')}
-              className="text-[#575147] hover:text-[#0F5C4D] font-display text-sm font-semibold px-4 py-2 transition-colors cursor-pointer"
+              className="text-[#575147] hover:text-[#0F5C4D] font-display text-xs sm:text-sm font-semibold px-2 py-1.5 sm:px-3 sm:py-2 transition-colors cursor-pointer whitespace-nowrap"
             >
               Connexion
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.04, backgroundColor: '#0c4a3e' }}
+              whileHover={{ scale: 1.03, backgroundColor: '#0c4a3e' }}
               whileTap={{ scale: 0.96 }}
               onClick={() => onOpenAuth('register')}
-              className="bg-[#0F5C4D] text-white rounded-full px-6 py-2.5 font-display text-sm font-semibold transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+              className="bg-[#0F5C4D] text-white rounded-xl sm:rounded-full px-3 py-1.5 sm:px-5 sm:py-2 font-display text-xs sm:text-sm font-semibold transition-colors shadow-2xs cursor-pointer flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0 active:scale-95"
             >
-              <span>Créer mon profil</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#C9A45C]"></span>
+              <span>S'inscrire</span>
+              <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-[#C9A45C]"></span>
             </motion.button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="pt-24 pb-16 overflow-hidden">
+      <main className="pt-20 sm:pt-24 pb-16 overflow-hidden">
         {/* Hero Section */}
-        <section id="accueil" className="max-w-5xl mx-auto px-4 sm:px-8 pt-10 pb-16 text-center">
+        <section id="accueil" className="max-w-5xl mx-auto px-4 sm:px-8 pt-8 sm:pt-10 pb-16 text-center">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -111,7 +110,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             transition={{ duration: 0.6, delay: 0.1 }}
             className="font-serif-display text-5xl sm:text-7xl md:text-8xl font-bold text-[#0F5C4D] leading-none tracking-tight mb-4"
           >
-            NASSIB
+            Nassib
           </motion.h1>
 
           <motion.p

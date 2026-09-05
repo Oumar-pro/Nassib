@@ -60,8 +60,11 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#211E1A]/60 backdrop-blur-sm animate-fadeIn">
-      <div className="w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-[#E8E3D7] max-h-[90vh] flex flex-col bg-white relative">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[#211E1A]/60 backdrop-blur-sm animate-fadeIn">
+      <div className="w-full max-w-2xl rounded-t-[28px] sm:rounded-3xl overflow-hidden shadow-2xl border-t sm:border border-[#E8E3D7] max-h-[92vh] sm:max-h-[90vh] flex flex-col bg-white relative pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        {/* Mobile drag handle indicator */}
+        <div className="sm:hidden w-12 h-1.5 bg-[#E8E3D7] rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
+
         {/* Modal Header Bar */}
         <div className="p-4 sm:p-6 border-b border-[#E8E3D7] flex justify-between items-center bg-[#FAF8F2]">
           <div className="flex items-center gap-2">

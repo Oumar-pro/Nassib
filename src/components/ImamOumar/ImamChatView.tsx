@@ -105,61 +105,61 @@ Comment puis-je vous guider aujourd'hui ?`,
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn pb-12">
       {/* Top Banner Identity */}
-      <div className="rounded-[28px] p-6 sm:p-8 shadow-sm border border-[#E8E3D7] bg-[#FAF8F2] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-5">
+      <div className="rounded-2xl sm:rounded-[28px] p-4 sm:p-8 shadow-xs border border-[#E8E3D7] bg-white relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
+        <div className="flex items-center gap-3 sm:gap-5">
           <div className="relative shrink-0">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#0F5C4D] text-white flex items-center justify-center border-4 border-white shadow-md overflow-hidden">
-              <span className="material-symbols-outlined text-3xl sm:text-4xl text-[#C9A45C]">auto_awesome</span>
+            <div className="w-13 h-13 sm:w-18 sm:h-18 rounded-full bg-[#0F5C4D] text-white flex items-center justify-center border-2 sm:border-4 border-white shadow-sm overflow-hidden">
+              <span className="material-symbols-outlined text-2xl sm:text-3xl text-[#C9A45C]">auto_awesome</span>
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-[#C9A45C] text-[#211E1A] text-[10px] font-bold p-1 rounded-full border-2 border-white shadow-xs">
-              <span className="material-symbols-outlined text-sm block" style={{ fontVariationSettings: "'FILL' 1" }}>
+            <div className="absolute -bottom-1 -right-1 bg-[#C9A45C] text-[#211E1A] text-[9px] font-bold p-0.5 sm:p-1 rounded-full border-2 border-white shadow-xs">
+              <span className="material-symbols-outlined text-[12px] sm:text-sm block" style={{ fontVariationSettings: "'FILL' 1" }}>
                 verified
               </span>
             </div>
           </div>
 
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-[#0F5C4D] text-white font-body text-[10px] font-bold tracking-wide uppercase">
-                Assistant IA Éthique &amp; Fiqh
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="px-2 py-0.5 rounded-full bg-[#0F5C4D] text-white font-body text-[9px] sm:text-[10px] font-bold tracking-wide uppercase">
+                Conseiller Spirituel
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#C9A45C]/20 text-[#211E1A] font-body text-[10px] font-bold uppercase border border-[#C9A45C]/40">
+              <span className="px-2 py-0.5 rounded-full bg-[#C9A45C]/20 text-[#211E1A] font-body text-[9px] sm:text-[10px] font-bold uppercase border border-[#C9A45C]/40">
                 Imam Oumar
               </span>
             </div>
-            <h2 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#0F5C4D]">
-              Conseil Matrimonial par Imam Oumar
+            <h2 className="font-serif-display text-lg sm:text-2xl font-bold text-[#0F5C4D]">
+              Guide Matrimonial Imam Oumar
             </h2>
-            <p className="font-body text-xs sm:text-sm text-[#575147] mt-1 max-w-xl leading-relaxed">
+            <p className="font-body text-xs text-[#575147] mt-0.5 max-w-xl leading-relaxed hidden sm:block">
               Posez toutes vos questions concernant les règles du mariage en Islam, le rôle du tuteur (Wali), la bénédiction de la dot (Mahr) et l'harmonie du foyer.
             </p>
           </div>
         </div>
 
-        <div className="shrink-0 flex items-center gap-2 bg-white px-4 py-2.5 rounded-2xl border border-[#E8E3D7] shadow-2xs">
-          <span className="material-symbols-outlined text-[#0F5C4D] text-xl">mosque</span>
+        <div className="shrink-0 flex items-center gap-2 bg-[#FAF8F2] px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-[#E8E3D7] shadow-2xs self-start md:self-center">
+          <span className="material-symbols-outlined text-[#0F5C4D] text-lg sm:text-xl">mosque</span>
           <div className="text-left">
-            <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold block">Spécialité</span>
+            <span className="font-body text-[9px] sm:text-[10px] text-[#7D766C] uppercase font-bold block">Spécialité</span>
             <span className="font-display text-xs font-bold text-[#211E1A]">Fiqh al-Nikah &amp; Coutumes Niger</span>
           </div>
         </div>
       </div>
 
       {/* Preset Suggestions Quick Chips */}
-      <div className="space-y-2">
-        <p className="font-body text-xs font-bold text-[#575147] uppercase tracking-wider flex items-center gap-1.5 px-1">
+      <div className="space-y-1.5">
+        <p className="font-body text-[11px] sm:text-xs font-bold text-[#575147] uppercase tracking-wider flex items-center gap-1.5 px-1">
           <span className="material-symbols-outlined text-sm text-[#0F5C4D]">lightbulb</span>
-          <span>Questions fréquentes &amp; Sujets clés :</span>
+          <span>Questions fréquentes :</span>
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex overflow-x-auto sm:flex-wrap gap-2 pb-1 no-scrollbar -mx-1 px-1">
           {presetQuestions.map((q) => (
             <button
               key={q}
               onClick={() => handleSendMessage(q)}
               disabled={isLoading}
-              className="px-3.5 py-2 rounded-2xl bg-white border border-[#E8E3D7] text-[#0F5C4D] font-body text-xs font-semibold hover:border-[#0F5C4D] hover:bg-[#8BAE9F]/10 hover:shadow-2xs transition-all cursor-pointer disabled:opacity-50 text-left flex items-center gap-2"
+              className="px-3 py-1.5 rounded-xl bg-white border border-[#E8E3D7] text-[#0F5C4D] font-body text-xs font-semibold hover:border-[#0F5C4D] hover:bg-[#8BAE9F]/10 transition-all cursor-pointer disabled:opacity-50 text-left flex items-center gap-1.5 whitespace-nowrap sm:whitespace-normal shrink-0 active:scale-95"
             >
-              <span className="material-symbols-outlined text-sm text-[#C9A45C]">help_outline</span>
+              <span className="material-symbols-outlined text-xs text-[#C9A45C]">help_outline</span>
               <span>{q}</span>
             </button>
           ))}
@@ -167,9 +167,9 @@ Comment puis-je vous guider aujourd'hui ?`,
       </div>
 
       {/* Chat Thread Container */}
-      <div className="rounded-[28px] border border-[#E8E3D7] shadow-md overflow-hidden flex flex-col h-[520px] bg-white">
+      <div className="rounded-2xl sm:rounded-[28px] border border-[#E8E3D7] shadow-xs sm:shadow-md overflow-hidden flex flex-col h-[55vh] sm:h-[520px] bg-white">
         {/* Chat Messages Body */}
-        <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4 bg-[#FAF8F2]/40">
+        <div className="flex-grow p-3 sm:p-6 overflow-y-auto space-y-3 sm:space-y-4 bg-[#FAF8F2]/40">
           {messages.map((msg) => {
             const isUser = msg.sender === 'user';
             return (

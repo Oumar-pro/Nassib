@@ -36,8 +36,14 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
       if (!hasPhoto) return false;
 
       // Rule 2: Opposite gender filtering (Men see women, women see men)
-      if (user.gender === 'male' && p.gender !== 'female') return false;
-      if (user.gender === 'female' && p.gender !== 'male') return false;
+      const userGender = (user.gender || '').toLowerCase();
+      const profGender = (p.gender || '').toLowerCase();
+      if (userGender === 'male' && profGender !== 'female') return false;
+      if (userGender === 'female' && profGender !== 'male') return false;
+
+      // Rule 3: Hide own profile
+      if (user.id && (p.userId === user.id || p.id === user.id)) return false;
+      if (user.email && (p.email === user.email || p.userEmail === user.email)) return false;
 
       // Standard user filters
       if (selectedCity && p.city !== selectedCity) return false;
@@ -53,32 +59,111 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
 
       return true;
     });
-  }, [profiles, user.gender, selectedCity, selectedAgeRange, selectedStatus, onlyVerified]);
+  }, [profiles, user.gender, user.id, user.email, selectedCity, selectedAgeRange, selectedStatus, onlyVerified]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fadeIn relative pb-12">
       {/* Search Header & Filter Bar */}
-      <section className="bg-white/90 backdrop-blur-md rounded-3xl p-6 border border-[#E8E3D7] shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
-        <div className="max-w-xl">
-          <h2 className="font-serif-display text-2xl font-bold text-[#211E1A] mb-1">
-            Trouvez votre Partenaire de Vie
-          </h2>
-          <p className="font-body text-xs sm:text-sm text-[#575147] leading-relaxed">
-            Parcourez les profils vérifiés avec intention et respect. Utilisez les filtres pour affiner votre recherche selon vos principes.
-          </p>
+      <section className="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#E8E3D7] shadow-xs flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="font-serif-display text-xl sm:text-2xl font-bold text-[#211E1A]">
+                Trouvez votre Partenaire de Vie
+              </h2>
+              {user.gender && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#8BAE9F]/15 text-[#0F5C4D] border border-[#8BAE9F]/30 text-xs font-semibold shrink-0">
+                  <span className="material-symbols-outlined text-sm">
+                    {user.gender === 'female' ? 'male' : 'female'}
+                  </span>
+                  <span>
+                    {user.gender === 'female' ? 'Profils Hommes' : 'Profils Femmes'}
+                  </span>
+                </div>
+              )}
+            </div>
+            <p className="font-body text-xs sm:text-sm text-[#575147]">
+              {user.gender === 'female'
+                ? 'Profils hommes vérifiés selon les critères islamiques et traditionnels.'
+                : user.gender === 'male'
+                ? 'Profils femmes vérifiés avec accompagnement du tuteur légal (Wali).'
+                : 'Profils vérifiés selon les valeurs de respect.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <span className="text-[11px] font-bold text-[#0F5C4D] bg-[#8BAE9F]/15 px-2.5 py-1 rounded-full border border-[#8BAE9F]/30">
+              {filteredProfiles.length} profil(s)
+            </span>
+
+            {/* Mobile Filter Toggle */}
+            <button
+              onClick={() => setShowMoreFilters(!showMoreFilters)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-body text-xs font-semibold transition-all cursor-pointer ${
+                showMoreFilters 
+                  ? 'bg-[#0F5C4D] text-white border-[#0F5C4D]' 
+                  : 'bg-[#FAF8F2] text-[#211E1A] border-[#E8E3D7] hover:bg-[#E8E3D7]/50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">tune</span>
+              <span>Filtres {showMoreFilters ? '▲' : '▼'}</span>
+            </button>
+          </div>
         </div>
 
-        {/* Filter Controls */}
-        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+        {/* Quick Filter Horizontal Scrollbar for Mobile / Desktop */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-1 -mx-1 px-1">
+          <button
+            onClick={() => setSelectedCity('')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+              selectedCity === ''
+                ? 'bg-[#0F5C4D] text-white shadow-xs'
+                : 'bg-[#FAF8F2] text-[#575147] hover:bg-[#E8E3D7] border border-[#E8E3D7]'
+            }`}
+          >
+            Toutes Villes
+          </button>
+          {['Niamey', 'Zinder', 'Maradi', 'Tahoua', 'Agadez', 'Dosso'].map((city) => (
+            <button
+              key={city}
+              onClick={() => setSelectedCity(selectedCity === city ? '' : city)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                selectedCity === city
+                  ? 'bg-[#0F5C4D] text-white shadow-xs'
+                  : 'bg-[#FAF8F2] text-[#575147] hover:bg-[#E8E3D7] border border-[#E8E3D7]'
+              }`}
+            >
+              {city}
+            </button>
+          ))}
+
+          {/* Quick NNI filter toggle */}
+          <button
+            onClick={() => setOnlyVerified(!onlyVerified)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
+              onlyVerified
+                ? 'bg-[#0F5C4D] text-white shadow-xs'
+                : 'bg-[#FAF8F2] text-[#0F5C4D] border border-[#8BAE9F]/40'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+              verified
+            </span>
+            <span>Vérifié NNI</span>
+          </button>
+        </div>
+
+        {/* Filter Controls (Dropdowns shown when desktop or expanded) */}
+        <div className="hidden sm:flex flex-wrap items-center gap-3 pt-2 border-t border-[#E8E3D7]/60">
           {/* Location Dropdown */}
-          <div className="relative w-full sm:w-auto">
+          <div className="relative min-w-[150px]">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#7D766C] text-sm pointer-events-none">
               location_on
             </span>
             <select
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
-              className="pl-9 pr-8 py-2.5 rounded-xl border border-[#E8E3D7] bg-[#FAF8F2] text-[#211E1A] font-body text-xs sm:text-sm appearance-none focus:ring-1 focus:ring-[#0F5C4D] focus:border-[#0F5C4D] transition-colors cursor-pointer w-full sm:w-auto min-w-[140px]"
+              className="pl-9 pr-8 py-2 rounded-xl border border-[#E8E3D7] bg-[#FAF8F2] text-[#211E1A] font-body text-xs appearance-none focus:ring-1 focus:ring-[#0F5C4D] focus:border-[#0F5C4D] transition-colors cursor-pointer w-full"
             >
               <option value="">Toutes les Villes</option>
               <option value="Niamey">Niamey</option>
@@ -95,14 +180,14 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
           </div>
 
           {/* Age Range Dropdown */}
-          <div className="relative w-full sm:w-auto">
+          <div className="relative min-w-[140px]">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#7D766C] text-sm pointer-events-none">
               cake
             </span>
             <select
               value={selectedAgeRange}
               onChange={(e) => setSelectedAgeRange(e.target.value)}
-              className="pl-9 pr-8 py-2.5 rounded-xl border border-[#E8E3D7] bg-[#FAF8F2] text-[#211E1A] font-body text-xs sm:text-sm appearance-none focus:ring-1 focus:ring-[#0F5C4D] focus:border-[#0F5C4D] transition-colors cursor-pointer w-full sm:w-auto min-w-[130px]"
+              className="pl-9 pr-8 py-2 rounded-xl border border-[#E8E3D7] bg-[#FAF8F2] text-[#211E1A] font-body text-xs appearance-none focus:ring-1 focus:ring-[#0F5C4D] focus:border-[#0F5C4D] transition-colors cursor-pointer w-full"
             >
               <option value="">Tout Âge</option>
               <option value="18-25">18 - 25 ans</option>
@@ -114,17 +199,6 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
               arrow_drop_down
             </span>
           </div>
-
-          {/* More Filters Toggle Button */}
-          <button
-            onClick={() => setShowMoreFilters(!showMoreFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E8E3D7] font-body text-xs sm:text-sm transition-colors w-full sm:w-auto justify-center cursor-pointer ${
-              showMoreFilters ? 'bg-[#0F5C4D] text-white' : 'bg-[#FAF8F2] text-[#211E1A] hover:bg-[#E8E3D7]/50'
-            }`}
-          >
-            <span className="material-symbols-outlined text-sm">tune</span>
-            Plus de filtres
-          </button>
         </div>
       </section>
 
@@ -216,7 +290,8 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
             return (
               <article
                 key={profile.id}
-                className="bg-white rounded-3xl overflow-hidden shadow-sm border border-[#E8E3D7] hover:shadow-md transition-all duration-300 group flex flex-col relative"
+                onClick={() => onSelectProfile(profile)}
+                className="bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-xs sm:shadow-sm border border-[#E8E3D7] hover:shadow-md active:scale-[0.99] transition-all duration-200 group flex flex-col relative cursor-pointer"
               >
                 {/* Card Image Header */}
                 <div className="relative h-64 overflow-hidden bg-[#FAF8F2] flex items-center justify-center">
@@ -351,7 +426,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
       {/* Floating Action Button (Toggle Mahram Mode) */}
       <button
         onClick={() => setMahramModeActive(!mahramModeActive)}
-        className={`fixed bottom-20 right-6 md:bottom-10 md:right-10 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-40 group cursor-pointer ${
+        className={`fixed bottom-22 right-4 sm:bottom-10 sm:right-10 w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-30 group cursor-pointer active:scale-95 ${
           mahramModeActive
             ? 'bg-[#C9A45C] text-[#211E1A] ring-4 ring-[#C9A45C]/30'
             : 'bg-[#0F5C4D] text-white hover:bg-[#0c4a3e] hover:scale-105'

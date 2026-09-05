@@ -311,49 +311,35 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] font-body flex flex-col selection:bg-[#8BAE9F]/25 selection:text-[#0F5C4D]">
-      {/* Top Header bar with clean logo and progress */}
-      <header className="sticky top-0 z-30 bg-[#FAF8F2]/95 backdrop-blur-md border-b border-[#E8E3D7]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 h-18 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            {currentStep > 0 && (
-              <button
-                type="button"
-                onClick={handlePrev}
-                className="p-2 -ml-2 text-[#575147] hover:text-[#0F5C4D] hover:bg-white rounded-full transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer border border-transparent hover:border-[#E8E3D7]"
-                title="Étape précédente"
-              >
-                <span className="material-symbols-outlined text-lg">arrow_back</span>
-                <span className="hidden sm:inline">Retour</span>
-              </button>
-            )}
-            <NasibaLogo size="sm" />
-          </div>
+      {/* Main Container (No Top Header) */}
+      <main className="flex-1 max-w-4xl w-full mx-auto px-3.5 sm:px-8 py-6 sm:py-10 flex flex-col justify-center">
+        {/* Inline Navigation & Step Progress (Replaces external header) */}
+        {!isLoadingAnalysis && currentStep > 0 && (
+          <div className="mb-4 sm:mb-6 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E8E3D7] text-xs font-semibold text-[#575147] hover:text-[#0F5C4D] hover:border-[#8BAE9F] shadow-2xs transition-colors cursor-pointer"
+              title="Étape précédente"
+            >
+              <span className="material-symbols-outlined text-base">arrow_back</span>
+              <span>Retour</span>
+            </button>
 
-          <div className="flex items-center gap-3">
-            {currentStep > 0 ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-[#0F5C4D]">
-                  Étape {currentStep} / {totalSteps}
-                </span>
-                <div className="w-24 sm:w-36 h-2 bg-[#E8E3D7] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#0F5C4D] transition-all duration-300 rounded-full"
-                    style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                  ></div>
-                </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-[#0F5C4D]">
+                Étape {currentStep} / {totalSteps}
+              </span>
+              <div className="w-20 sm:w-28 h-1.5 bg-[#E8E3D7] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#0F5C4D] transition-all duration-300 rounded-full"
+                  style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+                ></div>
               </div>
-            ) : (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#E8E3D7] text-xs font-semibold text-[#0F5C4D]">
-                <span className="w-2 h-2 rounded-full bg-[#0F5C4D]"></span>
-                <span>Parcours d'accueil</span>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-      </header>
+        )}
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-8 py-8 flex flex-col justify-center">
         {isLoadingAnalysis ? (
           /* Loading & Profiling Screen */
           <motion.div

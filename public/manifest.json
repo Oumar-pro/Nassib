@@ -1,0 +1,18 @@
+{
+  "short_name": "NASSIB",
+  "name": "NASSIB — Rencontres Sérieuses Niger",
+  "description": "Plateforme matrimoniale éthique, musulmane et moderne au Niger avec vérification NNI et encadrement Wali.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0F5C4D",
+  "background_color": "#FAF8F2",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

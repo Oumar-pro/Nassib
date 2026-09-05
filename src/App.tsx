@@ -29,6 +29,7 @@ import {
 
 import { Sidebar } from './components/Navigation/Sidebar';
 import { MobileHeader } from './components/Navigation/MobileHeader';
+import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { NasibaLogo } from './components/NasibaLogo';
 
 import { DashboardView } from './components/Dashboard/DashboardView';
@@ -64,6 +65,7 @@ export default function App() {
         role: activeSession.role,
         email: activeSession.email,
         phone: activeSession.phone || prev.phone,
+        gender: activeSession.gender || prev.gender,
         isPremium: true,
         planName: activeSession.planName || 'Accès Gratuit & Illimité',
         isVerifiedNNI: Boolean(activeSession.isVerifiedNNI),
@@ -75,6 +77,7 @@ export default function App() {
       if (refreshed) {
         setUser((prev) => ({
           ...prev,
+          gender: refreshed.gender || prev.gender,
           isPremium: true,
           planName: refreshed.planName || 'Accès Gratuit & Illimité',
           isVerifiedNNI: Boolean(refreshed.isVerifiedNNI),
@@ -203,7 +206,14 @@ export default function App() {
     }
   };
 
-  const favoriteProfiles = profiles.filter((p) => favoriteProfileIds.includes(p.id));
+  const favoriteProfiles = profiles.filter((p) => {
+    if (!favoriteProfileIds.includes(p.id)) return false;
+    const userGender = (user.gender || '').toLowerCase();
+    const profGender = (p.gender || '').toLowerCase();
+    if (userGender === 'male' && profGender !== 'female') return false;
+    if (userGender === 'female' && profGender !== 'male') return false;
+    return true;
+  });
 
   // Compute fans count for the logged-in user (favoris reçus)
   const currentUserProfile = profiles.find(
@@ -427,6 +437,7 @@ export default function App() {
       role: userAcc.role,
       email: userAcc.email,
       phone: userAcc.phone || prev.phone,
+      gender: userAcc.gender || prev.gender,
       isPremium: Boolean(userAcc.isPremium),
       planName: userAcc.planName || (userAcc.isPremium ? 'Baraka (Premium)' : 'Sadaq (Gratuit)'),
       isVerifiedNNI: Boolean(userAcc.isVerifiedNNI),
@@ -553,6 +564,15 @@ export default function App() {
         : { name: '', relation: '', phone: '' },
     }));
 
+    // Update active session locally with gender
+    const activeSess = getCurrentUserSession();
+    if (activeSess) {
+      localStorage.setItem(
+        'nasiba_user_session',
+        JSON.stringify({ ...activeSess, gender: finalProf.gender, name: finalProf.name })
+      );
+    }
+
     setCurrentTab('browse');
     showToast('Profil et informations enregistrés avec succès dans la base de données NASSIB !');
     if (userPhotos.length > 0) {
@@ -568,10 +588,11 @@ export default function App() {
     // Also sync the user's profile card in the profiles list
     setProfiles((prev) =>
       prev.map((p) => {
-        if (p.id === user.id || p.name.trim().toLowerCase() === user.name.trim().toLowerCase()) {
+        if (p.id === user.id || (user.id && p.userId === user.id) || p.name.trim().toLowerCase() === user.name.trim().toLowerCase()) {
           return {
             ...p,
             name: updated.name !== undefined ? updated.name : p.name,
+            gender: updated.gender !== undefined ? updated.gender : p.gender,
             photoUrl: updated.photoUrl !== undefined ? updated.photoUrl : p.photoUrl,
             photos: updated.photos !== undefined ? updated.photos : p.photos,
             photoPrivate: updated.photoBlurringActive !== undefined ? updated.photoBlurringActive : p.photoPrivate,
@@ -580,6 +601,15 @@ export default function App() {
         return p;
       })
     );
+
+    // Also sync stored session
+    const activeSess = getCurrentUserSession();
+    if (activeSess) {
+      localStorage.setItem(
+        'nasiba_user_session',
+        JSON.stringify({ ...activeSess, ...updated })
+      );
+    }
   };
 
   return (
@@ -706,7 +736,7 @@ export default function App() {
           )}
 
           {/* Main App Content View Wrapper */}
-          <main className="flex-1 md:ml-64 pt-20 md:pt-10 px-4 sm:px-8 pb-12 min-h-screen">
+          <main className="flex-1 md:ml-64 pt-16 md:pt-10 px-3.5 sm:px-8 pb-28 md:pb-12 min-h-screen">
             {currentTab === 'dashboard' && (
               <DashboardView
                 user={user}
@@ -716,8 +746,12 @@ export default function App() {
                     (p.photos && p.photos.some((ph) => Boolean(ph) && ph.trim() !== ''))
                   );
                   if (!hasPhoto) return false;
-                  if (user.gender === 'male' && p.gender !== 'female') return false;
-                  if (user.gender === 'female' && p.gender !== 'male') return false;
+                  const userGender = (user.gender || '').toLowerCase();
+                  const profGender = (p.gender || '').toLowerCase();
+                  if (userGender === 'male' && profGender !== 'female') return false;
+                  if (userGender === 'female' && profGender !== 'male') return false;
+                  if (user.id && (p.userId === user.id || p.id === user.id)) return false;
+                  if (user.email && (p.email === user.email || p.userEmail === user.email)) return false;
                   return true;
                 })}
                 favoriteProfiles={favoriteProfiles}
@@ -773,6 +807,13 @@ export default function App() {
               />
             )}
           </main>
+
+          {/* Mobile Bottom Navigation Dock */}
+          <MobileBottomNav
+            currentTab={currentTab}
+            onSelectTab={(tab) => setCurrentTab(tab)}
+            unreadCount={1}
+          />
         </>
       )}
 

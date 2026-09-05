@@ -44,6 +44,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         name,
         role: 'candidate',
         phone,
+        gender,
       });
 
       setLoading(false);
@@ -75,32 +76,28 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] font-body flex flex-col selection:bg-[#8BAE9F]/25 selection:text-[#0F5C4D]">
-      {/* Main Dedicated Page Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 sm:py-12 flex flex-col justify-center">
-        {/* Top Floating Back & Brand Link */}
-        <div className="mb-6 flex items-center justify-between">
+      {/* Main Dedicated Page Content (No Top Header) */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 sm:py-10 flex flex-col justify-center">
+        {/* Back Button Only - No Header */}
+        <div className="mb-4 sm:mb-6">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E8E3D7] text-xs font-semibold text-[#575147] hover:text-[#0F5C4D] hover:border-[#8BAE9F] shadow-2xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#E8E3D7] text-xs font-semibold text-[#575147] hover:text-[#0F5C4D] hover:border-[#8BAE9F] shadow-2xs transition-all cursor-pointer"
             title="Retour à l'accueil"
           >
             <span className="material-symbols-outlined text-base">arrow_back</span>
             <span>Retour à l'accueil</span>
           </button>
-
-          <div className="flex items-center gap-3">
-            <NasibaLogo size="sm" />
-          </div>
         </div>
 
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch max-w-xl lg:max-w-none mx-auto">
           
-          {/* Left Column: Brand Story, Sacred Vision & Reassurance */}
+          {/* Left Column: Brand Story, Sacred Vision & Reassurance (Hidden on mobile) */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="lg:col-span-5 flex flex-col justify-between bg-white rounded-3xl p-8 sm:p-10 border border-[#E8E3D7] shadow-sm relative overflow-hidden"
+            className="hidden lg:flex lg:col-span-5 flex-col justify-between bg-white rounded-3xl p-8 sm:p-10 border border-[#E8E3D7] shadow-sm relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#0F5C4D]/5 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#C9A45C]/10 rounded-full blur-2xl pointer-events-none"></div>
@@ -112,7 +109,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </div>
 
               <h1 className="font-serif-display text-3xl sm:text-4xl font-bold text-[#0F5C4D] leading-tight">
-                {mode === 'login' ? 'Ravi de vous retrouver sur NASSIB' : 'Commencez votre projet de mariage béni'}
+                {mode === 'login' ? 'Ravi de vous retrouver sur Nassib' : 'Commencez votre projet de mariage béni'}
               </h1>
 
               <blockquote className="p-4 rounded-2xl bg-[#FAF8F2] border-l-4 border-[#C9A45C] text-xs sm:text-sm text-[#575147] italic leading-relaxed">
@@ -231,6 +228,39 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
                 <>
+                  {/* Civilité / Genre */}
+                  <div className="space-y-1.5">
+                    <label className="font-display text-xs font-bold text-[#575147] block">
+                      Civilité <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setGender('female')}
+                        className={`h-11 rounded-2xl text-xs font-display font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                          gender === 'female'
+                            ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-xs'
+                            : 'bg-[#FAF8F2] text-[#575147] border-[#E8E3D7] hover:border-[#8BAE9F]'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-base">female</span>
+                        <span>Femme</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGender('male')}
+                        className={`h-11 rounded-2xl text-xs font-display font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                          gender === 'male'
+                            ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-xs'
+                            : 'bg-[#FAF8F2] text-[#575147] border-[#E8E3D7] hover:border-[#8BAE9F]'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-base">male</span>
+                        <span>Homme</span>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Full Name */}
                   <div className="space-y-1.5">
                     <label className="font-display text-xs font-bold text-[#575147] block">

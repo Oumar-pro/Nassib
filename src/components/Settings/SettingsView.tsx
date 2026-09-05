@@ -17,6 +17,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [name, setName] = useState<string>(user.name);
   const [email, setEmail] = useState<string>(user.email);
   const [phone, setPhone] = useState<string>(user.phone);
+  const [gender, setGender] = useState<'female' | 'male'>(user.gender || 'female');
   const [photos, setPhotos] = useState<string[]>(
     user.photos && user.photos.length > 0
       ? [user.photos[0] || user.photoUrl || '', user.photos[1] || '', user.photos[2] || '']
@@ -81,6 +82,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       name,
       email,
       phone,
+      gender,
       photoUrl: primaryPhoto,
       photos: photos.filter((p) => Boolean(p) && p.trim() !== '')
     });
@@ -270,6 +272,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               onChange={(e) => setPhone(e.target.value)}
               className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3.5 text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="font-body text-xs font-semibold text-[#575147]">Civilité (Genre)</label>
+            <div className="grid grid-cols-2 gap-3 max-w-sm">
+              <button
+                type="button"
+                onClick={() => setGender('female')}
+                className={`h-11 rounded-xl text-xs font-display font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                  gender === 'female'
+                    ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-xs'
+                    : 'bg-[#FAF8F2] text-[#575147] border-[#E8E3D7] hover:border-[#8BAE9F]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">female</span>
+                <span>Femme</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setGender('male')}
+                className={`h-11 rounded-xl text-xs font-display font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                  gender === 'male'
+                    ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-xs'
+                    : 'bg-[#FAF8F2] text-[#575147] border-[#E8E3D7] hover:border-[#8BAE9F]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">male</span>
+                <span>Homme</span>
+              </button>
+            </div>
+            <p className="font-body text-[11px] text-[#7D766C] mt-1">
+              Les femmes inscrites voient exclusivement des profils hommes, et les hommes voient des profils femmes.
+            </p>
           </div>
 
           {savedNotice && (
