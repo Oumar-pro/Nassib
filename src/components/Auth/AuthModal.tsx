@@ -158,7 +158,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <span className="w-1.5 h-1.5 rounded-full bg-[#0F5C4D]"></span>
                 Données Chiffrées
               </span>
-              <span>NASIBA © 2026</span>
+              <span>NASSIB © 2026</span>
             </div>
           </div>
 
@@ -198,7 +198,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <div className="mb-5">
                 <h3 className="font-serif-display text-2xl font-bold text-[#0F5C4D]">
-                  {mode === 'register' ? 'Rejoindre NASIBA' : 'Bon retour parmi nous'}
+                  {mode === 'register' ? 'Rejoindre NASSIB' : 'Bon retour parmi nous'}
                 </h3>
                 <p className="font-body text-xs text-[#575147] mt-1">
                   {mode === 'register'

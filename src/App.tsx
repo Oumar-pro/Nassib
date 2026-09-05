@@ -40,8 +40,9 @@ import { LandingView } from './components/Landing/LandingView';
 import { ImamChatView } from './components/ImamOumar/ImamChatView';
 
 import { ProfileDetailModal } from './components/Profile/ProfileDetailModal';
-import { AuthModal } from './components/Auth/AuthModal';
-import { OnboardingModal, OnboardingData } from './components/Auth/OnboardingModal';
+import { AuthPage } from './components/Auth/AuthPage';
+import { OnboardingPage } from './components/Auth/OnboardingPage';
+import { OnboardingData } from './components/Auth/OnboardingModal';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<TabType>('landing');
@@ -119,11 +120,9 @@ export default function App() {
     loadSupabaseData();
   }, []);
 
-  // Modals & Sliders
+  // Modals & Navigation
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
-  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
-  const [onboardingOpen, setOnboardingOpen] = useState<boolean>(false);
   const [registeredUserData, setRegisteredUserData] = useState<{
     name: string;
     role: 'candidate' | 'wali';
@@ -131,6 +130,11 @@ export default function App() {
   }>({ name: '', role: 'candidate', phone: '' });
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handleOpenAuth = (mode: 'login' | 'register') => {
+    setAuthMode(mode);
+    setCurrentTab('auth');
+  };
 
   // Favorites state persisted in localStorage and synced with Supabase per active user account
   const [favoriteProfileIds, setFavoriteProfileIds] = useState<string[]>([]);
@@ -239,7 +243,7 @@ export default function App() {
     showToast('Document NNI téléversé ! Votre profil bénéficie du badge vérifié.');
   };
 
-  const handleSendMessage = (text: string, targetConvId?: string) => {
+  const handleSendMessage = async (text: string, targetConvId?: string) => {
     const convId = targetConvId || activeConvId || 'conv_1';
     const targetConv = conversations.find((c) => c.id === convId);
     const recipientName = targetConv ? targetConv.participantName : 'Correspondant';
@@ -259,6 +263,10 @@ export default function App() {
 
     setMessages((prev) => [...prev, newMsg]);
 
+    if (isSupabaseConfigured && convId && !convId.startsWith('conv_init_')) {
+      await sendMessageToSupabase(convId, user.id, user.name, user.photoUrl, text);
+    }
+
     // Update conversation last message
     setConversations((prev) =>
       prev.map((c) =>
@@ -272,48 +280,85 @@ export default function App() {
       )
     );
 
-    // Simulated reply after 1.5 seconds
-    setTimeout(() => {
-      const replyMsg: Message = {
-        id: `msg_reply_${Date.now()}`,
-        conversationId: convId,
-        senderId: `sender_${convId}`,
-        senderName: recipientName,
-        senderAvatar: targetConv?.participantAvatar || '',
-        text: 'Wa alaikum salam. Merci pour ces précisions respectueuses. Mon Wali est également informé et se réjouit de l\'évolution de nos échanges.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isMine: false,
-        isSupervised: true,
-        status: 'read'
-      };
+    // Simulated reply after 1.5 seconds if local/mock conversation
+    if (!isSupabaseConfigured || convId.startsWith('conv_init_')) {
+      setTimeout(() => {
+        const replyMsg: Message = {
+          id: `msg_reply_${Date.now()}`,
+          conversationId: convId,
+          senderId: `sender_${convId}`,
+          senderName: recipientName,
+          senderAvatar: targetConv?.participantAvatar || '',
+          text: 'Wa alaikum salam. Merci pour ces précisions respectueuses. Mon Wali est également informé et se réjouit de l\'évolution de nos échanges.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isMine: false,
+          isSupervised: true,
+          status: 'read'
+        };
 
-      setMessages((prev) => [...prev, replyMsg]);
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === convId
-            ? {
-                ...c,
-                lastMessage: replyMsg.text,
-                lastMessageTime: replyMsg.timestamp,
-                unreadCount: 0
-              }
-            : c
-        )
-      );
-    }, 1500);
+        setMessages((prev) => [...prev, replyMsg]);
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === convId
+              ? {
+                  ...c,
+                  lastMessage: replyMsg.text,
+                  lastMessageTime: replyMsg.timestamp,
+                  unreadCount: 0
+                }
+              : c
+          )
+        );
+      }, 1500);
+    }
   };
 
-  const handleStartMessageWithProfile = (profile: Profile) => {
+  const handleStartMessageWithProfile = async (profile: Profile) => {
     let targetConv = conversations.find(
       (c) => c.participantName === profile.name || c.id === `conv_${profile.id}`
     );
 
     let targetConvId = targetConv?.id;
 
-    if (!targetConv) {
+    if (isSupabaseConfigured && user.id && profile.id) {
+      const dbConvId = await createOrGetConversationInSupabase(user.id, profile.id);
+      if (dbConvId) {
+        targetConvId = dbConvId;
+        const convMapped: Conversation = {
+          id: dbConvId,
+          participantId: profile.id,
+          participantName: profile.name,
+          participantAvatar: profile.photoUrl || '',
+          participantCity: profile.city || 'Niamey',
+          isSupervised: true,
+          isVerifiedNNI: profile.isVerifiedNNI,
+          lastMessage: 'Discussion ouverte',
+          lastMessageTime: 'À l\'instant',
+          unreadCount: 0,
+          onlineStatus: true,
+        };
+        setConversations((prev) => {
+          if (prev.some((c) => c.id === convMapped.id)) return prev;
+          return [convMapped, ...prev];
+        });
+        const remoteMsgs = await fetchMessagesFromSupabase(dbConvId);
+        if (remoteMsgs && remoteMsgs.length > 0) {
+          setMessages((prev) => {
+            const filtered = prev.filter((m) => m.conversationId !== dbConvId);
+            return [...filtered, ...remoteMsgs.map((m) => ({
+              ...m,
+              isMine: m.senderId === user.id
+            }))];
+          });
+        }
+      }
+    }
+
+    if (!targetConvId) {
       targetConvId = `conv_${profile.id}`;
       targetConv = {
         id: targetConvId,
+        participantId: profile.id,
         participantName: profile.name,
         participantAvatar: profile.photoUrl || '',
         participantCity: profile.city || 'Niamey',
@@ -342,10 +387,30 @@ export default function App() {
       setMessages((prev) => [...prev, initMsg]);
     }
 
-    setActiveConvId(targetConvId!);
+    setActiveConvId(targetConvId);
     setSelectedProfile(null);
     setCurrentTab('messages');
     showToast(`Discussion surveillée engagée avec ${profile.name}.`);
+  };
+
+  const handleReportProfile = async (targetProfile: Profile, reason: string, description?: string) => {
+    if (isSupabaseConfigured && user.id) {
+      await reportUserOrProfileInSupabase({
+        reporterUserId: user.id,
+        reportedProfileId: targetProfile.id,
+        reason,
+        description,
+      });
+    }
+    showToast(`Signalement enregistré pour le profil de ${targetProfile.name}. Merci.`);
+  };
+
+  const handleBlockProfile = async (targetProfile: Profile, reason?: string) => {
+    if (isSupabaseConfigured && user.id) {
+      await blockUserInSupabase(user.id, targetProfile.id, reason);
+    }
+    setProfiles((prev) => prev.filter((p) => p.id !== targetProfile.id));
+    showToast(`${targetProfile.name} a été bloqué(e).`);
   };
 
   const handleRequestPhotoAccess = (profile: Profile) => {
@@ -365,16 +430,15 @@ export default function App() {
       isVerifiedNNI: Boolean(userAcc.isVerifiedNNI),
       isWaliApproved: Boolean(userAcc.isWaliApproved),
     }));
-    setAuthModalOpen(false);
-
     if (isRegister) {
-      // Trigger Onboarding ONLY after registration
+      // Trigger dedicated Onboarding PAGE directly after registration
       setRegisteredUserData({ name: userAcc.name, role: userAcc.role, phone: userAcc.phone });
-      setOnboardingOpen(true);
+      setCurrentTab('onboarding');
+      showToast(`Compte créé ! Veuillez maintenant compléter votre profil.`);
     } else {
       // Direct login bypasses onboarding
       setCurrentTab('dashboard');
-      showToast(`Ravi de vous revoir sur NASIBA, ${userAcc.name} !`);
+      showToast(`Ravi de vous revoir sur NASSIB, ${userAcc.name} !`);
     }
   };
 
@@ -471,7 +535,6 @@ export default function App() {
         : { name: '', relation: '', phone: '' }
     }));
 
-    setOnboardingOpen(false);
     setCurrentTab('dashboard');
     if (userPhotos.length > 0) {
       showToast(`Profil enregistré avec ${userPhotos.length} photo(s) ! Bienvenue, ${registeredUserData.name || user.name} !`);
@@ -510,14 +573,25 @@ export default function App() {
         </div>
       )}
 
-      {/* Landing View (If selected) */}
-      {currentTab === 'landing' ? (
+      {/* Dedicated Auth Page */}
+      {currentTab === 'auth' ? (
+        <AuthPage
+          initialMode={authMode}
+          onBack={() => setCurrentTab('landing')}
+          onSuccess={handleAuthSuccess}
+        />
+      ) : currentTab === 'onboarding' ? (
+        <OnboardingPage
+          userName={registeredUserData.name || user.name}
+          userRole={registeredUserData.role || user.role}
+          userPhone={registeredUserData.phone || user.phone}
+          onComplete={handleOnboardingComplete}
+          onCancel={() => setCurrentTab('dashboard')}
+        />
+      ) : currentTab === 'landing' ? (
         <LandingView
           onEnterApp={() => setCurrentTab('dashboard')}
-          onOpenAuth={(mode) => {
-            setAuthMode(mode);
-            setAuthModalOpen(true);
-          }}
+          onOpenAuth={handleOpenAuth}
           onNavigateTab={(tab) => setCurrentTab(tab)}
         />
       ) : (
@@ -527,10 +601,7 @@ export default function App() {
             currentTab={currentTab}
             onSelectTab={(tab) => setCurrentTab(tab)}
             user={user}
-            onOpenAuth={(mode) => {
-              setAuthMode(mode);
-              setAuthModalOpen(true);
-            }}
+            onOpenAuth={handleOpenAuth}
             onLogout={handleLogout}
             unreadCount={1}
           />
@@ -597,8 +668,7 @@ export default function App() {
                   ) : (
                     <button
                       onClick={() => {
-                        setAuthMode('login');
-                        setAuthModalOpen(true);
+                        handleOpenAuth('login');
                         setMobileMenuOpen(false);
                       }}
                       className="w-full bg-[#0F5C4D] text-white hover:bg-[#0c4a3e] font-display font-semibold py-2.5 rounded-xl text-xs text-center flex items-center justify-center gap-1.5 shadow-xs"
@@ -690,27 +760,14 @@ export default function App() {
       {/* Global Modals */}
       <ProfileDetailModal
         profile={selectedProfile}
+        currentUser={user}
         onClose={() => setSelectedProfile(null)}
         onStartMessage={handleStartMessageWithProfile}
         onRequestPhotoAccess={handleRequestPhotoAccess}
         isFavorited={selectedProfile ? favoriteProfileIds.includes(selectedProfile.id) : false}
         onToggleFavorite={handleToggleFavorite}
-      />
-
-      <AuthModal
-        isOpen={authModalOpen}
-        initialMode={authMode}
-        onClose={() => setAuthModalOpen(false)}
-        onSuccess={handleAuthSuccess}
-      />
-
-      <OnboardingModal
-        isOpen={onboardingOpen}
-        userName={registeredUserData.name}
-        userRole={registeredUserData.role}
-        userPhone={registeredUserData.phone}
-        onClose={() => showToast("L'onboarding est obligatoire après l'inscription. Veuillez compléter les étapes.")}
-        onComplete={handleOnboardingComplete}
+        onReport={handleReportProfile}
+        onBlock={handleBlockProfile}
       />
     </div>
   );

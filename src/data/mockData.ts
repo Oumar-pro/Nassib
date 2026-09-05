@@ -4,7 +4,7 @@ import { Profile, Conversation, Message, User } from '../types';
 
 export const INITIAL_USER: User = {
   id: '',
-  name: 'Membre NASIBA',
+  name: 'Membre NASSIB',
   email: '',
   phone: '',
   role: 'candidate',

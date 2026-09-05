@@ -111,7 +111,7 @@ export const NasibaLogo: React.FC<NasibaLogoProps> = ({
               className={`font-serif-display font-bold text-[#0F5C4D] ${currentDim.title} ${currentDim.tracking} uppercase`}
               style={{ letterSpacing: '0.14em' }}
             >
-              NASIBA
+              NASSIB
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-[#C9A45C] shrink-0 translate-y-[-2px]"></span>
           </div>

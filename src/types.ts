@@ -5,7 +5,9 @@ export type TabType =
   | 'verification' 
   | 'settings' 
   | 'landing'
-  | 'imam';
+  | 'imam'
+  | 'auth'
+  | 'onboarding';
 
 export type MaritalStatus = 'Jamais marié(e)' | 'Divorcé(e)' | 'Veuf/Veuve' | string;
 

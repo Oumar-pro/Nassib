@@ -19,7 +19,7 @@ export const ImamChatView: React.FC<ImamChatViewProps> = ({ user }) => {
       id: 'welcome-msg',
       sender: 'assistant',
       text: `As-salamu alaykum wa rahmatullah ${user.name ? user.name.split(' ')[0] : 'cher membre'}.
-Je suis Imam Oumar, votre guide spirituel et conseiller matrimonial sur NASIBA. 
+Je suis Imam Oumar, votre guide spirituel et conseiller matrimonial sur NASSIB. 
 
 Que votre recherche soit personnelle ou au titre de tuteur (Wali), je suis à votre disposition pour éclairer vos questions sur le mariage islamique (Fiqh al-Nikah), la modération de la dot (Mahr), la courtoisie des échanges (Tâ'arof) et la bénédiction du foyer.
 
@@ -196,7 +196,7 @@ Comment puis-je vous guider aujourd'hui ?`,
                   {!isUser && (
                     <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-[#E8E3D7]">
                       <span className="font-display font-bold text-[#0F5C4D] text-xs">Imam Oumar</span>
-                      <span className="text-[10px] text-[#7D766C] font-body">Guide Spirituel NASIBA</span>
+                      <span className="text-[10px] text-[#7D766C] font-body">Guide Spirituel NASSIB</span>
                     </div>
                   )}
 

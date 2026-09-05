@@ -174,7 +174,7 @@ export async function createProfileInSupabase(
 
     const payload: Partial<DbProfile> = {
       user_id: validUserId,
-      name: profile.name || 'Membre NASIBA',
+      name: profile.name || 'Membre NASSIB',
       age: validAge,
       profession: profile.profession || 'Non renseigné',
       city: profile.city || 'Niamey',
@@ -438,7 +438,7 @@ export async function fetchConversationsFromSupabase(currentUserProfileId?: stri
         candidateId: item.candidate_id,
         suitorId: item.suitor_id,
         participantId: partnerId,
-        participantName: partner.name || 'Membre NASIBA',
+        participantName: partner.name || 'Membre NASSIB',
         participantAvatar: partner.photo_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
         participantCity: partner.city || 'Niamey',
         lastMessage: item.last_message || 'Discussion ouverte',

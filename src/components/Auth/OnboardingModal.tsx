@@ -341,7 +341,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 </div>
 
                 <h3 className="font-serif-display text-2xl font-bold text-[#0F5C4D] mb-2">
-                  Finalisation de votre profil NASIBA
+                  Finalisation de votre profil NASSIB
                 </h3>
 
                 <p className="font-body text-xs sm:text-sm text-[#575147] max-w-md h-12 flex items-center justify-center leading-relaxed">
@@ -1105,7 +1105,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                           className="w-5 h-5 accent-[#0F5C4D] rounded-md cursor-pointer"
                         />
                         <label htmlFor="termsCheck" className="font-body text-xs font-bold text-[#0F5C4D] cursor-pointer">
-                          J'accepte la Charte Éthique &amp; d'Engagement NASIBA
+                          J'accepte la Charte Éthique &amp; d'Engagement NASSIB
                         </label>
                       </div>
                     </div>

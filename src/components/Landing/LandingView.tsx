@@ -33,7 +33,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
       a: "Oui. L'application est 100% gratuite pour tous. Toutes les fonctionnalités (recherche, profils, messagerie éthique, accompagnement IA) sont accessibles sans aucun frais, sans abonnement ni carte bancaire."
     },
     {
-      q: "Qui peut s'inscrire sur NASIBA ?",
+      q: "Qui peut s'inscrire sur NASSIB ?",
       a: "La plateforme s'adresse aux musulmans majeurs qui recherchent une relation sérieuse avec l'objectif sacré de construire un foyer et un mariage pérenne."
     },
     {
@@ -45,8 +45,8 @@ export const LandingView: React.FC<LandingViewProps> = ({
       a: "Oui. Vous pouvez découvrir des profils selon la localisation (Niamey, Maradi, Zinder, Tahoua, Agadez, Dosso, etc.) et des critères d'affinité spirituelle et culturelle."
     },
     {
-      q: "En quoi NASIBA se distingue d'une application de rencontres classique ?",
-      a: "NASIBA proscrit les dérives des applications de drague éphémère. Chaque compte est orienté vers le mariage halal, avec accompagnement bienveillant et supervision possible du tuteur légal (Wali)."
+      q: "En quoi NASSIB se distingue d'une application de rencontres classique ?",
+      a: "NASSIB proscrit les dérives des applications de drague éphémère. Chaque compte est orienté vers le mariage halal, avec accompagnement bienveillant et supervision possible du tuteur légal (Wali)."
     }
   ];
 
@@ -111,7 +111,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             transition={{ duration: 0.6, delay: 0.1 }}
             className="font-serif-display text-5xl sm:text-7xl md:text-8xl font-bold text-[#0F5C4D] leading-none tracking-tight mb-4"
           >
-            NASIBA
+            NASSIB
           </motion.h1>
 
           <motion.p
@@ -162,7 +162,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             transition={{ duration: 0.5, delay: 0.35 }}
             className="font-body text-base sm:text-lg font-medium text-[#211E1A] max-w-3xl mx-auto mb-8 leading-relaxed"
           >
-            <strong className="text-[#0F5C4D]">NASIBA</strong> vous permet de réaliser des rencontres <strong className="text-[#0F5C4D]">pudiques, confidentielles et orientées vers le mariage</strong>, au Niger et en Afrique de l'Ouest.
+            <strong className="text-[#0F5C4D]">NASSIB</strong> vous permet de réaliser des rencontres <strong className="text-[#0F5C4D]">pudiques, confidentielles et orientées vers le mariage</strong>, au Niger et en Afrique de l'Ouest.
           </motion.p>
 
           {/* Hero CTA */}
@@ -220,7 +220,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
               className="font-body text-base sm:text-lg text-[#575147] max-w-3xl mx-auto leading-relaxed mb-12"
             >
               Nous croyons qu'une rencontre sincère ne devrait pas dépendre d'un algorithme superficiel ou d'un défilement compulsif.
-              <strong className="text-[#211E1A]"> NASIBA</strong> met l'accent sur ce qui compte vraiment : <strong>vos valeurs religieuses, votre caractère et votre vision du foyer</strong>.
+              <strong className="text-[#211E1A]"> NASSIB</strong> met l'accent sur ce qui compte vraiment : <strong>vos valeurs religieuses, votre caractère et votre vision du foyer</strong>.
             </motion.p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -441,7 +441,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
               transition={{ duration: 0.5, delay: 0.25 }}
               className="font-body text-base sm:text-lg text-[#575147] max-w-2xl mx-auto leading-relaxed"
             >
-              <strong className="text-[#0F5C4D]">NASIBA</strong> est conçue pour les personnes qui abordent le mariage avec <strong>une intention claire, sincère et responsable</strong>.
+              <strong className="text-[#0F5C4D]">NASSIB</strong> est conçue pour les personnes qui abordent le mariage avec <strong>une intention claire, sincère et responsable</strong>.
             </motion.p>
           </div>
 
@@ -549,7 +549,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
               Questions fréquentes
             </h2>
             <p className="font-body text-sm sm:text-base text-[#575147]">
-              Tout ce que vous devez savoir avant d'entamer votre démarche sur NASIBA.
+              Tout ce que vous devez savoir avant d'entamer votre démarche sur NASSIB.
             </p>
           </motion.div>
 
@@ -681,14 +681,14 @@ export const LandingView: React.FC<LandingViewProps> = ({
               <li><span className="hover:text-[#0F5C4D] cursor-pointer">Confidentialité</span></li>
               <li><span className="hover:text-[#0F5C4D] cursor-pointer">Conditions d'utilisation</span></li>
               <li><span className="hover:text-[#0F5C4D] cursor-pointer">Mentions légales</span></li>
-              <li><span className="hover:text-[#0F5C4D] cursor-pointer">Charte Éthique NASIBA</span></li>
+              <li><span className="hover:text-[#0F5C4D] cursor-pointer">Charte Éthique NASSIB</span></li>
               <li><span className="hover:text-[#0F5C4D] cursor-pointer">Contact</span></li>
             </ul>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 border-t border-[#E8E3D7] flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-[#7D766C]">
-          <p>© 2026 — NASIBA. Tous droits réservés.</p>
+          <p>© 2026 — NASSIB. Tous droits réservés.</p>
           <p className="font-medium text-[#0F5C4D]">Des rencontres avec une intention sérieuse.</p>
         </div>
       </footer>
