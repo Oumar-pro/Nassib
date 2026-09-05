@@ -17,103 +17,85 @@ export interface AuthAccount {
 
 let currentAccount: AuthAccount | null = null;
 
-function accountFromAuthUser(authUser: any, profile?: any): AuthAccount {
+async function accountFromAuthUser(authUser: any): Promise<AuthAccount> {
   const metadata = authUser?.user_metadata || {};
+  let profile: any = null;
+
+  if (supabase) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('name,phone,gender,is_premium,is_verified_nni,is_wali_approved,photo_url')
+      .eq('user_id', authUser.id)
+      .maybeSingle();
+    profile = data;
+  }
+
   return {
     id: authUser.id,
     email: authUser.email || '',
-    name: profile?.name || metadata.name || 'Membre NASSIB',
+    name: profile?.name || metadata.name || '',
     role: metadata.role === 'wali' ? 'wali' : 'candidate',
-    phone: metadata.phone || '',
+    phone: profile?.phone || metadata.phone || '',
     gender: profile?.gender || metadata.gender,
     createdAt: authUser.created_at || new Date().toISOString(),
     isPremium: Boolean(profile?.is_premium),
-    planName: profile?.is_premium ? 'Accès Gratuit & Illimité' : 'Sadaq (Gratuit)',
+    planName: profile?.is_premium ? 'Premium' : 'Sadaq (Gratuit)',
     isVerifiedNNI: Boolean(profile?.is_verified_nni),
     isWaliApproved: Boolean(profile?.is_wali_approved),
     photoUrl: profile?.photo_url || undefined,
   };
 }
 
-export async function fetchProfileStatusFromDB(userId: string) {
-  if (!isSupabaseConfigured || !supabase || !userId) return null;
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('is_premium,is_verified_nni,is_wali_approved,gender,name,photo_url')
-      .eq('user_id', userId)
-      .maybeSingle();
-    if (error || !data) return null;
-    return {
-      isPremium: Boolean(data.is_premium),
-      isVerifiedNNI: Boolean(data.is_verified_nni),
-      isWaliApproved: Boolean(data.is_wali_approved),
-      planName: data.is_premium ? 'Accès Gratuit & Illimité' : 'Sadaq (Gratuit)',
-      gender: data.gender,
-      name: data.name,
-      photoUrl: data.photo_url || undefined,
-    };
-  } catch {
-    return null;
-  }
-}
-
-export async function registerAccount(data: {email:string;password?:string;name:string;role?:'candidate'|'wali';phone:string;gender?:'male'|'female'}): Promise<{user:AuthAccount|null;error:string|null}> {
+export async function registerAccount(data: {
+  email: string;
+  password?: string;
+  name: string;
+  role?: 'candidate' | 'wali';
+  phone: string;
+  gender?: 'male' | 'female';
+}): Promise<{ user: AuthAccount | null; error: string | null }> {
   const email = data.email.trim().toLowerCase();
   if (!email || !data.password) return { user: null, error: 'Veuillez saisir une adresse email et un mot de passe valides.' };
-  if (!isSupabaseConfigured || !supabase) return { user: null, error: "Le service d'authentification n'est pas configuré." };
+  if (!isSupabaseConfigured || !supabase) return { user: null, error: "Le service d'authentification n'est pas configuré. Vérifiez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sur Vercel." };
 
-  try {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, email, role: data.role || 'candidate', gender: data.gender }),
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || !json.success || !json.user) {
-      return { user: null, error: json.error || 'Impossible de créer le compte. Réessayez.' };
-    }
+  const { data: signUpData, error } = await supabase.auth.signUp({
+    email,
+    password: data.password,
+    options: {
+      data: {
+        name: data.name.trim(),
+        phone: data.phone.trim(),
+        role: data.role || 'candidate',
+        gender: data.gender,
+      },
+    },
+  });
 
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password: data.password });
-    if (signInError || !signInData.user) {
-      return { user: null, error: 'Compte créé mais impossible d’établir la session. Veuillez vous reconnecter.' };
-    }
+  if (error) return { user: null, error: error.message };
+  if (!signUpData.user) return { user: null, error: "Impossible de créer le compte." };
 
-    const profileStatus = await fetchProfileStatusFromDB(signInData.user.id);
-    currentAccount = accountFromAuthUser(signInData.user, profileStatus);
-    return { user: currentAccount, error: null };
-  } catch {
-    return { user: null, error: 'Serveur indisponible. Réessayez dans quelques instants.' };
+  if (!signUpData.session) {
+    return { user: null, error: 'Compte créé. Vérifiez votre adresse email avant de vous connecter.' };
   }
+
+  currentAccount = await accountFromAuthUser(signUpData.user);
+  return { user: currentAccount, error: null };
 }
 
-export async function loginAccount(data:{email:string;password?:string}):Promise<{user:AuthAccount|null;error:string|null}> {
+export async function loginAccount(data: { email: string; password?: string }): Promise<{ user: AuthAccount | null; error: string | null }> {
   const email = data.email.trim().toLowerCase();
   if (!email || !data.password) return { user: null, error: 'Veuillez saisir votre adresse email et mot de passe.' };
-  if (!isSupabaseConfigured || !supabase) return { user: null, error: "Le service d'authentification n'est pas configuré." };
+  if (!isSupabaseConfigured || !supabase) return { user: null, error: "Le service d'authentification n'est pas configuré. Vérifiez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sur Vercel." };
 
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: data.password }),
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || !json.success || !json.user) {
-      return { user: null, error: json.error || 'Adresse email ou mot de passe incorrect.' };
-    }
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: data.password,
+  });
 
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password: data.password });
-    if (signInError || !signInData.user) {
-      return { user: null, error: 'Connexion réussie côté serveur, mais la session n’a pas pu être établie.' };
-    }
+  if (error || !signInData.user) return { user: null, error: error?.message || 'Adresse email ou mot de passe incorrect.' };
 
-    const profileStatus = await fetchProfileStatusFromDB(signInData.user.id);
-    currentAccount = accountFromAuthUser(signInData.user, profileStatus);
-    return { user: currentAccount, error: null };
-  } catch {
-    return { user: null, error: 'Serveur indisponible. Réessayez dans quelques instants.' };
-  }
+  currentAccount = await accountFromAuthUser(signInData.user);
+  return { user: currentAccount, error: null };
 }
 
 export function getCurrentUserSession(): AuthAccount | null {
@@ -122,20 +104,13 @@ export function getCurrentUserSession(): AuthAccount | null {
 
 export async function restoreCurrentUserSession(): Promise<AuthAccount | null> {
   if (!isSupabaseConfigured || !supabase) return null;
-  try {
-    const { data } = await supabase.auth.getSession();
-    const authUser = data.session?.user;
-    if (!authUser) {
-      currentAccount = null;
-      return null;
-    }
-    const profileStatus = await fetchProfileStatusFromDB(authUser.id);
-    currentAccount = accountFromAuthUser(authUser, profileStatus);
-    return currentAccount;
-  } catch {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session?.user) {
     currentAccount = null;
     return null;
   }
+  currentAccount = await accountFromAuthUser(data.session.user);
+  return currentAccount;
 }
 
 export async function refreshCurrentSessionFromDB(): Promise<AuthAccount | null> {
@@ -148,14 +123,11 @@ export function saveCurrentUserSession(updates: Partial<AuthAccount>) {
   return currentAccount;
 }
 
-export function updateAccountPlanAndStatus(_identifier: string, _updates: Partial<Pick<AuthAccount,'isPremium'|'planName'|'isVerifiedNNI'|'isWaliApproved'>>) {
-  // Account status is authoritative in Supabase; this function is retained only for API compatibility.
+export function updateAccountPlanAndStatus(_identifier: string, _updates: Partial<Pick<AuthAccount, 'isPremium' | 'planName' | 'isVerifiedNNI' | 'isWaliApproved'>>) {
   return;
 }
 
 export async function logoutUserSession() {
   currentAccount = null;
-  if (isSupabaseConfigured && supabase) {
-    await supabase.auth.signOut();
-  }
+  if (supabase) await supabase.auth.signOut();
 }
