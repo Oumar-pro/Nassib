@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { TabType, Profile, Conversation, Message, User, UserWaliInfo } from './types';
 import {
+  supabase,
   isSupabaseConfigured,
   fetchMessagesFromSupabase,
   sendMessageToSupabase,
@@ -40,29 +41,11 @@ import { OnboardingPage } from './components/Auth/OnboardingPage';
 import { OnboardingData } from './components/Auth/OnboardingModal';
 
 const EMPTY_USER: User = {
-  id: '',
-  name: '',
-  email: '',
-  phone: '',
-  role: 'candidate',
-  gender: undefined,
-  isVerifiedNNI: false,
-  isWaliApproved: false,
-  isPremium: false,
-  photoBlurringActive: true,
-  photoUrl: '',
-  planName: 'Sadaq (Gratuit)',
+  id: '', name: '', email: '', phone: '', role: 'candidate', gender: undefined,
+  isVerifiedNNI: false, isWaliApproved: false, isPremium: false,
+  photoBlurringActive: true, photoUrl: '', planName: 'Sadaq (Gratuit)',
   waliInfo: { name: '', relation: '', phone: '' },
-  stats: {
-    profileViews: 0,
-    profileConsultations: 0,
-    photoRequests: 0,
-    photoRequestsApproved: 0,
-    matchesCount: 0,
-    favoritesCount: 0,
-    compatibilityRateAvg: 0,
-    weeklyGrowthPercentage: 0,
-  },
+  stats: { profileViews: 0, profileConsultations: 0, photoRequests: 0, photoRequestsApproved: 0, matchesCount: 0, favoritesCount: 0, compatibilityRateAvg: 0, weeklyGrowthPercentage: 0 },
 };
 
 function accountToUser(account: AuthAccount, profile?: Profile | null): User {
@@ -80,10 +63,7 @@ function accountToUser(account: AuthAccount, profile?: Profile | null): User {
     photoUrl: profile?.photoUrl || account.photoUrl || '',
     photos: profile?.photos || [],
     planName: account.planName || 'Sadaq (Gratuit)',
-    stats: {
-      ...EMPTY_USER.stats,
-      favoritesCount: profile?.likesCount ?? 0,
-    },
+    stats: { ...EMPTY_USER.stats, favoritesCount: profile?.likesCount ?? 0 },
   };
 }
 
@@ -109,10 +89,7 @@ export default function App() {
   const loadDatabaseState = useCallback(async (userId: string) => {
     if (!userId || !isSupabaseConfigured) return;
     const [myProfile, dbProfiles, dbFavorites, dbConversations] = await Promise.all([
-      getMyProfile(userId),
-      getProfiles(userId),
-      getFavorites(userId),
-      fetchConversationsFromSupabase(userId),
+      getMyProfile(userId), getProfiles(userId), getFavorites(userId), fetchConversationsFromSupabase(userId),
     ]);
     setProfiles(dbProfiles);
     setFavoriteProfileIds(dbFavorites);
@@ -125,12 +102,7 @@ export default function App() {
   const syncAuth = useCallback(async () => {
     const account = await restoreCurrentUserSession();
     if (!account) {
-      setUser(EMPTY_USER);
-      setProfiles([]);
-      setConversations([]);
-      setMessages([]);
-      setFavoriteProfileIds([]);
-      return;
+      setUser(EMPTY_USER); setProfiles([]); setConversations([]); setMessages([]); setFavoriteProfileIds([]); setActiveConvId(null); return;
     }
     const myProfile = await getMyProfile(account.id);
     setUser(accountToUser(account, myProfile));
@@ -140,9 +112,7 @@ export default function App() {
   useEffect(() => {
     syncAuth();
     if (!supabase) return;
-    const { data } = supabase.auth.onAuthStateChange(() => {
-      window.setTimeout(() => syncAuth(), 0);
-    });
+    const { data } = supabase.auth.onAuthStateChange(() => { window.setTimeout(() => syncAuth(), 0); });
     return () => data.subscription.unsubscribe();
   }, [syncAuth]);
 
@@ -166,19 +136,11 @@ export default function App() {
   }, [user.id, activeConvId, loadDatabaseState]);
 
   useEffect(() => {
-    if (!activeConvId || !user.id) {
-      setMessages([]);
-      return;
-    }
-    fetchMessagesFromSupabase(activeConvId).then((remote) => {
-      setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.id })));
-    });
+    if (!activeConvId || !user.id) { setMessages([]); return; }
+    fetchMessagesFromSupabase(activeConvId).then((remote) => setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.id }))));
   }, [activeConvId, user.id]);
 
-  const handleOpenAuth = (mode: 'login' | 'register') => {
-    setAuthMode(mode);
-    setCurrentTab('auth');
-  };
+  const handleOpenAuth = (mode: 'login' | 'register') => { setAuthMode(mode); setCurrentTab('auth'); };
 
   const handleToggleFavorite = async (profileId: string) => {
     if (!user.id) return showToast('Veuillez vous connecter pour enregistrer vos favoris.');
@@ -198,10 +160,7 @@ export default function App() {
     const convId = targetConvId || activeConvId;
     if (!convId || !user.id) return;
     const result = await sendMessageToSupabase(convId, user.id, user.name, user.photoUrl, text);
-    if (!result) {
-      showToast('Impossible d’envoyer le message. Réessayez.');
-      return;
-    }
+    if (!result) return showToast('Impossible d’envoyer le message. Réessayez.');
     const remote = await fetchMessagesFromSupabase(convId);
     setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.id })));
   };
@@ -211,9 +170,7 @@ export default function App() {
     const conversationId = await createOrGetConversationInSupabase(user.id, profile.id);
     if (!conversationId) return showToast('Impossible d’ouvrir cette conversation.');
     await loadDatabaseState(user.id);
-    setActiveConvId(conversationId);
-    setSelectedProfile(null);
-    setCurrentTab('messages');
+    setActiveConvId(conversationId); setSelectedProfile(null); setCurrentTab('messages');
   };
 
   const handleReportProfile = async (targetProfile: Profile, reason: string, description?: string) => {
@@ -225,15 +182,10 @@ export default function App() {
   const handleBlockProfile = async (targetProfile: Profile, reason?: string) => {
     if (!user.id) return;
     const ok = await blockUserInSupabase(user.id, targetProfile.id, reason);
-    if (ok !== false) {
-      setProfiles((prev) => prev.filter((p) => p.id !== targetProfile.id));
-      showToast(`${targetProfile.name} a été bloqué(e).`);
-    }
+    if (ok !== false) { setProfiles((prev) => prev.filter((p) => p.id !== targetProfile.id)); showToast(`${targetProfile.name} a été bloqué(e).`); }
   };
 
-  const handleRequestPhotoAccess = (_profile: Profile) => {
-    showToast('La demande d’accès sera enregistrée dans votre compte.');
-  };
+  const handleRequestPhotoAccess = (_profile: Profile) => showToast('La demande d’accès sera enregistrée dans votre compte.');
 
   const handleAuthSuccess = async (userAcc: AuthAccount, isRegister: boolean) => {
     const myProfile = await getMyProfile(userAcc.id);
@@ -241,24 +193,13 @@ export default function App() {
     await loadDatabaseState(userAcc.id);
     if (isRegister) {
       setRegisteredUserData({ id: userAcc.id, email: userAcc.email, name: userAcc.name, role: userAcc.role, phone: userAcc.phone || '' });
-      setCurrentTab('onboarding');
-      showToast('Compte créé. Complétez maintenant votre profil.');
-    } else {
-      setCurrentTab('dashboard');
-      showToast(`Ravi de vous revoir sur NASSIB, ${userAcc.name} !`);
-    }
+      setCurrentTab('onboarding'); showToast('Compte créé. Complétez maintenant votre profil.');
+    } else { setCurrentTab('dashboard'); showToast(`Ravi de vous revoir sur NASSIB, ${userAcc.name} !`); }
   };
 
   const handleLogout = async () => {
     await logoutUserSession();
-    setUser(EMPTY_USER);
-    setProfiles([]);
-    setConversations([]);
-    setMessages([]);
-    setFavoriteProfileIds([]);
-    setActiveConvId(null);
-    setMobileMenuOpen(false);
-    setCurrentTab('landing');
+    setUser(EMPTY_USER); setProfiles([]); setConversations([]); setMessages([]); setFavoriteProfileIds([]); setActiveConvId(null); setMobileMenuOpen(false); setCurrentTab('landing');
   };
 
   const handleOnboardingComplete = async (data: OnboardingData) => {
@@ -267,35 +208,19 @@ export default function App() {
     const photos = data.photos || [];
     const hasWaliInfo = Boolean(data.waliName?.trim() && data.waliPhone?.trim());
     const profile: Partial<Profile> = {
-      name: registeredUserData.name || user.name,
-      age: data.age,
-      profession: data.profession,
+      name: registeredUserData.name || user.name, age: data.age, profession: data.profession,
       city: data.neighborhood ? `${data.region} (${data.neighborhood})` : data.region,
-      maritalStatus: data.maritalStatus as any,
-      religion: data.religion,
-      education: data.education as any,
-      isVerifiedNNI: false,
-      isWaliApproved: hasWaliInfo,
-      isPremium: false,
-      photoUrl: photos[0] || '',
-      photoPrivate: false,
-      bio: `Membre inscrit. Priorité : ${data.familyImportance || 'Famille'}.`,
-      gender: data.gender,
-      photos,
-      personality: data.personalityTrait,
-      familyImportance: data.familyImportance,
+      maritalStatus: data.maritalStatus as any, religion: data.religion, education: data.education as any,
+      isVerifiedNNI: false, isWaliApproved: hasWaliInfo, isPremium: false, photoUrl: photos[0] || '', photoPrivate: false,
+      bio: `Membre inscrit. Priorité : ${data.familyImportance || 'Famille'}.`, gender: data.gender, photos,
+      personality: data.personalityTrait, familyImportance: data.familyImportance,
       presentation: data.marriageHorizon ? `Horizon mariage : ${data.marriageHorizon}.` : '',
     };
     const saved = await saveMyProfile(userId, profile, data);
-    if (!saved) {
-      showToast('Impossible d’enregistrer le profil. Vos données n’ont pas été enregistrées.');
-      return;
-    }
+    if (!saved) return showToast('Impossible d’enregistrer le profil. Vos données n’ont pas été enregistrées.');
     const account = getCurrentUserSession();
     if (account) setUser(accountToUser(account, saved));
-    await loadDatabaseState(userId);
-    setCurrentTab('browse');
-    showToast('Profil enregistré dans la base de données NASSIB.');
+    await loadDatabaseState(userId); setCurrentTab('browse'); showToast('Profil enregistré dans la base de données NASSIB.');
   };
 
   const handleUpdateUser = async (updated: Partial<User>) => {
@@ -306,24 +231,15 @@ export default function App() {
     if (!saved) return showToast('Impossible d’enregistrer les modifications.');
     const account = getCurrentUserSession();
     if (account) setUser(accountToUser(account, saved));
-    await loadDatabaseState(user.id);
-    showToast('Modifications enregistrées.');
+    await loadDatabaseState(user.id); showToast('Modifications enregistrées.');
   };
 
   const handleUpdateWaliInfo = async (waliInfo: UserWaliInfo) => {
     if (!user.id) return;
     const existing = await getMyProfile(user.id);
     if (!existing) return;
-    const saved = await saveMyProfile(user.id, { ...existing, isWaliApproved: true }, {
-      waliName: waliInfo.name,
-      waliRelation: waliInfo.relation,
-      waliPhone: waliInfo.phone,
-    });
-    if (saved) {
-      setUser((prev) => ({ ...prev, isWaliApproved: true, waliInfo }));
-      await loadDatabaseState(user.id);
-      showToast('Informations du Wali enregistrées.');
-    }
+    const saved = await saveMyProfile(user.id, { ...existing, isWaliApproved: true }, { waliName: waliInfo.name, waliRelation: waliInfo.relation, waliPhone: waliInfo.phone });
+    if (saved) { setUser((prev) => ({ ...prev, isWaliApproved: true, waliInfo })); await loadDatabaseState(user.id); showToast('Informations du Wali enregistrées.'); }
   };
 
   const handleUploadNNI = async () => {
@@ -331,60 +247,26 @@ export default function App() {
     const existing = await getMyProfile(user.id);
     if (!existing) return;
     const saved = await saveMyProfile(user.id, { ...existing, isVerifiedNNI: true });
-    if (saved) {
-      setUser((prev) => ({ ...prev, isVerifiedNNI: true }));
-      await loadDatabaseState(user.id);
-      showToast('Vérification NNI enregistrée.');
-    }
+    if (saved) { setUser((prev) => ({ ...prev, isVerifiedNNI: true })); await loadDatabaseState(user.id); showToast('Vérification NNI enregistrée.'); }
   };
 
   return (
     <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] flex flex-col font-body">
-      {toastMessage && (
-        <div className="fixed top-20 right-4 left-4 sm:left-auto sm:right-6 z-50 bg-[#0F5C4D] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn border border-[#8BAE9F]/40">
-          <span className="material-symbols-outlined text-[#C9A45C]">check_circle</span>
-          <span className="font-display text-xs sm:text-sm font-semibold">{toastMessage}</span>
-        </div>
-      )}
-
-      {currentTab === 'auth' ? (
-        <AuthPage initialMode={authMode} onBack={() => setCurrentTab('landing')} onSuccess={handleAuthSuccess} />
-      ) : currentTab === 'onboarding' ? (
-        <OnboardingPage userName={registeredUserData.name || user.name} userRole={registeredUserData.role || user.role} userPhone={registeredUserData.phone || user.phone} onComplete={handleOnboardingComplete} onCancel={() => setCurrentTab('dashboard')} />
-      ) : currentTab === 'landing' ? (
-        <LandingView onEnterApp={() => setCurrentTab('dashboard')} onOpenAuth={handleOpenAuth} onNavigateTab={(tab) => setCurrentTab(tab)} />
-      ) : (
-        <>
-          <Sidebar currentTab={currentTab} onSelectTab={setCurrentTab} user={user} onOpenAuth={handleOpenAuth} onLogout={handleLogout} unreadCount={0} />
-          <MobileHeader user={user} onSelectTab={setCurrentTab} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} />
-          {mobileMenuOpen && (
-            <div className="md:hidden fixed inset-0 z-50 bg-[#211E1A]/60 backdrop-blur-sm flex justify-end">
-              <div className="w-4/5 max-w-xs bg-[#FAF8F2] h-full p-6 flex flex-col justify-between shadow-2xl animate-fadeIn border-l border-[#E8E3D7]">
-                <div>
-                  <div className="flex justify-between items-center pb-6 border-b border-[#E8E3D7] mb-6"><NasibaLogo size="sm" /><button onClick={() => setMobileMenuOpen(false)} className="p-1 text-[#7D766C]"><span className="material-symbols-outlined">close</span></button></div>
-                  <nav className="space-y-1.5">
-                    {[['dashboard','Tableau de bord','dashboard'],['browse','Parcourir','search'],['imam','Imam Oumar IA','auto_awesome'],['messages','Messages','chat_bubble'],['verification','Vérification Wali','verified_user'],['settings','Paramètres','settings']].map(([id,label,icon]) => (
-                      <button key={id} onClick={() => { setCurrentTab(id as TabType); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-display text-sm font-semibold text-left ${currentTab === id ? 'bg-[#8BAE9F]/20 text-[#0F5C4D]' : 'text-[#575147] hover:bg-[#8BAE9F]/10'}`}><span className="material-symbols-outlined text-lg">{icon}</span>{label}</button>
-                    ))}
-                  </nav>
-                </div>
-                <button onClick={handleLogout} className="w-full border border-[#E8E3D7] bg-white text-[#575147] font-display font-semibold py-2.5 rounded-xl text-xs">Se déconnecter</button>
-              </div>
-            </div>
-          )}
-
-          <main className="flex-1 md:ml-64 pt-16 md:pt-10 px-3.5 sm:px-8 pb-28 md:pb-12 min-h-screen">
-            {currentTab === 'dashboard' && <DashboardView user={user} recommendedProfiles={profiles.filter((p) => p.photoUrl && p.userId !== user.id && p.gender !== user.gender)} favoriteProfiles={favoriteProfiles} favoriteProfileIds={favoriteProfileIds} fansCount={userFansCount} onSelectProfile={setSelectedProfile} onNavigateToTab={setCurrentTab} onTogglePhotoBlurring={() => setUser((u) => ({ ...u, photoBlurringActive: !u.photoBlurringActive }))} onToggleFavorite={handleToggleFavorite} />}
-            {currentTab === 'browse' && <BrowseView user={user} profiles={profiles} onSelectProfile={setSelectedProfile} onRequestAccess={handleRequestPhotoAccess} favoriteProfileIds={favoriteProfileIds} onToggleFavorite={handleToggleFavorite} />}
-            {currentTab === 'imam' && <ImamChatView user={user} />}
-            {currentTab === 'messages' && <MessagesView user={user} conversations={conversations} activeMessages={messages} activeConvId={activeConvId} onSelectConversation={setActiveConvId} onSendMessage={handleSendMessage} />}
-            {currentTab === 'verification' && <VerificationView user={user} onUpdateWaliInfo={handleUpdateWaliInfo} onUploadNNI={handleUploadNNI} />}
-            {currentTab === 'settings' && <SettingsView user={user} onUpdateUser={handleUpdateUser} onNavigateTab={setCurrentTab} onLogout={handleLogout} />}
-          </main>
-          <MobileBottomNav currentTab={currentTab} onSelectTab={setCurrentTab} unreadCount={0} />
-        </>
-      )}
-
+      {toastMessage && <div className="fixed top-20 right-4 left-4 sm:left-auto sm:right-6 z-50 bg-[#0F5C4D] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn border border-[#8BAE9F]/40"><span className="material-symbols-outlined text-[#C9A45C]">check_circle</span><span className="font-display text-xs sm:text-sm font-semibold">{toastMessage}</span></div>}
+      {currentTab === 'auth' ? <AuthPage initialMode={authMode} onBack={() => setCurrentTab('landing')} onSuccess={handleAuthSuccess} /> : currentTab === 'onboarding' ? <OnboardingPage userName={registeredUserData.name || user.name} userRole={registeredUserData.role || user.role} userPhone={registeredUserData.phone || user.phone} onComplete={handleOnboardingComplete} onCancel={() => setCurrentTab('dashboard')} /> : currentTab === 'landing' ? <LandingView onEnterApp={() => setCurrentTab('dashboard')} onOpenAuth={handleOpenAuth} onNavigateTab={setCurrentTab} /> : <>
+        <Sidebar currentTab={currentTab} onSelectTab={setCurrentTab} user={user} onOpenAuth={handleOpenAuth} onLogout={handleLogout} unreadCount={0} />
+        <MobileHeader user={user} onSelectTab={setCurrentTab} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} />
+        {mobileMenuOpen && <div className="md:hidden fixed inset-0 z-50 bg-[#211E1A]/60 backdrop-blur-sm flex justify-end"><div className="w-4/5 max-w-xs bg-[#FAF8F2] h-full p-6 flex flex-col justify-between shadow-2xl"><div><div className="flex justify-between items-center pb-6 border-b border-[#E8E3D7] mb-6"><NasibaLogo size="sm" /><button onClick={() => setMobileMenuOpen(false)} className="p-1 text-[#7D766C]"><span className="material-symbols-outlined">close</span></button></div><nav className="space-y-1.5">{[['dashboard','Tableau de bord','dashboard'],['browse','Parcourir','search'],['imam','Imam Oumar IA','auto_awesome'],['messages','Messages','chat_bubble'],['verification','Vérification Wali','verified_user'],['settings','Paramètres','settings']].map(([id,label,icon]) => <button key={id} onClick={() => { setCurrentTab(id as TabType); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-display text-sm font-semibold text-left ${currentTab === id ? 'bg-[#8BAE9F]/20 text-[#0F5C4D]' : 'text-[#575147] hover:bg-[#8BAE9F]/10'}`}><span className="material-symbols-outlined text-lg">{icon}</span>{label}</button>)}</nav></div><button onClick={handleLogout} className="w-full border border-[#E8E3D7] bg-white text-[#575147] font-display font-semibold py-2.5 rounded-xl text-xs">Se déconnecter</button></div></div>}
+        <main className="flex-1 md:ml-64 pt-16 md:pt-10 px-3.5 sm:px-8 pb-28 md:pb-12 min-h-screen">
+          {currentTab === 'dashboard' && <DashboardView user={user} recommendedProfiles={profiles.filter((p) => p.photoUrl && p.userId !== user.id && p.gender !== user.gender)} favoriteProfiles={favoriteProfiles} favoriteProfileIds={favoriteProfileIds} fansCount={userFansCount} onSelectProfile={setSelectedProfile} onNavigateToTab={setCurrentTab} onTogglePhotoBlurring={() => setUser((u) => ({ ...u, photoBlurringActive: !u.photoBlurringActive }))} onToggleFavorite={handleToggleFavorite} />}
+          {currentTab === 'browse' && <BrowseView user={user} profiles={profiles} onSelectProfile={setSelectedProfile} onRequestAccess={handleRequestPhotoAccess} favoriteProfileIds={favoriteProfileIds} onToggleFavorite={handleToggleFavorite} />}
+          {currentTab === 'imam' && <ImamChatView user={user} />}
+          {currentTab === 'messages' && <MessagesView user={user} conversations={conversations} activeMessages={messages} activeConvId={activeConvId} onSelectConversation={setActiveConvId} onSendMessage={handleSendMessage} />}
+          {currentTab === 'verification' && <VerificationView user={user} onUpdateWaliInfo={handleUpdateWaliInfo} onUploadNNI={handleUploadNNI} />}
+          {currentTab === 'settings' && <SettingsView user={user} onUpdateUser={handleUpdateUser} onNavigateTab={setCurrentTab} onLogout={handleLogout} />}
+        </main>
+        <MobileBottomNav currentTab={currentTab} onSelectTab={setCurrentTab} unreadCount={0} />
+      </>}
       <ProfileDetailModal profile={selectedProfile} currentUser={user} onClose={() => setSelectedProfile(null)} onStartMessage={handleStartMessageWithProfile} onRequestPhotoAccess={handleRequestPhotoAccess} isFavorited={selectedProfile ? favoriteProfileIds.includes(selectedProfile.id) : false} onToggleFavorite={handleToggleFavorite} onReport={handleReportProfile} onBlock={handleBlockProfile} />
     </div>
   );
