@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="85 30 316 316" width="512" height="512" fill="none">
+  <defs>
+    <!-- Deep Emerald Green Gradient for Male Figure -->
+    <linearGradient id="nassibMaleBody" x1="120" y1="100" x2="290" y2="330" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#042C24"/>
+      <stop offset="30%" stop-color="#073B30"/>
+      <stop offset="65%" stop-color="#0B4E40"/>
+      <stop offset="100%" stop-color="#062E25"/>
+    </linearGradient>
+
+    <!-- Male Arm Inner Highlight / Specular Silk Sheen -->
+    <linearGradient id="nassibMaleSheen" x1="184" y1="102" x2="235" y2="210" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#84C6B8" stop-opacity="0.95"/>
+      <stop offset="20%" stop-color="#52A595" stop-opacity="0.75"/>
+      <stop offset="55%" stop-color="#216D60" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#0B4E40" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Male Head Radial Gradient -->
+    <radialGradient id="nassibMaleHead" cx="38%" cy="34%" r="62%">
+      <stop offset="0%" stop-color="#115E4F"/>
+      <stop offset="50%" stop-color="#083D32"/>
+      <stop offset="100%" stop-color="#03201A"/>
+    </radialGradient>
+
+    <!-- Bronze Champagne Gold Gradient for Female Figure -->
+    <linearGradient id="nassibFemaleBody" x1="275" y1="135" x2="375" y2="335" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E5C38D"/>
+      <stop offset="25%" stop-color="#CF9F63"/>
+      <stop offset="55%" stop-color="#B78448"/>
+      <stop offset="85%" stop-color="#8C5A28"/>
+      <stop offset="100%" stop-color="#6B4219"/>
+    </linearGradient>
+
+    <!-- Female Head Radial Gradient -->
+    <radialGradient id="nassibFemaleHead" cx="38%" cy="34%" r="62%">
+      <stop offset="0%" stop-color="#E8C692"/>
+      <stop offset="45%" stop-color="#C79557"/>
+      <stop offset="85%" stop-color="#96632D"/>
+      <stop offset="100%" stop-color="#6F451B"/>
+    </radialGradient>
+
+    <!-- Center Star Blessing Gradient -->
+    <linearGradient id="nassibStar" x1="220" y1="245" x2="270" y2="315" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E5C38D"/>
+      <stop offset="45%" stop-color="#C49356"/>
+      <stop offset="100%" stop-color="#8A5826"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="85" y="30" width="316" height="316" rx="64" fill="#FAF8F2"/>
+
+  <!-- ==================== LEFT FIGURE (MALE - DEEP EMERALD) ==================== -->
+  <!-- Male Head -->
+  <circle cx="191" cy="69" r="26" fill="url(#nassibMaleHead)" />
+
+  <!-- Male Left Torso / Column (Left Stem of 'N') -->
+  <path
+    d="M 183.5 102
+       C 172 103, 140 121, 124 154
+       C 113 178, 113 214, 113 250
+       L 113 327
+       C 113 333, 116 335, 120 332
+       C 136 322, 168 288, 183.5 268
+       L 183.5 102
+       Z"
+    fill="url(#nassibMaleBody)"
+  />
+
+  <!-- Male Diagonal Arm (Diagonal of 'N') -->
+  <path
+    d="M 183.5 102
+       C 185 130, 205 200, 302 280
+       C 303 277, 303 268, 296 258
+       C 246 195, 204 142, 183.5 102
+       Z"
+    fill="url(#nassibMaleBody)"
+  />
+
+  <!-- High-Precision Sheen / Highlight on the Arm Crest -->
+  <path
+    d="M 183.5 102
+       C 184.5 128, 195 175, 226 215
+       C 216 195, 198 145, 186.5 104
+       Z"
+    fill="url(#nassibMaleSheen)"
+  />
+
+  <!-- ==================== RIGHT FIGURE (FEMALE - WARM BRONZE GOLD) ==================== -->
+  <!-- Female Head -->
+  <circle cx="316.5" cy="103" r="23" fill="url(#nassibFemaleHead)" />
+
+  <!-- Female Body (Right Stem of 'N') -->
+  <path
+    d="M 316.5 133
+       C 328 133, 360 155, 373 185
+       L 373 328
+       C 373 333, 370 335, 366 332
+       C 350 322, 324 290, 316.5 268
+       L 316.5 212
+       C 313 185, 298 168, 281 174
+       C 277 175, 274 170, 276 166
+       C 286 145, 305 133, 316.5 133
+       Z"
+    fill="url(#nassibFemaleBody)"
+  />
+
+  <!-- ==================== CENTRAL STAR (BLESSING SPARKLE) ==================== -->
+  <path
+    d="M 245 248
+       C 245 265, 233 281, 217 281
+       C 233 281, 245 297, 245 314
+       C 245 297, 257 281, 273 281
+       C 257 281, 245 265, 245 248
+       Z"
+    fill="url(#nassibStar)"
+  />
+</svg>
