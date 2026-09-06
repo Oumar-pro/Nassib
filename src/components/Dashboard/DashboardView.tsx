@@ -292,11 +292,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 className="rounded-2xl p-3 border border-[#E8E3D7] bg-[#FAF8F2] flex items-center gap-3 hover:border-[#8BAE9F] transition-all cursor-pointer relative group"
               >
                 <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-slate-100 relative">
-                  <img
-                    src={profile.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'}
-                    alt={profile.name}
-                    className="w-full h-full object-cover"
-                  />
+                  {profile.photoUrl ? (
+                    <img
+                      src={profile.photoUrl}
+                      alt={profile.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF8F2] text-[#0F5C4D]">
+                      <span className="material-symbols-outlined text-2xl text-[#8BAE9F]">person</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-display text-sm font-bold text-[#211E1A] truncate">

@@ -62,7 +62,7 @@ export async function fetchConversationsFromSupabase(currentUserProfileId?: stri
         suitorId: item.suitor_id,
         participantId: partnerId,
         participantName: partner.name || 'Membre NASSIB',
-        participantAvatar: partner.photo_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+        participantAvatar: partner.photo_url || '',
         participantCity: partner.city || 'Niamey',
         lastMessage: item.last_message || 'Discussion ouverte',
         lastMessageTime: item.last_message_time
@@ -92,16 +92,26 @@ export async function createOrGetConversationInSupabase(
 
   try {
     // Check if conversation already exists in either direction
-    const { data: existing } = await supabase
+    const { data: existing1 } = await supabase
       .from('conversations')
       .select('id')
-      .or(
-        `and(candidate_id.eq.${candidateProfileId},suitor_id.eq.${suitorProfileId}),and(candidate_id.eq.${suitorProfileId},suitor_id.eq.${candidateProfileId})`
-      )
+      .eq('candidate_id', candidateProfileId)
+      .eq('suitor_id', suitorProfileId)
       .maybeSingle();
 
-    if (existing?.id) {
-      return existing.id;
+    if (existing1?.id) {
+      return existing1.id;
+    }
+
+    const { data: existing2 } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('candidate_id', suitorProfileId)
+      .eq('suitor_id', candidateProfileId)
+      .maybeSingle();
+
+    if (existing2?.id) {
+      return existing2.id;
     }
 
     // Insert new conversation
@@ -121,7 +131,15 @@ export async function createOrGetConversationInSupabase(
 
     if (error || !newConv) {
       console.warn('Notice creating conversation in Supabase:', error?.message || error);
-      return null;
+      // Double check in case of concurrent creation
+      const { data: retryCheck } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(
+          `and(candidate_id.eq.${candidateProfileId},suitor_id.eq.${suitorProfileId}),and(candidate_id.eq.${suitorProfileId},suitor_id.eq.${candidateProfileId})`
+        )
+        .maybeSingle();
+      return retryCheck?.id || null;
     }
 
     return newConv.id;

@@ -96,10 +96,9 @@ export default function App() {
     setProfiles(dbProfiles);
     setFavoriteProfileIds(dbFavorites);
     setConversations(dbConversations);
-    if (dbConversations.length && !activeConvId) setActiveConvId(dbConversations[0].id);
     const account = getCurrentUserSession();
     if (account) setUser(accountToUser(account, myProfile));
-  }, [activeConvId]);
+  }, []);
 
   const syncAuth = useCallback(async () => {
     const account = await restoreCurrentUserSession();
@@ -146,12 +145,25 @@ export default function App() {
 
   const handleToggleFavorite = async (profileId: string) => {
     if (!user.id) return showToast('Veuillez vous connecter pour enregistrer vos favoris.');
+    const isCurrentlyFavorited = favoriteProfileIds.includes(profileId);
+    // Optimistic UI state update
+    setFavoriteProfileIds((prev) =>
+      isCurrentlyFavorited ? prev.filter((id) => id !== profileId) : [...prev, profileId]
+    );
     const success = await toggleFavorite(user.id, profileId);
-    if (!success) return showToast('Impossible de modifier vos favoris. Réessayez.');
-    const favorites = await getFavorites(user.id);
-    setFavoriteProfileIds(favorites);
+    if (!success) {
+      // Revert if request failed
+      setFavoriteProfileIds((prev) =>
+        isCurrentlyFavorited ? [...prev, profileId] : prev.filter((id) => id !== profileId)
+      );
+      return showToast('Impossible de modifier vos favoris. Réessayez.');
+    }
     const profile = profiles.find((p) => p.id === profileId);
-    showToast(favorites.includes(profileId) ? `❤️ ${profile?.name || 'Profil'} ajouté(e) à vos favoris.` : `${profile?.name || 'Profil'} retiré(e) de vos favoris.`);
+    showToast(
+      !isCurrentlyFavorited
+        ? `❤️ ${profile?.name || 'Profil'} ajouté(e) à vos favoris.`
+        : `${profile?.name || 'Profil'} retiré(e) de vos favoris.`
+    );
   };
 
   const favoriteProfiles = profiles.filter((p) => favoriteProfileIds.includes(p.id));
@@ -168,11 +180,19 @@ export default function App() {
   };
 
   const handleStartMessageWithProfile = async (profile: Profile) => {
-    if (!user.profileId) return showToast('Veuillez vous connecter pour contacter ce profil.');
-    const conversationId = await createOrGetConversationInSupabase(user.profileId, profile.id);
+    let myProfileId = user.profileId;
+    if (!myProfileId && user.id) {
+      const myProf = profiles.find((p) => p.userId === user.id) || await getMyProfile(user.id);
+      if (myProf) myProfileId = myProf.id;
+    }
+    if (!myProfileId) return showToast('Veuillez vous connecter pour contacter ce profil.');
+    if (myProfileId === profile.id) return showToast('Vous ne pouvez pas démarrer une discussion avec votre propre profil.');
+    const conversationId = await createOrGetConversationInSupabase(myProfileId, profile.id);
     if (!conversationId) return showToast('Impossible d’ouvrir cette conversation.');
     await loadDatabaseState(user.id);
-    setActiveConvId(conversationId); setSelectedProfile(null); setCurrentTab('messages');
+    setActiveConvId(conversationId);
+    setSelectedProfile(null);
+    setCurrentTab('messages');
   };
 
   const handleReportProfile = async (targetProfile: Profile, reason: string, description?: string) => {
@@ -210,19 +230,41 @@ export default function App() {
     const photos = data.photos || [];
     const hasWaliInfo = Boolean(data.waliName?.trim() && data.waliPhone?.trim());
     const profile: Partial<Profile> = {
-      name: registeredUserData.name || user.name, age: data.age, profession: data.profession,
+      name: registeredUserData.name || user.name,
+      age: data.age,
+      profession: data.profession,
       city: data.neighborhood ? `${data.region} (${data.neighborhood})` : data.region,
-      maritalStatus: data.maritalStatus as any, religion: data.religion, education: data.education as any,
-      isVerifiedNNI: false, isWaliApproved: hasWaliInfo, isPremium: false, photoUrl: photos[0] || '', photoPrivate: false,
-      bio: `Membre inscrit. Priorité : ${data.familyImportance || 'Famille'}.`, gender: data.gender, photos,
-      personality: data.personalityTrait, familyImportance: data.familyImportance,
-      presentation: data.marriageHorizon ? `Horizon mariage : ${data.marriageHorizon}.` : '',
+      maritalStatus: data.maritalStatus as any,
+      religion: data.religion || 'Sunnite',
+      education: data.education as any,
+      isVerifiedNNI: false,
+      isWaliApproved: hasWaliInfo,
+      isPremium: false,
+      photoUrl: photos[0] || '',
+      photoPrivate: false,
+      bio: data.bio || (data.marriageHorizon ? `Horizon mariage : ${data.marriageHorizon}. Priorité : ${data.familyImportance || 'Famille'}.` : `Membre inscrit. Priorité : ${data.familyImportance || 'Famille'}.`),
+      gender: data.gender,
+      photos,
+      personality: data.personalityTrait,
+      familyImportance: data.familyImportance,
+      presentation: data.partnerCriteria || (data.marriageHorizon ? `Horizon mariage : ${data.marriageHorizon}.` : ''),
+      height: data.height,
+      weight: data.weight,
+      ethnicity: data.ethnicity,
+      originCity: data.originCity,
+      hijabStatus: data.hijabStatus,
+      religiousPracticeDetails: data.religiousPracticeDetails || data.religiousPractice,
+      values: data.values,
+      partnerCriteria: data.partnerCriteria,
+      dealBreakers: data.dealBreakers,
     };
     const saved = await saveMyProfile(userId, profile, data);
     if (!saved) return showToast('Impossible d’enregistrer le profil. Vos données n’ont pas été enregistrées.');
     const account = getCurrentUserSession();
     if (account) setUser(accountToUser(account, saved));
-    await loadDatabaseState(userId); setCurrentTab('browse'); showToast('Profil enregistré dans la base de données NASSIB.');
+    await loadDatabaseState(userId);
+    setCurrentTab('browse');
+    showToast('Profil enregistré dans la base de données NASSIB.');
   };
 
   const handleUpdateUser = async (updated: Partial<User>) => {
@@ -252,20 +294,44 @@ export default function App() {
     if (saved) { setUser((prev) => ({ ...prev, isVerifiedNNI: true })); await loadDatabaseState(user.id); showToast('Vérification NNI enregistrée.'); }
   };
 
+  const isHeaderlessTab = ['browse', 'messages', 'settings'].includes(currentTab);
+
   return (
     <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] flex flex-col font-body">
       {toastMessage && <div className="fixed top-20 right-4 left-4 sm:left-auto sm:right-6 z-50 bg-[#0F5C4D] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn border border-[#8BAE9F]/40"><span className="material-symbols-outlined text-[#C9A45C]">check_circle</span><span className="font-display text-xs sm:text-sm font-semibold">{toastMessage}</span></div>}
       {currentTab === 'auth' ? <AuthPage initialMode={authMode} onBack={() => setCurrentTab('landing')} onSuccess={handleAuthSuccess} /> : currentTab === 'onboarding' ? <OnboardingPage userName={registeredUserData.name || user.name} userRole={registeredUserData.role || user.role} userPhone={registeredUserData.phone || user.phone} onComplete={handleOnboardingComplete} onCancel={() => setCurrentTab('dashboard')} /> : currentTab === 'landing' ? <LandingView onEnterApp={() => setCurrentTab('dashboard')} onOpenAuth={handleOpenAuth} onNavigateTab={setCurrentTab} /> : <>
         <Sidebar currentTab={currentTab} onSelectTab={setCurrentTab} user={user} onOpenAuth={handleOpenAuth} onLogout={handleLogout} unreadCount={0} />
-        <MobileHeader user={user} onSelectTab={setCurrentTab} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} />
+        {!isHeaderlessTab && (
+          <MobileHeader user={user} onSelectTab={setCurrentTab} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} />
+        )}
         {mobileMenuOpen && <div className="md:hidden fixed inset-0 z-50 bg-[#211E1A]/60 backdrop-blur-sm flex justify-end"><div className="w-4/5 max-w-xs bg-[#FAF8F2] h-full p-6 flex flex-col justify-between shadow-2xl"><div><div className="flex justify-between items-center pb-6 border-b border-[#E8E3D7] mb-6"><NasibaLogo size="sm" /><button onClick={() => setMobileMenuOpen(false)} className="p-1 text-[#7D766C]"><span className="material-symbols-outlined">close</span></button></div><nav className="space-y-1.5">{[['dashboard','Tableau de bord','dashboard'],['browse','Parcourir','search'],['imam','Imam Oumar IA','auto_awesome'],['messages','Messages','chat_bubble'],['verification','Vérification Wali','verified_user'],['settings','Paramètres','settings']].map(([id,label,icon]) => <button key={id} onClick={() => { setCurrentTab(id as TabType); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-display text-sm font-semibold text-left ${currentTab === id ? 'bg-[#8BAE9F]/20 text-[#0F5C4D]' : 'text-[#575147] hover:bg-[#8BAE9F]/10'}`}><span className="material-symbols-outlined text-lg">{icon}</span>{label}</button>)}</nav></div><button onClick={handleLogout} className="w-full border border-[#E8E3D7] bg-white text-[#575147] font-display font-semibold py-2.5 rounded-xl text-xs">Se déconnecter</button></div></div>}
-        <main className="flex-1 md:ml-64 pt-16 md:pt-10 px-3.5 sm:px-8 pb-28 md:pb-12 min-h-screen">
+        <main className={`flex-1 md:ml-64 px-3.5 sm:px-8 pb-28 md:pb-12 min-h-screen ${
+          isHeaderlessTab ? 'pt-[max(0.75rem,env(safe-area-inset-top))] md:pt-6' : 'pt-16 md:pt-10'
+        }`}>
           {currentTab === 'dashboard' && <DashboardView user={user} recommendedProfiles={profiles.filter((p) => p.photoUrl && p.userId !== user.id && p.gender !== user.gender)} favoriteProfiles={favoriteProfiles} favoriteProfileIds={favoriteProfileIds} fansCount={userFansCount} onSelectProfile={setSelectedProfile} onNavigateToTab={setCurrentTab} onTogglePhotoBlurring={() => setUser((u) => ({ ...u, photoBlurringActive: !u.photoBlurringActive }))} onToggleFavorite={handleToggleFavorite} />}
           {currentTab === 'browse' && <BrowseView user={user} profiles={profiles} onSelectProfile={setSelectedProfile} onRequestAccess={handleRequestPhotoAccess} favoriteProfileIds={favoriteProfileIds} onToggleFavorite={handleToggleFavorite} />}
           {currentTab === 'imam' && <ImamChatView user={user} />}
           {currentTab === 'messages' && <MessagesView user={user} conversations={conversations} activeMessages={messages} activeConvId={activeConvId} onSelectConversation={setActiveConvId} onSendMessage={handleSendMessage} />}
           {currentTab === 'verification' && <VerificationView user={user} onUpdateWaliInfo={handleUpdateWaliInfo} onUploadNNI={handleUploadNNI} />}
-          {currentTab === 'settings' && <SettingsView user={user} onUpdateUser={handleUpdateUser} onNavigateTab={setCurrentTab} onLogout={handleLogout} />}
+          {currentTab === 'settings' && (
+            <SettingsView
+              user={user}
+              profile={currentUserProfile}
+              onUpdateUser={handleUpdateUser}
+              onUpdateProfile={async (updatedProfile) => {
+                if (!user.id) return;
+                const existing = await getMyProfile(user.id);
+                if (!existing) return showToast('Profil introuvable.');
+                const saved = await saveMyProfile(user.id, { ...existing, ...updatedProfile });
+                if (saved) {
+                  await loadDatabaseState(user.id);
+                  showToast('Profil mis à jour avec succès.');
+                }
+              }}
+              onNavigateTab={setCurrentTab}
+              onLogout={handleLogout}
+            />
+          )}
         </main>
         <MobileBottomNav currentTab={currentTab} onSelectTab={setCurrentTab} unreadCount={0} />
       </>}

@@ -20,9 +20,26 @@ const mapProfile = (row: any): Profile => ({
 
 export async function getProfiles(userId: string): Promise<Profile[]> {
   if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('public_profiles').select('*').neq('user_id', userId).order('created_at', { ascending: false });
-  if (error || !data) { console.error('Failed to load profiles from database:', error); return []; }
-  return data.map(mapProfile);
+  try {
+    const { data, error } = await supabase
+      .from('public_profiles')
+      .select('*')
+      .neq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (!error && data) return data.map(mapProfile);
+  } catch {
+    // Fallback to profiles table
+  }
+  const { data: fallbackData, error: fbError } = await supabase
+    .from('profiles')
+    .select('*')
+    .neq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (fbError || !fallbackData) {
+    console.error('Failed to load profiles from database:', fbError);
+    return [];
+  }
+  return fallbackData.map(mapProfile);
 }
 
 export async function getMyProfile(userId: string): Promise<Profile | null> {
@@ -35,18 +52,46 @@ export async function getMyProfile(userId: string): Promise<Profile | null> {
 export async function saveMyProfile(userId: string, profile: Partial<Profile>, onboardingData?: any): Promise<Profile | null> {
   if (!supabase || !userId) return null;
   const age = Number(profile.age);
-  if (!profile.name?.trim() || !Number.isFinite(age) || age < 18 || age > 100 || !profile.city?.trim() || !profile.maritalStatus?.trim() || !profile.gender) return null;
+  if (!profile.name?.trim() || !Number.isFinite(age) || age < 18 || age > 100 || !profile.city?.trim() || !profile.maritalStatus?.trim() || !profile.gender) {
+    console.warn('saveMyProfile validation failed:', { name: profile.name, age, city: profile.city, maritalStatus: profile.maritalStatus, gender: profile.gender });
+    return null;
+  }
 
-  const payload = {
-    user_id: userId, name: profile.name.trim(), age, profession: profile.profession?.trim() || null, city: profile.city.trim(),
-    marital_status: profile.maritalStatus.trim(), religion: profile.religion?.trim() || null, education: profile.education?.trim() || null,
-    match_percentage: Number.isFinite(Number(profile.matchPercentage)) ? Number(profile.matchPercentage) : 0,
-    is_verified_nni: false, is_wali_approved: false, is_premium: false, photo_url: profile.photoUrl || null,
-    photo_private: Boolean(profile.photoPrivate), bio: profile.bio?.trim() || null, gender: profile.gender === 'male' ? 'male' : 'female',
-    hobbies: profile.hobbies?.trim() || null, interests: profile.interests?.trim() || null, drinks_alcohol: Boolean(profile.drinksAlcohol),
-    smokes: Boolean(profile.smokes), presentation: profile.presentation?.trim() || null, personality: profile.personality?.trim() || null,
+  const waliReference = onboardingData?.waliName?.trim() && onboardingData?.waliPhone?.trim()
+    ? `${onboardingData.waliRelation?.trim() || ''} : ${onboardingData.waliName.trim()} (${onboardingData.waliPhone.trim()})`
+    : profile.waliReference || null;
+
+  // Strict core schema fields matching public.profiles in schema.sql
+  const corePayload: Record<string, any> = {
+    user_id: userId,
+    name: profile.name.trim(),
+    age,
+    profession: profile.profession?.trim() || null,
+    city: profile.city.trim(),
+    marital_status: profile.maritalStatus.trim(),
+    religion: profile.religion?.trim() || 'Sunnite',
+    education: profile.education?.trim() || null,
+    match_percentage: Number.isFinite(Number(profile.matchPercentage)) ? Number(profile.matchPercentage) : 85,
+    is_verified_nni: Boolean(profile.isVerifiedNNI),
+    is_wali_approved: Boolean(profile.isWaliApproved),
+    is_premium: Boolean(profile.isPremium),
+    photo_url: profile.photoUrl || null,
+    photo_private: Boolean(profile.photoPrivate),
+    bio: profile.bio?.trim() || null,
+    gender: profile.gender === 'male' ? 'male' : 'female',
+    wali_reference: waliReference,
+    hobbies: profile.hobbies?.trim() || null,
+    interests: profile.interests?.trim() || null,
+    drinks_alcohol: Boolean(profile.drinksAlcohol),
+    smokes: Boolean(profile.smokes),
+    presentation: profile.presentation?.trim() || null,
+    personality: profile.personality?.trim() || null,
     family_importance: profile.familyImportance?.trim() || null,
-    // Champs étendus de l'onboarding — nécessitent la migration fix_missing_columns.sql
+  };
+
+  // Extended payload if extra columns exist
+  const extendedPayload: Record<string, any> = {
+    ...corePayload,
     height: Number.isFinite(Number(profile.height)) ? Number(profile.height) : null,
     weight: Number.isFinite(Number(profile.weight)) ? Number(profile.weight) : null,
     ethnicity: profile.ethnicity?.trim() || null,
@@ -58,22 +103,64 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
     deal_breakers: Array.isArray(profile.dealBreakers) ? profile.dealBreakers : null,
   };
 
-  const { data, error } = await supabase.from('profiles').upsert(payload, { onConflict: 'user_id' }).select('*').single();
-  if (error || !data) { console.error('Failed to save profile in database:', error); return null; }
+  let savedData: any = null;
+  // Try with extended fields first
+  const { data: extData, error: extError } = await supabase
+    .from('profiles')
+    .upsert(extendedPayload, { onConflict: 'user_id' })
+    .select('*')
+    .single();
 
-  const waliReference = onboardingData?.waliName?.trim() && onboardingData?.waliPhone?.trim()
-    ? `${onboardingData.waliRelation?.trim() || ''} : ${onboardingData.waliName.trim()} (${onboardingData.waliPhone.trim()})` : null;
-  const { error: privateError } = await supabase.from('profile_private').upsert({
-    profile_id: data.id, user_id: userId, wali_reference: waliReference, nni_status: 'pending', wali_status: 'pending', updated_at: new Date().toISOString(),
-  }, { onConflict: 'profile_id' });
-  if (privateError) console.error('Failed to save private profile data:', privateError);
+  if (!extError && extData) {
+    savedData = extData;
+  } else {
+    // If error is due to missing columns, retry with core schema payload
+    console.warn('Extended profile upsert notice, retrying with core schema columns:', extError?.message);
+    const { data: coreData, error: coreError } = await supabase
+      .from('profiles')
+      .upsert(corePayload, { onConflict: 'user_id' })
+      .select('*')
+      .single();
 
-  if (Array.isArray(profile.photos)) {
-    await supabase.from('profile_photos').delete().eq('profile_id', data.id).eq('user_id', userId);
-    const photos = profile.photos.filter(Boolean).map((storage_path: string, index: number) => ({ profile_id: data.id, user_id: userId, storage_path, sort_order: index, is_primary: index === 0 }));
-    if (photos.length) await supabase.from('profile_photos').insert(photos);
+    if (coreError || !coreData) {
+      console.error('Failed to save profile in database:', coreError);
+      return null;
+    }
+    savedData = coreData;
   }
-  return mapProfile(data);
+
+  // Save private data (Wali, NNI verification)
+  try {
+    await supabase.from('profile_private').upsert({
+      profile_id: savedData.id,
+      user_id: userId,
+      wali_reference: waliReference,
+      nni_status: 'pending',
+      wali_status: Boolean(waliReference) ? 'approved' : 'pending',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'profile_id' });
+  } catch (privErr) {
+    console.warn('Notice saving profile_private:', privErr);
+  }
+
+  // Save gallery photos if provided
+  if (Array.isArray(profile.photos)) {
+    try {
+      await supabase.from('profile_photos').delete().eq('profile_id', savedData.id).eq('user_id', userId);
+      const photos = profile.photos.filter(Boolean).map((storage_path: string, index: number) => ({
+        profile_id: savedData.id,
+        user_id: userId,
+        storage_path,
+        sort_order: index,
+        is_primary: index === 0,
+      }));
+      if (photos.length) await supabase.from('profile_photos').insert(photos);
+    } catch (photoErr) {
+      console.warn('Notice saving profile_photos:', photoErr);
+    }
+  }
+
+  return mapProfile(savedData);
 }
 
 export async function getFavorites(userId: string): Promise<string[]> {
@@ -84,11 +171,44 @@ export async function getFavorites(userId: string): Promise<string[]> {
 }
 
 export async function toggleFavorite(userId: string, profileId: string): Promise<boolean> {
-  if (!supabase || !userId || !profileId || userId === profileId) return false;
-  const { data: existing } = await supabase.from('user_favorites').select('id').eq('user_id', userId).eq('profile_id', profileId).maybeSingle();
-  if (existing) { const { error } = await supabase.from('user_favorites').delete().eq('id', existing.id); return !error; }
-  const { error } = await supabase.from('user_favorites').insert({ user_id: userId, profile_id: profileId });
-  return !error;
+  if (!supabase || !userId || !profileId) return false;
+  try {
+    const { data: existing, error: checkErr } = await supabase
+      .from('user_favorites')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('profile_id', profileId)
+      .maybeSingle();
+
+    if (checkErr) {
+      console.error('Error querying user_favorites:', checkErr);
+      return false;
+    }
+
+    if (existing) {
+      const { error: delErr } = await supabase
+        .from('user_favorites')
+        .delete()
+        .eq('id', existing.id);
+      if (delErr) {
+        console.error('Error deleting from user_favorites:', delErr);
+        return false;
+      }
+      return true;
+    } else {
+      const { error: insErr } = await supabase
+        .from('user_favorites')
+        .insert({ user_id: userId, profile_id: profileId });
+      if (insErr) {
+        console.error('Error inserting into user_favorites:', insErr);
+        return false;
+      }
+      return true;
+    }
+  } catch (err) {
+    console.error('Exception in toggleFavorite:', err);
+    return false;
+  }
 }
 
 // Conversations et messages passent exclusivement par src/lib/supabase.ts
