@@ -4,6 +4,7 @@ import { NasibaLogo } from '../NasibaLogo';
 import { OnboardingData } from './OnboardingModal';
 import { PremiumSelect } from '../Common/PremiumSelect';
 import { PremiumDatePicker } from '../Common/PremiumDatePicker';
+import { calculateProfileCompletion } from '../../types';
 
 interface OnboardingPageProps {
   userName: string;
@@ -18,14 +19,18 @@ const STEP_TITLES = [
   'Civilité (Genre)',
   'Date de Naissance',
   'Localisation Résidentielle',
-  'Statut Matrimonial & Polygamie',
-  'Religion & Pratique Quotidienne',
-  'Niveau d\'Études & Profession',
+  'Origine & Ethnie',
+  'Taille, Poids & Silhouette',
+  'Pratique Religieuse & Port du Hijab',
+  'Présentation (Bio) & Profession',
   'Personnalité & Priorité Familiale',
-  'Horizon de Mariage & Origine',
+  'Valeurs Cardinales du Foyer',
+  'Ce que vous cherchez (Critères)',
+  'Ce que vous n\'acceptez pas (Lignes Rouges)',
+  'Statut Matrimonial & Polygamie',
   'Tuteur Légal (Wali)',
   'Charte Éthique & Engagement',
-  'Photos & Pudeur du Profil',
+  'Photos & Visibilité du Profil',
 ];
 
 // Location Data
@@ -43,10 +48,10 @@ const COUNTRIES_LIST = [
 
 const NIGER_CITIES = [
   { value: 'Niamey', label: 'Niamey (Capitale)', badge: 'Plus de 400 profils' },
-  { value: 'Maradi', label: 'Maradi', badge: 'Actif' },
-  { value: 'Zinder', label: 'Zinder', badge: 'Actif' },
-  { value: 'Tahoua', label: 'Tahoua' },
-  { value: 'Agadez', label: 'Agadez' },
+  { value: 'Maradi', label: 'Maradi (Pôle économique)' },
+  { value: 'Zinder', label: 'Zinder (Capitale historique)' },
+  { value: 'Tahoua', label: 'Tahoua (Ader)' },
+  { value: 'Agadez', label: 'Agadez (Porte du Sahara)' },
   { value: 'Dosso', label: 'Dosso' },
   { value: 'Tillabéri', label: 'Tillabéri' },
   { value: 'Diffa', label: 'Diffa' },
@@ -106,6 +111,43 @@ const ZINDER_NEIGHBORHOODS = [
   'Autre quartier...',
 ];
 
+const ETHNICITIES_LIST = [
+  'Haoussa',
+  'Zarma-Songhaï',
+  'Touareg',
+  'Peul / Fulani',
+  'Kanouri',
+  'Toubou',
+  'Gourmantché',
+  'Arabe',
+  'Autre ethnie sahélienne',
+];
+
+const VALUES_OPTIONS = [
+  'Crainte d\'Allah (Taqwa)',
+  'Respect mutuel & bienveillance',
+  'Respect de la belle-famille',
+  'Pudeur & chasteté (Haya)',
+  'Vérité & loyauté absolue',
+  'Éducation islamique des enfants',
+  'Communication sereine & douceur',
+  'Patience & indulgence (Sabr)',
+  'Simplicité du mode de vie',
+  'Entraide matérielle & morale',
+];
+
+const DEAL_BREAKERS_OPTIONS = [
+  'Consommation d\'alcool',
+  'Tabagisme / Chicha',
+  'Négligence des 5 prières quotidiennes',
+  'Manque de respect envers les parents / belle-famille',
+  'Polygamie sans accord préalable',
+  'Violence verbale ou colère impulsive',
+  'Mensonge, dissimulation ou tromperie',
+  'Dépenses inconsidérées / Dettes cachées',
+  'Absence de projet de vie ou d\'ambition',
+];
+
 export const OnboardingPage: React.FC<OnboardingPageProps> = ({
   userName,
   userRole = 'candidate',
@@ -115,7 +157,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
 }) => {
   // Current step: starts at 0 (Welcome Screen)
   const [currentStep, setCurrentStep] = useState<number>(0);
-  const totalSteps = 11; // Steps 1 to 11
+  const totalSteps = 15; // Steps 1 to 15
 
   // Step 1: Gender
   const [gender, setGender] = useState<'female' | 'male'>('female');
@@ -130,37 +172,64 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
   const [neighborhood, setNeighborhood] = useState<string>('Plateau');
   const [customNeighborhood, setCustomNeighborhood] = useState<string>('');
 
-  // Step 4: Matrimonial Status & Polygamy
-  const [maritalStatus, setMaritalStatus] = useState<string>('Célibataire (Jamais marié/e)');
-  const [polygamyPreference, setPolygamyPreference] = useState<string>('Monogamie stricte souhaitée');
+  // Step 4: Origin & Ethnicity
+  const [originRegion, setOriginRegion] = useState<string>('Région de Niamey');
+  const [ethnicity, setEthnicity] = useState<string>('Haoussa');
 
-  // Step 5: Religion & Practice
+  // Step 5: Physical characteristics (Height, Weight, Body type)
+  const [height, setHeight] = useState<number>(170);
+  const [weight, setWeight] = useState<number>(68);
+  const [bodyType, setBodyType] = useState<string>('Moyenne / Harmonieuse');
+
+  // Step 6: Religion, Prayers & Hijab
   const [religion, setReligion] = useState<string>('Musulman(e) Sunnite (Rite Malékite)');
   const [religiousPractice, setReligiousPractice] = useState<string>('Régulière à l\'heure (5 prières)');
+  const [hijabStatus, setHijabStatus] = useState<string>('Porte le Hijab au quotidien');
 
-  // Step 6: Education & Profession
+  // Step 7: Personal Presentation (Bio) & Profession
+  const [bio, setBio] = useState<string>('');
   const [education, setEducation] = useState<string>('Licence / Bac+3');
   const [professionCategory, setProfessionCategory] = useState<string>('Secteur Privé / Cadre');
   const [profession, setProfession] = useState<string>('Salarié(e) Secteur Privé');
 
-  // Step 7: Personality & Family Priority
+  // Step 8: Personality & Family Priority
   const [personalityTrait, setPersonalityTrait] = useState<string>('Calme & Posé(e)');
   const [familyImportance, setFamilyImportance] = useState<string>('Priorité absolue au quotidien');
 
-  // Step 8: Marriage Horizon & Origin
-  const [marriageHorizon, setMarriageHorizon] = useState<string>('Dans les 6 mois');
-  const [originRegion, setOriginRegion] = useState<string>('Originaire du Niger (Toutes régions)');
+  // Step 9: Core Values
+  const [selectedValues, setSelectedValues] = useState<string[]>([
+    'Crainte d\'Allah (Taqwa)',
+    'Respect de la belle-famille',
+    'Pudeur & chasteté (Haya)',
+  ]);
 
-  // Step 9: Wali Info State
+  // Step 10: Partner Criteria (Ce que la personne cherche)
+  const [partnerCriteria, setPartnerCriteria] = useState<string>('');
+  const [preferredAgeRange, setPreferredAgeRange] = useState<string>('Tranche d\'âge similaire');
+
+  // Step 11: Deal-breakers (Ce qu'elle n'accepte pas)
+  const [selectedDealBreakers, setSelectedDealBreakers] = useState<string[]>([
+    'Consommation d\'alcool',
+    'Tabagisme / Chicha',
+    'Négligence des 5 prières quotidiennes',
+  ]);
+  const [customDealBreaker, setCustomDealBreaker] = useState<string>('');
+
+  // Step 12: Matrimonial Status & Polygamy
+  const [maritalStatus, setMaritalStatus] = useState<string>('Célibataire (Jamais marié/e)');
+  const [polygamyPreference, setPolygamyPreference] = useState<string>('Monogamie stricte souhaitée');
+  const [marriageHorizon, setMarriageHorizon] = useState<string>('Dans les 6 mois');
+
+  // Step 13: Wali Info State
   const [skipWaliInfo, setSkipWaliInfo] = useState<boolean>(false);
   const [waliName, setWaliName] = useState<string>('');
   const [waliRelation, setWaliRelation] = useState<string>('Père');
   const [waliPhone, setWaliPhone] = useState<string>('');
 
-  // Step 10: Ethics Agreement
+  // Step 14: Ethics Agreement
   const [agreedToTerms, setAgreedToTerms] = useState<boolean>(true);
 
-  // Step 11: Photos
+  // Step 15: Photos & Visibility Check
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>(['', '', '']);
 
   // Loading animation state at end of onboarding
@@ -171,21 +240,23 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
   const loadingMessages = [
     `Configuration du profil sécurisé de ${userName}...`,
     `Localisation vérifiée à ${region} (${country.replace(/[^\p{L}\s]/gu, '').trim()})...`,
+    'Vérification des critères de visibilité éthique...',
     'Application des filtres de pudeur et de discrétion...',
-    'Initialisation des recommandations matrimoniales conformes...',
     'Profil matrimonial NASSIB prêt !',
   ];
 
-  // Adjust default polygamy option when gender changes
+  // Adjust default options when gender changes
   useEffect(() => {
     if (gender === 'male') {
       if (polygamyPreference.includes('co-épouse') || polygamyPreference.includes('stricte souhaitée')) {
         setPolygamyPreference('Monogamie uniquement');
       }
+      setHijabStatus('Barbe soignée selon la Sunnah & tenue pudique');
     } else {
       if (polygamyPreference === 'Monogamie uniquement') {
         setPolygamyPreference('Monogamie stricte souhaitée');
       }
+      setHijabStatus('Porte le Hijab au quotidien');
     }
   }, [gender]);
 
@@ -226,6 +297,50 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
     });
   };
 
+  const toggleValueSelection = (val: string) => {
+    setSelectedValues((prev) =>
+      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]
+    );
+  };
+
+  const toggleDealBreakerSelection = (item: string) => {
+    setSelectedDealBreakers((prev) =>
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
+    );
+  };
+
+  // Live profile completion score calculation
+  const validPhotos = uploadedPhotos.filter((p) => Boolean(p) && p.trim() !== '');
+  const hasPhoto = validPhotos.length > 0;
+  const currentCompletionScore = calculateProfileCompletion({
+    name: userName,
+    gender,
+    age: calculatedAge,
+    city: region,
+    profession,
+    maritalStatus: maritalStatus as any,
+    religion,
+    education,
+    bio,
+    presentation: bio,
+    partnerCriteria,
+    height: Number(height) || undefined,
+    weight: Number(weight) || undefined,
+    hijabStatus,
+    religiousPracticeDetails: religiousPractice,
+    values: selectedValues,
+    dealBreakers: [
+      ...selectedDealBreakers,
+      ...(customDealBreaker.trim() ? [customDealBreaker.trim()] : []),
+    ],
+    ethnicity,
+    originCity: originRegion,
+    photoUrl: validPhotos[0] || '',
+    photos: validPhotos,
+  });
+
+  const isVisibleOnApp = hasPhoto && currentCompletionScore >= 50;
+
   const completionTriggeredRef = useRef(false);
 
   const handleStartAnalysis = () => {
@@ -234,11 +349,15 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
     setLoadingMessageIndex(0);
     completionTriggeredRef.current = false;
 
-    const validPhotos = uploadedPhotos.filter((p) => Boolean(p) && p.trim() !== '');
     const finalNeighborhood =
       neighborhood === 'Autre quartier...' && customNeighborhood.trim()
         ? customNeighborhood.trim()
         : neighborhood;
+
+    const allDealBreakers = [
+      ...selectedDealBreakers,
+      ...(customDealBreaker.trim() ? [customDealBreaker.trim()] : []),
+    ];
 
     const finishOnboarding = () => {
       if (completionTriggeredRef.current) return;
@@ -266,16 +385,27 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
         waliPhone: skipWaliInfo ? '' : waliPhone,
         agreedToTerms,
         photos: validPhotos,
+        // Extended Profile Data
+        bio,
+        height: Number(height) || undefined,
+        weight: Number(weight) || undefined,
+        ethnicity,
+        originCity: originRegion,
+        hijabStatus,
+        religiousPracticeDetails: religiousPractice,
+        values: selectedValues,
+        partnerCriteria,
+        dealBreakers: allDealBreakers,
       });
     };
 
-    // Realistic stepped progress
+    // Stepped progress animation
     const interval = setInterval(() => {
       setLoadingProgress((prev) => {
         const next = prev + 4;
         if (next >= 100) {
           clearInterval(interval);
-          setTimeout(finishOnboarding, 600);
+          setTimeout(finishOnboarding, 500);
           return 100;
         }
         if (next >= 25 && next < 50) setLoadingMessageIndex(1);
@@ -284,7 +414,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
         else if (next >= 95) setLoadingMessageIndex(4);
         return next;
       });
-    }, 90);
+    }, 80);
   };
 
   const handleNext = () => {
@@ -311,9 +441,9 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] font-body flex flex-col selection:bg-[#8BAE9F]/25 selection:text-[#0F5C4D]">
-      {/* Main Container (No Top Header) */}
+      {/* Main Container */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-3.5 sm:px-8 py-6 sm:py-10 flex flex-col justify-center">
-        {/* Inline Navigation & Step Progress (Replaces external header) */}
+        {/* Inline Navigation & Step Progress */}
         {!isLoadingAnalysis && currentStep > 0 && (
           <div className="mb-4 sm:mb-6 flex items-center justify-between">
             <button
@@ -330,7 +460,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
               <span className="text-xs font-bold text-[#0F5C4D]">
                 Étape {currentStep} / {totalSteps}
               </span>
-              <div className="w-20 sm:w-28 h-1.5 bg-[#E8E3D7] rounded-full overflow-hidden">
+              <div className="w-20 sm:w-32 h-1.5 bg-[#E8E3D7] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#0F5C4D] transition-all duration-300 rounded-full"
                   style={{ width: `${(currentStep / totalSteps) * 100}%` }}
@@ -389,7 +519,6 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
             exit={{ opacity: 0, y: -20 }}
             className="bg-white rounded-3xl p-8 sm:p-12 border border-[#E8E3D7] shadow-xl relative overflow-hidden space-y-8"
           >
-            {/* Spiritual Accent */}
             <div className="text-center space-y-3">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FAF8F2] border border-[#E8E3D7] text-xs font-semibold text-[#0F5C4D]">
                 <span className="material-symbols-outlined text-sm text-[#C9A45C]">auto_awesome</span>
@@ -403,7 +532,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
               <p className="font-body text-xs sm:text-sm text-[#575147] max-w-2xl mx-auto leading-relaxed">
                 Votre démarche matrimoniale repose sur une intention noble et sincère (Niyyah).
                 Pour vous présenter les profils les plus compatibles et respectueux de votre vision,
-                nous vous guidons à travers un parcours d'onboarding rapide, bienveillant et 100% confidentiel.
+                nous vous guidons à travers un parcours d'onboarding complet, bienveillant et 100% confidentiel.
               </p>
             </div>
 
@@ -414,10 +543,10 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                   1
                 </div>
                 <h3 className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                  Civilité &amp; Maturité
+                  Identité &amp; Origine
                 </h3>
                 <p className="text-[11px] text-[#575147] leading-relaxed">
-                  Précisez votre civilité et votre date de naissance avec notre sélecteur premium sécurisé.
+                  Civilité, localisation précise, mensurations physiques et ethnie d'origine.
                 </p>
               </div>
 
@@ -426,10 +555,10 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                   2
                 </div>
                 <h3 className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                  Localisation Séquentielle
+                  Foi &amp; Tempérament
                 </h3>
                 <p className="text-[11px] text-[#575147] leading-relaxed">
-                  Indiquez votre pays, votre ville au Niger puis votre quartier pour faciliter les affinités de proximité.
+                  Pratique religieuse, tenue/hijab, présentation personnelle et valeurs cardinales.
                 </p>
               </div>
 
@@ -438,10 +567,10 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                   3
                 </div>
                 <h3 className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                  Valeurs &amp; Pudeur
+                  Critères &amp; Pudeur
                 </h3>
                 <p className="text-[11px] text-[#575147] leading-relaxed">
-                  Pratique religieuse, tuteur légal (Wali), et photos privées floutées selon votre volonté.
+                  Ce que vous cherchez, vos lignes rouges, photos et garanties de visibilité éthique.
                 </p>
               </div>
             </div>
@@ -452,7 +581,8 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                 shield
               </span>
               <div className="text-xs text-[#575147] leading-relaxed">
-                <strong className="text-[#0F5C4D]">Garantie de Pudeur (Haya) :</strong> Vos informations restent strictement confidentielles et ne sont jamais partagées à des tiers. Les photos restent sous votre contrôle exclusif.
+                <strong className="text-[#0F5C4D]">Garantie de Pudeur &amp; Confidentialité :</strong> Vos informations sont protégées.
+                Sur NASSIB, seuls les profils comportant au moins une photo et complétés à 50% ou plus sont visibles aux autres membres, garantissant le sérieux des échanges.
               </div>
             </div>
 
@@ -467,7 +597,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                   Revenir plus tard
                 </button>
               ) : (
-                <div className="text-xs text-[#7D766C]">Temps estimé : ~3 minutes</div>
+                <div className="text-xs text-[#7D766C]">Temps estimé : ~3 à 4 minutes</div>
               )}
 
               <button
@@ -482,23 +612,23 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
           </motion.div>
         ) : (
           /* ============================================================ */
-          /* FORMULAIRE MULTI-ÉTAPES AVEC SÉLECTEURS PREMIUM              */
+          /* FORMULAIRE SÉQUENTIEL MULTI-ÉTAPES                           */
           /* ============================================================ */
-          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#E8E3D7] shadow-xl space-y-8">
-            {/* Step Header */}
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF8F2] border border-[#E8E3D7] text-[11px] font-bold text-[#0F5C4D] mb-2">
-                <span>Étape {currentStep} sur {totalSteps}</span>
+          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#E8E3D7] shadow-xl space-y-6">
+            <div className="border-b border-[#E8E3D7] pb-4 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-[#C9A45C] tracking-wider uppercase">
+                  Étape {currentStep} sur {totalSteps}
+                </span>
+                <h2 className="font-serif-display text-xl sm:text-2xl font-bold text-[#0F5C4D] mt-0.5">
+                  {STEP_TITLES[currentStep]}
+                </h2>
               </div>
-              <h2 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#211E1A]">
-                {STEP_TITLES[currentStep]}
-              </h2>
+              <NasibaLogo size="sm" />
             </div>
 
-            <div className="min-h-[300px]">
-              {/* ============================================================ */}
-              {/* ÉTAPE 1 : CHOIX DU GENRE                                     */}
-              {/* ============================================================ */}
+            <div className="min-h-[280px]">
+              {/* ÉTAPE 1 : GENRE */}
               {currentStep === 1 && (
                 <div className="space-y-6">
                   <p className="text-xs sm:text-sm text-[#575147]">
@@ -506,7 +636,6 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Option Femme */}
                     <button
                       type="button"
                       onClick={() => setGender('female')}
@@ -526,7 +655,6 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                           </span>
                         )}
                       </div>
-
                       <div className="space-y-1">
                         <div className="font-display text-base font-bold text-[#211E1A]">
                           Je suis une Femme (Sœur)
@@ -535,14 +663,12 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                           À la recherche d'un époux pieux, intègre et protecteur dans le respect des traditions et avec l'accord de mon tuteur (Wali).
                         </p>
                       </div>
-
                       <div className="pt-2 border-t border-[#E8E3D7]/60 text-[11px] font-semibold text-[#0F5C4D] flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-sm">lock</span>
                         <span>Préservation de la pudeur &amp; floutage activable</span>
                       </div>
                     </button>
 
-                    {/* Option Homme */}
                     <button
                       type="button"
                       onClick={() => setGender('male')}
@@ -562,7 +688,6 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                           </span>
                         )}
                       </div>
-
                       <div className="space-y-1">
                         <div className="font-display text-base font-bold text-[#211E1A]">
                           Je suis un Homme (Frère)
@@ -571,7 +696,6 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                           À la recherche d'une épouse vertueuse, bienveillante et pieuse pour fonder un foyer stable et harmonieux.
                         </p>
                       </div>
-
                       <div className="pt-2 border-t border-[#E8E3D7]/60 text-[11px] font-semibold text-[#0F5C4D] flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-sm">handshake</span>
                         <span>Démarche d'engagement &amp; respect des familles</span>
@@ -581,15 +705,12 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                 </div>
               )}
 
-              {/* ============================================================ */}
-              {/* ÉTAPE 2 : DATE DE NAISSANCE (SÉLECTEUR PREMIUM)             */}
-              {/* ============================================================ */}
+              {/* ÉTAPE 2 : DATE DE NAISSANCE */}
               {currentStep === 2 && (
                 <div className="space-y-6">
                   <p className="text-xs sm:text-sm text-[#575147]">
                     Veuillez sélectionner votre date de naissance avec notre sélecteur premium. NASSIB est strictement réservé aux personnes majeures (18 ans et plus).
                   </p>
-
                   <PremiumDatePicker
                     value={birthDate}
                     onChange={(newDateStr, newAge) => {
@@ -603,16 +724,13 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                 </div>
               )}
 
-              {/* ============================================================ */}
-              {/* ÉTAPE 3 : LOCALISATION SÉQUENTIELLE                         */}
-              {/* ============================================================ */}
+              {/* ÉTAPE 3 : LOCALISATION */}
               {currentStep === 3 && (
                 <div className="space-y-6">
                   <p className="text-xs sm:text-sm text-[#575147]">
                     Renseignez votre lieu de vie. Choisissez d'abord votre <strong>pays de résidence</strong>, la <strong>ville</strong> apparaîtra juste en dessous, puis le <strong>quartier</strong>.
                   </p>
 
-                  {/* 1. PAYS DE RÉSIDENCE */}
                   <div className="space-y-1.5">
                     <PremiumSelect
                       label="1. Pays de résidence"
@@ -633,7 +751,6 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                     />
                   </div>
 
-                  {/* 2. VILLE / RÉGION (Apparaît juste en dessous une fois le pays choisi) */}
                   <AnimatePresence>
                     {country && (
                       <motion.div
@@ -660,7 +777,6 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                     )}
                   </AnimatePresence>
 
-                  {/* 3. QUARTIER / COMMUNE (Apparaît juste en dessous une fois la ville choisie) */}
                   <AnimatePresence>
                     {region && (
                       <motion.div
@@ -678,7 +794,6 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                           searchable={true}
                         />
 
-                        {/* Input if "Autre quartier..." is chosen */}
                         {neighborhood === 'Autre quartier...' && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
@@ -700,10 +815,503 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                 </div>
               )}
 
-              {/* ============================================================ */}
-              {/* ÉTAPE 4 : STATUT MATRIMONIAL & POLYGAMIE                     */}
-              {/* ============================================================ */}
+              {/* ÉTAPE 4 : ORIGINE & ETHNIE */}
               {currentStep === 4 && (
+                <div className="space-y-6">
+                  <p className="text-xs sm:text-sm text-[#575147]">
+                    L'origine géographique et l'ethnie permettent de respecter les affinités culturelles et linguistiques chères aux familles lors de l'union :
+                  </p>
+
+                  <PremiumSelect
+                    label="Région ou Ville d'origine"
+                    icon="travel_explore"
+                    value={originRegion}
+                    onChange={(val) => setOriginRegion(val)}
+                    options={[
+                      'Région de Niamey',
+                      'Région de Maradi',
+                      'Région de Zinder',
+                      'Région de Tahoua',
+                      'Région de Dosso',
+                      'Région d\'Agadez',
+                      'Région de Tillabéri',
+                      'Région de Diffa',
+                      'Originaire de la Diaspora',
+                    ]}
+                  />
+
+                  <PremiumSelect
+                    label="Ethnie / Communauté culturelle"
+                    icon="groups"
+                    value={ethnicity}
+                    onChange={(val) => setEthnicity(val)}
+                    options={ETHNICITIES_LIST}
+                  />
+
+                  <div className="p-4 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] flex items-center gap-3 text-xs text-[#575147]">
+                    <span className="material-symbols-outlined text-[#0F5C4D]">info</span>
+                    <span>
+                      Ces critères sont purement indicatifs et favorisent les rapprochements dans la bienveillance fraternelle.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* ÉTAPE 5 : MENSURATIONS (TAILLE & POIDS) */}
+              {currentStep === 5 && (
+                <div className="space-y-6">
+                  <p className="text-xs sm:text-sm text-[#575147]">
+                    Renseignez vos attributs physiques en toute transparence pour une présentation fidèle et honnête :
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Taille en cm */}
+                    <div className="p-5 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] space-y-3">
+                      <div className="flex justify-between items-center">
+                        <label className="font-display text-xs font-bold text-[#211E1A] flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[#0F5C4D] text-base">straighten</span>
+                          <span>Taille :</span>
+                        </label>
+                        <span className="px-3 py-1 bg-white border border-[#8BAE9F] rounded-full text-xs font-bold text-[#0F5C4D]">
+                          {height} cm
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="145"
+                        max="210"
+                        step="1"
+                        value={height}
+                        onChange={(e) => setHeight(Number(e.target.value))}
+                        className="w-full accent-[#0F5C4D] cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-[#7D766C]">
+                        <span>145 cm</span>
+                        <span>175 cm</span>
+                        <span>210 cm</span>
+                      </div>
+                    </div>
+
+                    {/* Poids en kg */}
+                    <div className="p-5 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] space-y-3">
+                      <div className="flex justify-between items-center">
+                        <label className="font-display text-xs font-bold text-[#211E1A] flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[#0F5C4D] text-base">monitor_weight</span>
+                          <span>Poids :</span>
+                        </label>
+                        <span className="px-3 py-1 bg-white border border-[#8BAE9F] rounded-full text-xs font-bold text-[#0F5C4D]">
+                          {weight} kg
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="40"
+                        max="135"
+                        step="1"
+                        value={weight}
+                        onChange={(e) => setWeight(Number(e.target.value))}
+                        className="w-full accent-[#0F5C4D] cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-[#7D766C]">
+                        <span>40 kg</span>
+                        <span>70 kg</span>
+                        <span>135 kg</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Silhouette */}
+                  <PremiumSelect
+                    label="Allure / Silhouette générale"
+                    icon="accessibility_new"
+                    value={bodyType}
+                    onChange={(val) => setBodyType(val)}
+                    options={[
+                      'Mince / Fine',
+                      'Moyenne / Harmonieuse',
+                      'Athlétique / En forme',
+                      'Forte / Ronde',
+                    ]}
+                  />
+                </div>
+              )}
+
+              {/* ÉTAPE 6 : PRATIQUE RELIGIEUSE & HIJAB */}
+              {currentStep === 6 && (
+                <div className="space-y-6">
+                  <p className="text-xs sm:text-sm text-[#575147]">
+                    La pratique religieuse est le pilier d'une union solide et bénie. Précisez vos habitudes spirituelles et votre tenue :
+                  </p>
+
+                  <PremiumSelect
+                    label="Pratique des 5 prières quotidiennes"
+                    icon="schedule"
+                    value={religiousPractice}
+                    onChange={(val) => setReligiousPractice(val)}
+                    options={[
+                      {
+                        value: 'Régulière à l\'heure (5 prières)',
+                        label: 'Régulière à l\'heure (5 prières)',
+                        badge: 'Assiduité complète',
+                      },
+                      {
+                        value: 'À la mosquée régulièrement',
+                        label: 'À la mosquée régulièrement',
+                        badge: 'Pratique en congrégation',
+                      },
+                      {
+                        value: 'Pratique modérée avec effort constant',
+                        label: 'Pratique modérée avec effort constant',
+                      },
+                      {
+                        value: 'En progression spirituelle',
+                        label: 'En progression spirituelle',
+                      },
+                    ]}
+                  />
+
+                  {gender === 'female' ? (
+                    <PremiumSelect
+                      label="Port du Hijab &amp; Tenue au quotidien"
+                      icon="styler"
+                      value={hijabStatus}
+                      onChange={(val) => setHijabStatus(val)}
+                      options={[
+                        {
+                          value: 'Porte le Hijab au quotidien',
+                          label: 'Porte le Hijab au quotidien',
+                          badge: 'Tenue pudique',
+                        },
+                        {
+                          value: 'Porte le Jilbab / Khimar',
+                          label: 'Porte le Jilbab / Khimar',
+                          badge: 'Couvrance intégrale',
+                        },
+                        {
+                          value: 'Porte le Niqab',
+                          label: 'Porte le Niqab',
+                          badge: 'Voile intégral',
+                        },
+                        {
+                          value: 'Tenue pudique & voile occasionnel',
+                          label: 'Tenue pudique & voile occasionnel',
+                        },
+                        {
+                          value: 'En réflexion sincère pour le porter',
+                          label: 'En réflexion sincère pour le porter',
+                        },
+                      ]}
+                    />
+                  ) : (
+                    <PremiumSelect
+                      label="Apparence &amp; Engagement selon la Sunnah"
+                      icon="face"
+                      value={hijabStatus}
+                      onChange={(val) => setHijabStatus(val)}
+                      options={[
+                        {
+                          value: 'Barbe soignée selon la Sunnah & tenue pudique',
+                          label: 'Barbe soignée selon la Sunnah & tenue pudique',
+                          badge: 'Sunnah respectée',
+                        },
+                        {
+                          value: 'Prières régulières à la mosquée (Fajr)',
+                          label: 'Prières régulières à la mosquée (Fajr)',
+                        },
+                        {
+                          value: 'Tenue modeste, propre et pudique',
+                          label: 'Tenue modeste, propre et pudique',
+                        },
+                        {
+                          value: 'Pratique islamique constante au quotidien',
+                          label: 'Pratique islamique constante au quotidien',
+                        },
+                      ]}
+                    />
+                  )}
+
+                  <PremiumSelect
+                    label="Courant religieux &amp; École jurisprudentielle"
+                    icon="mosque"
+                    value={religion}
+                    onChange={(val) => setReligion(val)}
+                    options={[
+                      {
+                        value: 'Musulman(e) Sunnite (Rite Malékite)',
+                        label: 'Musulman(e) Sunnite (Rite Malékite)',
+                        badge: 'Tradition dominante au Niger',
+                      },
+                      {
+                        value: 'Musulman(e) Sunnite (Général)',
+                        label: 'Musulman(e) Sunnite (Général)',
+                      },
+                      {
+                        value: 'Musulman(e) Pratiquant(e)',
+                        label: 'Musulman(e) Pratiquant(e)',
+                      },
+                      {
+                        value: 'Autre courant musulman',
+                        label: 'Autre courant musulman',
+                      },
+                    ]}
+                  />
+                </div>
+              )}
+
+              {/* ÉTAPE 7 : PRÉSENTATION (BIO) & PROFESSION */}
+              {currentStep === 7 && (
+                <div className="space-y-6">
+                  <div className="space-y-1.5">
+                    <label className="font-display text-xs font-bold text-[#211E1A] flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[#0F5C4D] text-base">edit_note</span>
+                        <span>Présentation personnelle (Résumé de qui vous êtes) *</span>
+                      </span>
+                      <span className="text-[11px] font-normal text-[#7D766C]">
+                        {bio.length} caractères (min. 20)
+                      </span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder="Ex: Personne calme, sincère et attachée à sa foi. J'aime la lecture, les moments en famille et les projets constructifs. Je souhaite bâtir un foyer fondé sur la piété, la complicité et l'entraide mutuelle..."
+                      className="w-full p-4 bg-white border border-[#E8E3D7] rounded-2xl text-xs sm:text-sm text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#0F5C4D]/10 leading-relaxed"
+                    />
+                    <p className="text-[11px] text-[#7D766C]">
+                      Un résumé sincère augmente fortement la confiance des prétendants et de leurs familles.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <PremiumSelect
+                      label="Niveau d'études"
+                      icon="school"
+                      value={education}
+                      onChange={(val) => setEducation(val)}
+                      options={[
+                        'Baccalauréat',
+                        'Licence / Bac+3',
+                        'Master / Bac+5',
+                        'Doctorat / Ph.D',
+                        'Formation professionnelle / BTS',
+                        'Études islamiques supérieures',
+                        'Autre niveau d\'études',
+                      ]}
+                    />
+
+                    <PremiumSelect
+                      label="Secteur d'activité"
+                      icon="work"
+                      value={professionCategory}
+                      onChange={(val) => setProfessionCategory(val)}
+                      options={[
+                        'Fonction publique & Administration',
+                        'Secteur Privé / Cadre',
+                        'Commerce & Entreprenariat',
+                        'Santé & Médical',
+                        'Éducation & Enseignement',
+                        'Étudiant(e) / Formation',
+                        'Foyer / Sans activité professionnelle',
+                        'Autre profession',
+                      ]}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-display text-xs font-bold text-[#575147]">
+                      Intitulé exact de votre métier ou profession :
+                    </label>
+                    <input
+                      type="text"
+                      value={profession}
+                      onChange={(e) => setProfession(e.target.value)}
+                      placeholder="Ex: Comptable, Enseignant(e), Commerçant(e), Juriste, Informaticien..."
+                      className="w-full h-12 px-4 bg-white border border-[#E8E3D7] rounded-2xl text-xs sm:text-sm text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ÉTAPE 8 : PERSONNALITÉ & PRIORITÉ FAMILIALE */}
+              {currentStep === 8 && (
+                <div className="space-y-6">
+                  <p className="text-xs sm:text-sm text-[#575147]">
+                    Votre tempérament et votre attachement aux liens familiaux :
+                  </p>
+
+                  <PremiumSelect
+                    label="Trait de caractère principal"
+                    icon="psychology"
+                    value={personalityTrait}
+                    onChange={(val) => setPersonalityTrait(val)}
+                    options={[
+                      'Calme & Posé(e)',
+                      'Sérieux(se) & Organisé(e)',
+                      'Chaleureux(se) & Sociable',
+                      'Pieux(se) & Discret(ète)',
+                      'Généreux(se) & Bienveillant(e)',
+                      'Ambitieux(se) & Déterminé(e)',
+                      'Doux(ce) & À l\'écoute',
+                      'Jovial(e) & Optimiste',
+                    ]}
+                  />
+
+                  <PremiumSelect
+                    label="Place de la famille dans votre vie quotidienne"
+                    icon="home"
+                    value={familyImportance}
+                    onChange={(val) => setFamilyImportance(val)}
+                    options={[
+                      {
+                        value: 'Priorité absolue au quotidien',
+                        label: 'Priorité absolue au quotidien',
+                        sublabel: 'Très proche des parents et de la belle-famille',
+                      },
+                      {
+                        value: 'Très importante avec respect de l\'espace du couple',
+                        label: 'Très importante avec équilibre du couple',
+                        sublabel: 'Harmonie familiale et préservation de l\'intimité conjugale',
+                      },
+                      {
+                        value: 'Équilibrée et harmonieuse',
+                        label: 'Équilibrée et harmonieuse',
+                      },
+                    ]}
+                  />
+                </div>
+              )}
+
+              {/* ÉTAPE 9 : VALEURS CARDINALES DU FOYER */}
+              {currentStep === 9 && (
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-xs sm:text-sm text-[#575147]">
+                      Sélectionnez les valeurs fondamentales qui guident votre vie et que vous désirez partager au sein de votre futur foyer (choisissez-en 3 ou plus) :
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {VALUES_OPTIONS.map((val) => {
+                      const isSelected = selectedValues.includes(val);
+                      return (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => toggleValueSelection(val)}
+                          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                            isSelected
+                              ? 'bg-[#0F5C4D]/10 border-[#0F5C4D] text-[#0F5C4D] font-bold shadow-2xs'
+                              : 'bg-white border-[#E8E3D7] text-[#575147] hover:border-[#8BAE9F]'
+                          }`}
+                        >
+                          <span className="text-xs sm:text-sm">{val}</span>
+                          <span
+                            className={`material-symbols-outlined text-lg shrink-0 ${
+                              isSelected ? 'text-[#0F5C4D]' : 'text-[#7D766C]/40'
+                            }`}
+                          >
+                            {isSelected ? 'check_circle' : 'add_circle'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] flex items-center justify-between text-xs">
+                    <span className="text-[#575147]">Valeurs sélectionnées :</span>
+                    <span className="font-bold text-[#0F5C4D]">{selectedValues.length} retenue(s)</span>
+                  </div>
+                </div>
+              )}
+
+              {/* ÉTAPE 10 : CE QUE LA PERSONNE CHERCHE */}
+              {currentStep === 10 && (
+                <div className="space-y-6">
+                  <div className="space-y-1.5">
+                    <label className="font-display text-xs font-bold text-[#211E1A] flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[#0F5C4D] text-base">search_check</span>
+                      <span>Ce que vous cherchez chez votre futur conjoint (Critères clés) *</span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={partnerCriteria}
+                      onChange={(e) => setPartnerCriteria(e.target.value)}
+                      placeholder="Ex: Je recherche un époux/une épouse pieux(se), assidu(e) dans ses prières, respectueux(se) de ses engagements et bienveillant(e). Quelqu'un qui a le sens de la famille, qui communique dans la sérénité et souhaite élever des enfants dans les valeurs de l'Islam..."
+                      className="w-full p-4 bg-white border border-[#E8E3D7] rounded-2xl text-xs sm:text-sm text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#0F5C4D]/10 leading-relaxed"
+                    />
+                  </div>
+
+                  <PremiumSelect
+                    label="Tranche d'âge privilégiée pour le prétendant"
+                    icon="cake"
+                    value={preferredAgeRange}
+                    onChange={(val) => setPreferredAgeRange(val)}
+                    options={[
+                      'Tranche d\'âge similaire à la mienne (+/- 3 ans)',
+                      '18 - 25 ans',
+                      '25 - 32 ans',
+                      '30 - 40 ans',
+                      '40 ans et plus',
+                      'Sans préférence d\'âge stricte (priorité à la maturité)',
+                    ]}
+                  />
+                </div>
+              )}
+
+              {/* ÉTAPE 11 : CE QU'ELLE N'ACCEPTE PAS (LIGNES ROUGES) */}
+              {currentStep === 11 && (
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-xs sm:text-sm text-[#575147]">
+                      Indiquez vos <strong>lignes rouges</strong> (deal-breakers) afin d'éviter tout malentendu et vous orienter uniquement vers des profils compatibles :
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {DEAL_BREAKERS_OPTIONS.map((item) => {
+                      const isSelected = selectedDealBreakers.includes(item);
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => toggleDealBreakerSelection(item)}
+                          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                            isSelected
+                              ? 'bg-red-50 border-red-300 text-red-800 font-bold shadow-2xs'
+                              : 'bg-white border-[#E8E3D7] text-[#575147] hover:border-[#8BAE9F]'
+                          }`}
+                        >
+                          <span className="text-xs sm:text-sm">{item}</span>
+                          <span
+                            className={`material-symbols-outlined text-lg shrink-0 ${
+                              isSelected ? 'text-red-600' : 'text-[#7D766C]/40'
+                            }`}
+                          >
+                            {isSelected ? 'cancel' : 'add_circle'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-display text-xs font-bold text-[#575147]">
+                      Autre chose que vous n'acceptez pas (optionnel) :
+                    </label>
+                    <input
+                      type="text"
+                      value={customDealBreaker}
+                      onChange={(e) => setCustomDealBreaker(e.target.value)}
+                      placeholder="Ex: Déménagement imprévu à l'étranger, travail de nuit non négocié..."
+                      className="w-full h-12 px-4 bg-white border border-[#E8E3D7] rounded-2xl text-xs sm:text-sm text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ÉTAPE 12 : STATUT MATRIMONIAL & POLYGAMIE */}
+              {currentStep === 12 && (
                 <div className="space-y-6">
                   <PremiumSelect
                     label="Statut matrimonial actuel"
@@ -762,170 +1370,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                           ]
                     }
                   />
-                </div>
-              )}
 
-              {/* ============================================================ */}
-              {/* ÉTAPE 5 : RELIGION & PRATIQUE QUOTIDIENNE                    */}
-              {/* ============================================================ */}
-              {currentStep === 5 && (
-                <div className="space-y-6">
-                  <PremiumSelect
-                    label="Courant religieux"
-                    icon="mosque"
-                    value={religion}
-                    onChange={(val) => setReligion(val)}
-                    options={[
-                      {
-                        value: 'Musulman(e) Sunnite (Rite Malékite)',
-                        label: 'Musulman(e) Sunnite (Rite Malékite)',
-                        badge: 'Tradition dominante au Niger',
-                      },
-                      {
-                        value: 'Musulman(e) Sunnite (Général)',
-                        label: 'Musulman(e) Sunnite (Général)',
-                      },
-                      {
-                        value: 'Musulman(e) Pratiquant(e)',
-                        label: 'Musulman(e) Pratiquant(e)',
-                      },
-                      {
-                        value: 'Autre courant musulman',
-                        label: 'Autre courant musulman',
-                      },
-                    ]}
-                  />
-
-                  <PremiumSelect
-                    label="Pratique des 5 prières quotidiennes"
-                    icon="schedule"
-                    value={religiousPractice}
-                    onChange={(val) => setReligiousPractice(val)}
-                    options={[
-                      {
-                        value: 'Régulière à l\'heure (5 prières)',
-                        label: 'Régulière à l\'heure (5 prières)',
-                        badge: 'Assiduité complète',
-                      },
-                      {
-                        value: 'Pratique modérée avec effort constant',
-                        label: 'Pratique modérée avec effort constant',
-                        badge: 'En régularisation',
-                      },
-                      {
-                        value: 'En progression spirituelle',
-                        label: 'En progression spirituelle',
-                        badge: 'Apprentissage continu',
-                      },
-                    ]}
-                  />
-                </div>
-              )}
-
-              {/* ============================================================ */}
-              {/* ÉTAPE 6 : ÉTUDES & PROFESSION                                */}
-              {/* ============================================================ */}
-              {currentStep === 6 && (
-                <div className="space-y-6">
-                  <PremiumSelect
-                    label="Niveau d'études académiques ou islamiques"
-                    icon="school"
-                    value={education}
-                    onChange={(val) => setEducation(val)}
-                    options={[
-                      'Baccalauréat',
-                      'Licence / Bac+3',
-                      'Master / Bac+5',
-                      'Doctorat / Ph.D',
-                      'Formation professionnelle / BTS',
-                      'Études islamiques supérieures',
-                      'Autre niveau d\'études',
-                    ]}
-                  />
-
-                  <PremiumSelect
-                    label="Catégorie socio-professionnelle"
-                    icon="work"
-                    value={professionCategory}
-                    onChange={(val) => setProfessionCategory(val)}
-                    options={[
-                      'Fonction publique & Administration',
-                      'Secteur Privé / Cadre',
-                      'Commerce & Entreprenariat',
-                      'Santé & Médical',
-                      'Éducation & Enseignement',
-                      'Étudiant(e) / Formation',
-                      'Foyer / Sans activité professionnelle',
-                      'Autre profession',
-                    ]}
-                  />
-
-                  <div className="space-y-1.5">
-                    <label className="font-display text-xs font-bold text-[#575147]">
-                      Précision sur votre profession ou métier :
-                    </label>
-                    <input
-                      type="text"
-                      value={profession}
-                      onChange={(e) => setProfession(e.target.value)}
-                      placeholder="Ex: Enseignant, Comptable, Commerçant(e), Juriste, Ingénieur..."
-                      className="w-full h-12 px-4 bg-white border border-[#E8E3D7] rounded-2xl text-xs sm:text-sm text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* ============================================================ */}
-              {/* ÉTAPE 7 : PERSONNALITÉ & PRIORITÉ FAMILIALE                  */}
-              {/* ============================================================ */}
-              {currentStep === 7 && (
-                <div className="space-y-6">
-                  <PremiumSelect
-                    label="Trait de caractère principal"
-                    icon="psychology"
-                    value={personalityTrait}
-                    onChange={(val) => setPersonalityTrait(val)}
-                    options={[
-                      'Calme & Posé(e)',
-                      'Sérieux(se) & Organisé(e)',
-                      'Chaleureux(se) & Sociable',
-                      'Pieux(se) & Discret(ète)',
-                      'Généreux(se) & Bienveillant(e)',
-                      'Ambitieux(se) & Déterminé(e)',
-                    ]}
-                  />
-
-                  <PremiumSelect
-                    label="Place de la famille dans votre vie quotidienne"
-                    icon="home"
-                    value={familyImportance}
-                    onChange={(val) => setFamilyImportance(val)}
-                    options={[
-                      {
-                        value: 'Priorité absolue au quotidien',
-                        label: 'Priorité absolue au quotidien',
-                        sublabel: 'Très proche des parents et de la belle-famille',
-                      },
-                      {
-                        value: 'Très importante avec respect de l\'espace du couple',
-                        label: 'Très importante avec équilibre du couple',
-                        sublabel: 'Harmonie familiale et préservation de l\'intimité conjugale',
-                      },
-                      {
-                        value: 'Équilibrée et harmonieuse',
-                        label: 'Équilibrée et harmonieuse',
-                        sublabel: 'Ouvert à la conciliation bienveillante',
-                      },
-                    ]}
-                  />
-                </div>
-              )}
-
-              {/* ============================================================ */}
-              {/* ÉTAPE 8 : HORIZON DE MARIAGE & ORIGINE                      */}
-              {/* ============================================================ */}
-              {currentStep === 8 && (
-                <div className="space-y-6">
                   <PremiumSelect
                     label="Horizon souhaité pour concrétiser le mariage (Zawaj)"
                     icon="event"
@@ -949,32 +1394,11 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                       },
                     ]}
                   />
-
-                  <PremiumSelect
-                    label="Région d'origine / Attachement communautaire"
-                    icon="travel_explore"
-                    value={originRegion}
-                    onChange={(val) => setOriginRegion(val)}
-                    options={[
-                      'Originaire du Niger (Toutes régions)',
-                      'Région de Niamey',
-                      'Région de Maradi',
-                      'Région de Zinder',
-                      'Région de Tahoua',
-                      'Région de Dosso',
-                      'Région d\'Agadez',
-                      'Région de Tillabéri',
-                      'Région de Diffa',
-                      'Diaspora / International',
-                    ]}
-                  />
                 </div>
               )}
 
-              {/* ============================================================ */}
-              {/* ÉTAPE 9 : TUTEUR LÉGAL (WALI)                                */}
-              {/* ============================================================ */}
-              {currentStep === 9 && (
+              {/* ÉTAPE 13 : TUTEUR LÉGAL (WALI) */}
+              {currentStep === 13 && (
                 <div className="space-y-6">
                   <div className="p-4 bg-[#C9A45C]/15 border border-[#C9A45C]/30 rounded-2xl flex items-start gap-3 text-xs text-[#735619]">
                     <span className="material-symbols-outlined text-lg text-[#C9A45C] shrink-0 mt-0.5">
@@ -1049,10 +1473,8 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                 </div>
               )}
 
-              {/* ============================================================ */}
-              {/* ÉTAPE 10 : CHARTE ÉTHIQUE & ENGAGEMENT                       */}
-              {/* ============================================================ */}
-              {currentStep === 10 && (
+              {/* ÉTAPE 14 : CHARTE ÉTHIQUE */}
+              {currentStep === 14 && (
                 <div className="space-y-6">
                   <div className="p-6 bg-[#FAF8F2] rounded-3xl border border-[#E8E3D7] space-y-4 text-xs leading-relaxed text-[#575147]">
                     <h4 className="font-display text-sm font-bold text-[#0F5C4D] flex items-center gap-2">
@@ -1085,69 +1507,169 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                 </div>
               )}
 
-              {/* ============================================================ */}
-              {/* ÉTAPE 11 : PHOTOS & PUDEUR DU PROFIL                         */}
-              {/* ============================================================ */}
-              {currentStep === 11 && (
+              {/* ÉTAPE 15 : PHOTOS & VISIBILITÉ DU PROFIL */}
+              {currentStep === 15 && (
                 <div className="space-y-6">
-                  <div className="p-4 bg-[#8BAE9F]/15 border border-[#8BAE9F]/30 rounded-2xl flex items-start gap-3 text-xs text-[#0F5C4D]">
-                    <span className="material-symbols-outlined text-lg shrink-0 mt-0.5">
-                      verified_user
+                  {/* Critical Visibility Rule Banner */}
+                  <div
+                    className={`p-4 rounded-2xl border flex items-start gap-3 text-xs leading-relaxed ${
+                      isVisibleOnApp
+                        ? 'bg-[#8BAE9F]/15 border-[#0F5C4D]/30 text-[#0F5C4D]'
+                        : 'bg-amber-50 border-amber-300 text-amber-900'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-xl shrink-0 mt-0.5">
+                      {isVisibleOnApp ? 'verified' : 'warning'}
                     </span>
-                    <div className="leading-relaxed">
-                      <strong className="font-bold">Contrôle de la Pudeur :</strong>
-                      <p className="mt-0.5 text-[#575147]">
-                        Vous pouvez ajouter jusqu'à 3 photos. Par défaut, vos photos bénéficient du mode flouté pour préserver votre intimité. Les autres membres ne pourront les visualiser qu'après votre consentement mutuel.
+                    <div className="space-y-1">
+                      <strong className="font-bold text-sm block">
+                        Règles strictes de visibilité sur NASSIB :
+                      </strong>
+                      <p>
+                        <strong>1. Photo obligatoire :</strong> Tout profil n'ayant aucune photo reste <strong>automatiquement masqué et invisible</strong> aux autres membres.
+                      </p>
+                      <p>
+                        <strong>2. Complétion minimale de 50% :</strong> Tout profil dont le pourcentage de complétion est inférieur à 50% reste également <strong>non visible</strong> sur l'application.
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {[0, 1, 2].map((idx) => {
-                      const photoUrl = uploadedPhotos[idx];
-                      return (
-                        <div
-                          key={idx}
-                          className="relative aspect-square rounded-2xl border-2 border-dashed border-[#E8E3D7] bg-[#FAF8F2] overflow-hidden flex flex-col items-center justify-center text-center p-2 group hover:border-[#0F5C4D] transition-colors"
-                        >
-                          {photoUrl ? (
-                            <>
-                              <img
-                                src={photoUrl}
-                                alt={`Photo ${idx + 1}`}
-                                className="w-full h-full object-cover rounded-xl"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleRemovePhoto(idx)}
-                                className="absolute top-2 right-2 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-red-700"
-                                title="Supprimer"
-                              >
-                                <span className="material-symbols-outlined text-sm">close</span>
-                              </button>
-                            </>
+                  {/* Dynamic Score & Status Card */}
+                  <div className="p-5 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-bold text-[#211E1A]">
+                          Taux de complétion de votre profil :
+                        </span>
+                        <div className="text-[11px] text-[#575147]">
+                          Statut actuel :{' '}
+                          {isVisibleOnApp ? (
+                            <span className="text-emerald-700 font-bold">
+                              Visible aux autres membres
+                            </span>
                           ) : (
-                            <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
-                              <span className="material-symbols-outlined text-3xl text-[#7D766C] group-hover:text-[#0F5C4D] mb-1.5">
-                                add_a_photo
-                              </span>
-                              <span className="text-xs font-bold text-[#7D766C] group-hover:text-[#0F5C4D]">
-                                {idx === 0 ? 'Photo principale' : `Photo ${idx + 1}`}
-                              </span>
-                              <span className="text-[10px] text-[#7D766C]/80 mt-1">
-                                (Optionnelle pour débuter)
-                              </span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handlePhotoUpload(idx, e)}
-                                className="hidden"
-                              />
-                            </label>
+                            <span className="text-amber-800 font-bold">
+                              Non visible sur l'application (Masqué)
+                            </span>
                           )}
                         </div>
-                      );
-                    })}
+                      </div>
+                      <span
+                        className={`text-xl font-bold font-mono px-3 py-1 rounded-xl ${
+                          currentCompletionScore >= 50
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {currentCompletionScore}%
+                      </span>
+                    </div>
+
+                    <div className="w-full h-2.5 bg-white border border-[#E8E3D7] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          currentCompletionScore >= 50 ? 'bg-[#0F5C4D]' : 'bg-amber-500'
+                        }`}
+                        style={{ width: `${currentCompletionScore}%` }}
+                      ></div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`material-symbols-outlined text-sm font-bold ${
+                            hasPhoto ? 'text-emerald-600' : 'text-red-500'
+                          }`}
+                        >
+                          {hasPhoto ? 'check_circle' : 'cancel'}
+                        </span>
+                        <span className={hasPhoto ? 'text-[#211E1A]' : 'text-red-600 font-semibold'}>
+                          Photo ajoutée ({hasPhoto ? 'Oui' : 'Non - Requise'})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`material-symbols-outlined text-sm font-bold ${
+                            currentCompletionScore >= 50 ? 'text-emerald-600' : 'text-red-500'
+                          }`}
+                        >
+                          {currentCompletionScore >= 50 ? 'check_circle' : 'cancel'}
+                        </span>
+                        <span
+                          className={
+                            currentCompletionScore >= 50 ? 'text-[#211E1A]' : 'text-red-600 font-semibold'
+                          }
+                        >
+                          Complétion ≥ 50% ({currentCompletionScore}%)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Photo Upload Boxes */}
+                  <div className="space-y-2">
+                    <label className="font-display text-xs font-bold text-[#211E1A] block">
+                      Téléversez votre photo de profil (au moins 1 pour être visible) :
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {[0, 1, 2].map((idx) => {
+                        const photoUrl = uploadedPhotos[idx];
+                        return (
+                          <div
+                            key={idx}
+                            className={`relative aspect-square rounded-2xl border-2 border-dashed overflow-hidden flex flex-col items-center justify-center text-center p-2 group transition-colors ${
+                              idx === 0 && !photoUrl
+                                ? 'border-[#0F5C4D] bg-[#0F5C4D]/5'
+                                : 'border-[#E8E3D7] bg-[#FAF8F2] hover:border-[#0F5C4D]'
+                            }`}
+                          >
+                            {photoUrl ? (
+                              <>
+                                <img
+                                  src={photoUrl}
+                                  alt={`Photo ${idx + 1}`}
+                                  className="w-full h-full object-cover rounded-xl"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePhoto(idx)}
+                                  className="absolute top-2 right-2 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-red-700"
+                                  title="Supprimer"
+                                >
+                                  <span className="material-symbols-outlined text-sm">close</span>
+                                </button>
+                              </>
+                            ) : (
+                              <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-3">
+                                <span
+                                  className={`material-symbols-outlined text-3xl mb-1.5 ${
+                                    idx === 0 ? 'text-[#0F5C4D]' : 'text-[#7D766C] group-hover:text-[#0F5C4D]'
+                                  }`}
+                                >
+                                  add_a_photo
+                                </span>
+                                <span
+                                  className={`text-xs font-bold ${
+                                    idx === 0 ? 'text-[#0F5C4D]' : 'text-[#7D766C] group-hover:text-[#0F5C4D]'
+                                  }`}
+                                >
+                                  {idx === 0 ? 'Photo principale *' : `Photo ${idx + 1}`}
+                                </span>
+                                <span className="text-[10px] text-[#7D766C]/90 mt-1">
+                                  {idx === 0 ? '(Obligatoire pour visibilité)' : '(Complémentaire)'}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handlePhotoUpload(idx, e)}
+                                  className="hidden"
+                                />
+                              </label>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1167,7 +1689,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
               <button
                 type="button"
                 onClick={handleNext}
-                disabled={currentStep === 10 && !agreedToTerms}
+                disabled={currentStep === 14 && !agreedToTerms}
                 className="w-full sm:w-auto px-8 py-3.5 bg-[#0F5C4D] text-white hover:bg-[#0c4a3e] rounded-2xl font-display text-xs sm:text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <span>

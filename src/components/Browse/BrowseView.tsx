@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Profile, User } from '../../types';
+import { Profile, User, isProfileVisible } from '../../types';
 
 interface BrowseViewProps {
   user: User;
@@ -21,31 +21,96 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedAgeRange, setSelectedAgeRange] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [showMoreFilters, setShowMoreFilters] = useState<boolean>(false);
   const [onlyVerified, setOnlyVerified] = useState<boolean>(false);
   const [mahramModeActive, setMahramModeActive] = useState<boolean>(false);
-  const [visibleCount, setVisibleCount] = useState<number>(6);
+  const [visibleCount, setVisibleCount] = useState<number>(12);
+
+  // Filter Modal state
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
+  const [draftCity, setDraftCity] = useState<string>('');
+  const [draftAgeRange, setDraftAgeRange] = useState<string>('');
+  const [draftStatus, setDraftStatus] = useState<string>('');
+  const [draftOnlyVerified, setDraftOnlyVerified] = useState<boolean>(false);
+
+  const openFilterModal = () => {
+    setDraftCity(selectedCity);
+    setDraftAgeRange(selectedAgeRange);
+    setDraftStatus(selectedStatus);
+    setDraftOnlyVerified(onlyVerified);
+    setIsFilterModalOpen(true);
+  };
+
+  const applyDraftFilters = () => {
+    setSelectedCity(draftCity);
+    setSelectedAgeRange(draftAgeRange);
+    setSelectedStatus(draftStatus);
+    setOnlyVerified(draftOnlyVerified);
+    setIsFilterModalOpen(false);
+  };
+
+  const resetDraftFilters = () => {
+    setDraftCity('');
+    setDraftAgeRange('');
+    setDraftStatus('');
+    setDraftOnlyVerified(false);
+  };
+
+  const clearAllActiveFilters = () => {
+    setSelectedCity('');
+    setSelectedAgeRange('');
+    setSelectedStatus('');
+    setOnlyVerified(false);
+  };
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedCity) count++;
+    if (selectedAgeRange) count++;
+    if (selectedStatus) count++;
+    if (onlyVerified) count++;
+    return count;
+  }, [selectedCity, selectedAgeRange, selectedStatus, onlyVerified]);
+
+  const activeFiltersSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (selectedCity) parts.push(selectedCity);
+    if (selectedAgeRange) parts.push(`${selectedAgeRange} ans`);
+    if (selectedStatus) parts.push(selectedStatus);
+    if (onlyVerified) parts.push('Vérifié NNI');
+    if (parts.length === 0) return 'Tous critères • Aucune restriction';
+    return parts.join(' • ');
+  }, [selectedCity, selectedAgeRange, selectedStatus, onlyVerified]);
+
+  // Helper to normalize gender strings safely
+  const normalizeGender = (g?: string): 'male' | 'female' | 'unknown' => {
+    if (!g) return 'unknown';
+    const s = String(g).toLowerCase().trim();
+    if (s === 'male' || s === 'homme' || s === 'garçon' || s === 'garcon' || s === 'h' || s === 'm') return 'male';
+    if (s === 'female' || s === 'femme' || s === 'fille' || s === 'f') return 'female';
+    return 'unknown';
+  };
 
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {
-      // Rule 1: Hide profile if user has not uploaded any image
-      const hasPhoto = Boolean(
-        (p.photoUrl && p.photoUrl.trim() !== '') ||
-        (p.photos && p.photos.some((ph) => Boolean(ph) && ph.trim() !== ''))
-      );
-      if (!hasPhoto) return false;
+      // 1. Règle Halal Stricte :
+      // - Si un garçon (homme) est connecté, il voit UNIQUEMENT tous les profils de filles (femmes).
+      // - Si une fille (femme) est connectée, elle voit UNIQUEMENT tous les profils de garçons (hommes).
+      // Note : Cette logique affiche tous les profils inscrits (distincte de la recommandation de l'accueil).
+      const userGender = normalizeGender(user.gender);
+      const profGender = normalizeGender(p.gender);
 
-      // Rule 2: Opposite gender filtering (Men see women, women see men)
-      const userGender = (user.gender || '').toLowerCase();
-      const profGender = (p.gender || '').toLowerCase();
-      if (userGender === 'male' && profGender !== 'female') return false;
-      if (userGender === 'female' && profGender !== 'male') return false;
+      if (userGender === 'male') {
+        if (profGender !== 'female') return false;
+      } else if (userGender === 'female') {
+        if (profGender !== 'male') return false;
+      }
 
-      // Rule 3: Hide own profile
+      // 2. Masquer son propre profil
       if (user.id && (p.userId === user.id || p.id === user.id)) return false;
       if (user.email && (p.email === user.email || p.userEmail === user.email)) return false;
+      if (user.name && p.name && user.name.trim().toLowerCase() === p.name.trim().toLowerCase()) return false;
 
-      // Standard user filters
+      // 3. Filtres optionnels choisis par l'utilisateur
       if (selectedCity && p.city !== selectedCity) return false;
       if (selectedStatus && p.maritalStatus !== selectedStatus) return false;
       if (onlyVerified && !p.isVerifiedNNI) return false;
@@ -59,190 +124,340 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
 
       return true;
     });
-  }, [profiles, user.gender, user.id, user.email, selectedCity, selectedAgeRange, selectedStatus, onlyVerified]);
+  }, [profiles, user.gender, user.id, user.email, user.name, selectedCity, selectedAgeRange, selectedStatus, onlyVerified]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-fadeIn relative pb-12">
-      {/* Search Header & Filter Bar */}
-      <section className="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#E8E3D7] shadow-xs flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="font-serif-display text-xl sm:text-2xl font-bold text-[#211E1A]">
-                Trouvez votre Partenaire de Vie
-              </h2>
-              {user.gender && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#8BAE9F]/15 text-[#0F5C4D] border border-[#8BAE9F]/30 text-xs font-semibold shrink-0">
-                  <span className="material-symbols-outlined text-sm">
-                    {user.gender === 'female' ? 'male' : 'female'}
-                  </span>
-                  <span>
-                    {user.gender === 'female' ? 'Profils Hommes' : 'Profils Femmes'}
-                  </span>
-                </div>
-              )}
+    <div className="max-w-7xl mx-auto space-y-6 animate-fadeIn relative pb-12">
+      {/* Title & Context - Positioned directly at the top outside the card */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#0F5C4D]">
+              Trouvez votre partenaire
+            </h1>
+            {user.gender && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#8BAE9F]/15 text-[#0F5C4D] border border-[#8BAE9F]/30 text-xs font-semibold shrink-0">
+                <span className="material-symbols-outlined text-sm">
+                  {normalizeGender(user.gender) === 'female' ? 'male' : 'female'}
+                </span>
+                <span>
+                  {normalizeGender(user.gender) === 'female' ? 'Profils Hommes Inscrits' : 'Profils Femmes Inscrites'}
+                </span>
+              </span>
+            )}
+          </div>
+          <p className="font-body text-xs sm:text-sm text-[#575147]">
+            {normalizeGender(user.gender) === 'female'
+              ? 'Tous les profils hommes inscrits vérifiés selon les critères islamiques et traditionnels.'
+              : normalizeGender(user.gender) === 'male'
+              ? 'Tous les profils femmes inscrits vérifiés avec accompagnement du tuteur légal (Wali).'
+              : 'Tous les profils inscrits vérifiés selon les valeurs de respect.'}
+          </p>
+        </div>
+
+        <span className="text-[11px] font-bold text-[#0F5C4D] bg-[#8BAE9F]/15 px-3 py-1.5 rounded-full border border-[#8BAE9F]/30 shrink-0">
+          {filteredProfiles.length} profil(s) inscrit(s)
+        </span>
+      </div>
+
+      {/* Minimized Filter Trigger Card (few mm high, opens modal on click) */}
+      <div className="space-y-2">
+        <div
+          onClick={openFilterModal}
+          className="bg-white rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-2.5 border border-[#E8E3D7] shadow-2xs hover:shadow-xs hover:border-[#0F5C4D]/40 transition-all cursor-pointer flex items-center justify-between gap-3 group"
+        >
+          <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
+            <div className="w-7 h-7 rounded-lg bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center shrink-0 group-hover:bg-[#0F5C4D] group-hover:text-white transition-colors">
+              <span className="material-symbols-outlined text-[17px]">tune</span>
             </div>
-            <p className="font-body text-xs sm:text-sm text-[#575147]">
-              {user.gender === 'female'
-                ? 'Profils hommes vérifiés selon les critères islamiques et traditionnels.'
-                : user.gender === 'male'
-                ? 'Profils femmes vérifiés avec accompagnement du tuteur légal (Wali).'
-                : 'Profils vérifiés selon les valeurs de respect.'}
-            </p>
+            <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A] shrink-0">
+                Filtres de recherche
+              </span>
+              {activeFiltersCount > 0 && (
+                <span className="bg-[#C9A45C] text-[#211E1A] text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                  {activeFiltersCount} actif{activeFiltersCount > 1 ? 's' : ''}
+                </span>
+              )}
+              <span className="text-[#7D766C] text-xs truncate hidden sm:inline">
+                • {activeFiltersSummary}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-            <span className="text-[11px] font-bold text-[#0F5C4D] bg-[#8BAE9F]/15 px-2.5 py-1 rounded-full border border-[#8BAE9F]/30">
-              {filteredProfiles.length} profil(s)
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0F5C4D] shrink-0">
+            <span className="hidden xs:inline text-xs">Filtrer</span>
+            <span className="material-symbols-outlined text-base group-hover:translate-x-0.5 transition-transform">
+              chevron_right
             </span>
-
-            {/* Mobile Filter Toggle */}
-            <button
-              onClick={() => setShowMoreFilters(!showMoreFilters)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-body text-xs font-semibold transition-all cursor-pointer ${
-                showMoreFilters 
-                  ? 'bg-[#0F5C4D] text-white border-[#0F5C4D]' 
-                  : 'bg-[#FAF8F2] text-[#211E1A] border-[#E8E3D7] hover:bg-[#E8E3D7]/50'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">tune</span>
-              <span>Filtres {showMoreFilters ? '▲' : '▼'}</span>
-            </button>
           </div>
         </div>
 
-        {/* Quick Filter Horizontal Scrollbar for Mobile / Desktop */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-1 -mx-1 px-1">
-          <button
-            onClick={() => setSelectedCity('')}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
-              selectedCity === ''
-                ? 'bg-[#0F5C4D] text-white shadow-xs'
-                : 'bg-[#FAF8F2] text-[#575147] hover:bg-[#E8E3D7] border border-[#E8E3D7]'
-            }`}
-          >
-            Toutes Villes
-          </button>
-          {['Niamey', 'Zinder', 'Maradi', 'Tahoua', 'Agadez', 'Dosso'].map((city) => (
-            <button
-              key={city}
-              onClick={() => setSelectedCity(selectedCity === city ? '' : city)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
-                selectedCity === city
-                  ? 'bg-[#0F5C4D] text-white shadow-xs'
-                  : 'bg-[#FAF8F2] text-[#575147] hover:bg-[#E8E3D7] border border-[#E8E3D7]'
-              }`}
-            >
-              {city}
-            </button>
-          ))}
-
-          {/* Quick NNI filter toggle */}
-          <button
-            onClick={() => setOnlyVerified(!onlyVerified)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
-              onlyVerified
-                ? 'bg-[#0F5C4D] text-white shadow-xs'
-                : 'bg-[#FAF8F2] text-[#0F5C4D] border border-[#8BAE9F]/40'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-              verified
-            </span>
-            <span>Vérifié NNI</span>
-          </button>
-        </div>
-
-        {/* Filter Controls (Dropdowns shown when desktop or expanded) */}
-        <div className="hidden sm:flex flex-wrap items-center gap-3 pt-2 border-t border-[#E8E3D7]/60">
-          {/* Location Dropdown */}
-          <div className="relative min-w-[150px]">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#7D766C] text-sm pointer-events-none">
-              location_on
-            </span>
-            <select
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="pl-9 pr-8 py-2 rounded-xl border border-[#E8E3D7] bg-[#FAF8F2] text-[#211E1A] font-body text-xs appearance-none focus:ring-1 focus:ring-[#0F5C4D] focus:border-[#0F5C4D] transition-colors cursor-pointer w-full"
-            >
-              <option value="">Toutes les Villes</option>
-              <option value="Niamey">Niamey</option>
-              <option value="Zinder">Zinder</option>
-              <option value="Maradi">Maradi</option>
-              <option value="Tahoua">Tahoua</option>
-              <option value="Agadez">Agadez</option>
-              <option value="Dosso">Dosso</option>
-              <option value="Tillabéri">Tillabéri</option>
-            </select>
-            <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-[#7D766C] text-sm pointer-events-none">
-              arrow_drop_down
-            </span>
-          </div>
-
-          {/* Age Range Dropdown */}
-          <div className="relative min-w-[140px]">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#7D766C] text-sm pointer-events-none">
-              cake
-            </span>
-            <select
-              value={selectedAgeRange}
-              onChange={(e) => setSelectedAgeRange(e.target.value)}
-              className="pl-9 pr-8 py-2 rounded-xl border border-[#E8E3D7] bg-[#FAF8F2] text-[#211E1A] font-body text-xs appearance-none focus:ring-1 focus:ring-[#0F5C4D] focus:border-[#0F5C4D] transition-colors cursor-pointer w-full"
-            >
-              <option value="">Tout Âge</option>
-              <option value="18-25">18 - 25 ans</option>
-              <option value="26-32">26 - 32 ans</option>
-              <option value="33-40">33 - 40 ans</option>
-              <option value="40+">40 ans et +</option>
-            </select>
-            <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-[#7D766C] text-sm pointer-events-none">
-              arrow_drop_down
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Expanded Filter Panel */}
-      {showMoreFilters && (
-        <div className="rounded-2xl p-6 shadow-sm border border-[#E8E3D7] bg-white flex flex-wrap gap-6 items-center animate-fadeIn">
-          <div>
-            <label className="font-body text-xs font-semibold text-[#575147] block mb-2">
-              Statut Matrimonial
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {['', 'Jamais marié(e)', 'Divorcé(e)', 'Veuf/Veuve'].map((st) => (
+        {/* Active filter badges if any are active */}
+        {activeFiltersCount > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap px-1">
+            <span className="text-[11px] font-semibold text-[#575147]">Filtres appliqués :</span>
+            {selectedCity && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] text-xs font-medium">
+                {selectedCity}
                 <button
-                  key={st}
-                  onClick={() => setSelectedStatus(st)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                    selectedStatus === st
-                      ? 'bg-[#0F5C4D] text-white'
-                      : 'bg-[#FAF8F2] text-[#211E1A] hover:bg-[#E8E3D7] border border-[#E8E3D7]'
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCity('');
+                  }}
+                  className="hover:text-red-500 cursor-pointer ml-0.5"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {selectedAgeRange && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] text-xs font-medium">
+                {selectedAgeRange} ans
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedAgeRange('');
+                  }}
+                  className="hover:text-red-500 cursor-pointer ml-0.5"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {selectedStatus && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] text-xs font-medium">
+                {selectedStatus}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedStatus('');
+                  }}
+                  className="hover:text-red-500 cursor-pointer ml-0.5"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {onlyVerified && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] text-xs font-medium">
+                Vérifié NNI
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOnlyVerified(false);
+                  }}
+                  className="hover:text-red-500 cursor-pointer ml-0.5"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={clearAllActiveFilters}
+              className="text-xs text-[#735619] underline font-medium hover:text-[#211E1A] ml-1 cursor-pointer"
+            >
+              Tout effacer
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Filter Modal */}
+      {isFilterModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-[#211E1A]/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setIsFilterModalOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl border border-[#E8E3D7] max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-5 animate-scaleUp max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-[#E8E3D7]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-xl">tune</span>
+                </div>
+                <div>
+                  <h3 className="font-serif-display text-lg sm:text-xl font-bold text-[#211E1A]">
+                    Filtres de recherche
+                  </h3>
+                  <p className="font-body text-xs text-[#7D766C]">
+                    Choisissez vos critères et appliquez-les
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsFilterModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-[#FAF8F2] hover:bg-[#E8E3D7] text-[#7D766C] hover:text-[#211E1A] flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="space-y-4">
+              {/* City Filter */}
+              <div>
+                <label className="font-display text-xs font-bold text-[#211E1A] flex items-center gap-1.5 mb-2">
+                  <span className="material-symbols-outlined text-sm text-[#0F5C4D]">location_on</span>
+                  Ville / Région
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: '', label: 'Toutes les villes' },
+                    { id: 'Niamey', label: 'Niamey' },
+                    { id: 'Zinder', label: 'Zinder' },
+                    { id: 'Maradi', label: 'Maradi' },
+                    { id: 'Tahoua', label: 'Tahoua' },
+                    { id: 'Agadez', label: 'Agadez' },
+                    { id: 'Dosso', label: 'Dosso' },
+                    { id: 'Tillabéri', label: 'Tillabéri' },
+                    { id: 'Diffa', label: 'Diffa' },
+                  ].map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setDraftCity(c.id)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                        draftCity === c.id
+                          ? 'bg-[#0F5C4D] text-white shadow-xs font-semibold'
+                          : 'bg-[#FAF8F2] text-[#575147] hover:bg-[#E8E3D7] border border-[#E8E3D7]'
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Age Range Filter */}
+              <div>
+                <label className="font-display text-xs font-bold text-[#211E1A] flex items-center gap-1.5 mb-2">
+                  <span className="material-symbols-outlined text-sm text-[#0F5C4D]">cake</span>
+                  Tranche d'âge
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                  {[
+                    { id: '', label: 'Tout âge' },
+                    { id: '18-25', label: '18-25 ans' },
+                    { id: '26-32', label: '26-32 ans' },
+                    { id: '33-40', label: '33-40 ans' },
+                    { id: '40+', label: '40 ans +' },
+                  ].map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => setDraftAgeRange(a.id)}
+                      className={`px-2.5 py-2 rounded-xl text-xs font-medium text-center transition-all cursor-pointer ${
+                        draftAgeRange === a.id
+                          ? 'bg-[#0F5C4D] text-white shadow-xs font-semibold'
+                          : 'bg-[#FAF8F2] text-[#575147] hover:bg-[#E8E3D7] border border-[#E8E3D7]'
+                      }`}
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Marital Status Filter */}
+              <div>
+                <label className="font-display text-xs font-bold text-[#211E1A] flex items-center gap-1.5 mb-2">
+                  <span className="material-symbols-outlined text-sm text-[#0F5C4D]">favorite</span>
+                  Statut matrimonial
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: '', label: 'Tous les statuts' },
+                    { id: 'Jamais marié(e)', label: 'Jamais marié(e)' },
+                    { id: 'Divorcé(e)', label: 'Divorcé(e)' },
+                    { id: 'Veuf/Veuve', label: 'Veuf / Veuve' },
+                  ].map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setDraftStatus(st.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                        draftStatus === st.id
+                          ? 'bg-[#0F5C4D] text-white shadow-xs font-semibold'
+                          : 'bg-[#FAF8F2] text-[#575147] hover:bg-[#E8E3D7] border border-[#E8E3D7]'
+                      }`}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* NNI Verification Toggle */}
+              <div className="pt-2 border-t border-[#E8E3D7]">
+                <button
+                  type="button"
+                  onClick={() => setDraftOnlyVerified(!draftOnlyVerified)}
+                  className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
+                    draftOnlyVerified
+                      ? 'bg-[#8BAE9F]/15 border-[#0F5C4D] text-[#0F5C4D]'
+                      : 'bg-[#FAF8F2] border-[#E8E3D7] text-[#575147] hover:bg-[#E8E3D7]/50'
                   }`}
                 >
-                  {st === '' ? 'Tous' : st}
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="material-symbols-outlined text-xl text-[#0F5C4D]"
+                      style={{ fontVariationSettings: draftOnlyVerified ? "'FILL' 1" : "'FILL' 0" }}
+                    >
+                      verified
+                    </span>
+                    <div className="text-left">
+                      <p className="font-display text-xs font-bold text-[#211E1A]">
+                        Profils vérifiés NNI uniquement
+                      </p>
+                      <p className="font-body text-[11px] text-[#7D766C]">
+                        Afficher seulement les membres dont l'identité est validée
+                      </p>
+                    </div>
+                  </div>
+                  <span className="material-symbols-outlined text-xl">
+                    {draftOnlyVerified ? 'check_circle' : 'radio_button_unchecked'}
+                  </span>
                 </button>
-              ))}
+              </div>
             </div>
-          </div>
 
-          <div className="border-l border-[#E8E3D7] pl-6">
-            <label className="font-body text-xs font-semibold text-[#575147] block mb-2">
-              Vérification Obligatoire
-            </label>
-            <button
-              onClick={() => setOnlyVerified(!onlyVerified)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
-                onlyVerified
-                  ? 'bg-[#8BAE9F]/20 border-[#0F5C4D] text-[#0F5C4D]'
-                  : 'border-[#E8E3D7] text-[#575147] bg-[#FAF8F2]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-sm font-bold">
-                {onlyVerified ? 'check_box' : 'checkbox_outline_blank'}
-              </span>
-              Uniquement profils vérifiés NNI
-            </button>
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between pt-4 border-t border-[#E8E3D7] gap-3">
+              <button
+                type="button"
+                onClick={resetDraftFilters}
+                className="px-3 py-2 rounded-xl text-xs font-display font-semibold text-[#7D766C] hover:text-[#211E1A] hover:bg-[#FAF8F2] transition-colors cursor-pointer"
+              >
+                Réinitialiser
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsFilterModalOpen(false)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-display font-semibold text-[#575147] border border-[#E8E3D7] hover:bg-[#FAF8F2] transition-colors cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={applyDraftFilters}
+                  className="px-4 py-2 rounded-xl bg-[#0F5C4D] text-white text-xs font-display font-bold hover:bg-[#0c4a3e] transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-sm">check</span>
+                  <span>Appliquer les filtres</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

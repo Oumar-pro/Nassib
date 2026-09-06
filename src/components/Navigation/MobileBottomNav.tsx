@@ -10,14 +10,13 @@ interface MobileBottomNavProps {
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   currentTab,
   onSelectTab,
-  unreadCount = 1
+  unreadCount = 0
 }) => {
   const tabs: { id: TabType; label: string; icon: string; badge?: number; special?: boolean }[] = [
     { id: 'dashboard', label: 'Accueil', icon: 'home' },
     { id: 'browse', label: 'Découvrir', icon: 'explore' },
-    { id: 'imam', label: 'Imam IA', icon: 'auto_awesome', special: true },
     { id: 'messages', label: 'Messages', icon: 'chat_bubble', badge: unreadCount },
-    { id: 'settings', label: 'Mon Profil', icon: 'person' },
+    { id: 'settings', label: 'Paramètres', icon: 'settings' },
   ];
 
   return (

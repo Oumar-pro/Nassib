@@ -63,7 +63,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   });
 
   return (
-    <div className="min-h-[calc(100vh-6rem)] flex flex-col bg-[#FAF8F2] rounded-3xl overflow-hidden shadow-sm border border-[#E8E3D7]">
+    <div className="space-y-6 max-w-5xl mx-auto animate-fadeIn min-h-[calc(100vh-6rem)]">
       <AnimatePresence mode="wait">
         {selectedConvId === null || !currentConv ? (
           /* VIEW 1: CONVERSATIONS LIST ONLY */
@@ -73,18 +73,18 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -15 }}
             transition={{ duration: 0.25 }}
-            className="flex flex-col flex-grow bg-white min-h-[calc(100vh-6rem)]"
+            className="flex flex-col space-y-4"
           >
-            {/* Conversations Header */}
-            <div className="p-6 border-b border-[#E8E3D7] bg-white/90 backdrop-blur-md sticky top-0 z-10">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            {/* Conversations Header (directly on background) */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h1 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#0F5C4D]">
                     Mes Discussions & Messages
                   </h1>
                   <p className="font-body text-xs sm:text-sm text-[#575147] mt-0.5 flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-sm text-[#C9A45C]">security</span>
-                    Échanges éthiques sous la supervision de votre Wali ({user.waliInfo.name})
+                    Échanges éthiques sous la supervision de votre Wali ({user.waliInfo?.name || 'Tuteur'})
                   </p>
                 </div>
 
@@ -106,7 +106,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Rechercher par nom, ville ou message..."
-                    className="w-full bg-[#FAF8F2] border border-[#E8E3D7] rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm font-body text-[#211E1A] focus:ring-2 focus:ring-[#0F5C4D]/20 focus:border-[#0F5C4D] transition-all placeholder:text-[#7D766C]"
+                    className="w-full bg-white border border-[#E8E3D7] rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm font-body text-[#211E1A] focus:ring-2 focus:ring-[#0F5C4D]/20 focus:border-[#0F5C4D] transition-all placeholder:text-[#7D766C] shadow-2xs"
                   />
                   {searchQuery && (
                     <button
@@ -119,7 +119,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 </div>
 
                 {/* Filter Tabs */}
-                <div className="flex bg-[#FAF8F2] p-1 rounded-2xl border border-[#E8E3D7] shrink-0">
+                <div className="flex bg-white p-1 rounded-2xl border border-[#E8E3D7] shrink-0 shadow-2xs">
                   <button
                     onClick={() => setFilterTab('all')}
                     className={`px-3 py-1.5 rounded-xl font-body text-xs font-semibold transition-all cursor-pointer ${
@@ -155,7 +155,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             </div>
 
             {/* Conversations List Items */}
-            <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-3 custom-scrollbar">
+            <div className="space-y-3 pt-2">
               {filteredConversations.length === 0 ? (
                 <div className="text-center py-16 px-4">
                   <div className="w-16 h-16 rounded-3xl bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center mx-auto mb-4">
@@ -258,7 +258,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 15 }}
             transition={{ duration: 0.25 }}
-            className="flex flex-col flex-grow bg-white min-h-[calc(100vh-6rem)] relative"
+            className="flex flex-col flex-grow bg-white min-h-[calc(100vh-6rem)] relative rounded-3xl border border-[#E8E3D7] overflow-hidden shadow-sm"
           >
             {/* Chat Top Navigation Bar */}
             <div className="px-4 sm:px-6 py-3.5 flex justify-between items-center z-10 border-b border-[#E8E3D7] shadow-xs sticky top-0 bg-white/95">

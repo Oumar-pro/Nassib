@@ -34,6 +34,17 @@ export interface OnboardingData {
   waliPhone: string;
   agreedToTerms: boolean;
   photos: string[];
+  // Extended fields
+  bio?: string;
+  height?: number;
+  weight?: number;
+  ethnicity?: string;
+  originCity?: string;
+  hijabStatus?: string;
+  religiousPracticeDetails?: string;
+  values?: string[];
+  partnerCriteria?: string;
+  dealBreakers?: string[];
 }
 
 const MONTHS_LIST = [

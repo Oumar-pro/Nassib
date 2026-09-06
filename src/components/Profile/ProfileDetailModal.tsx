@@ -220,6 +220,41 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
               </div>
             )}
 
+            {(profile.height || profile.weight) && (
+              <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2 sm:col-span-1">
+                <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
+                  Taille &amp; Poids
+                </span>
+                <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
+                  {profile.height ? `${profile.height} cm` : ''}
+                  {profile.height && profile.weight ? ' • ' : ''}
+                  {profile.weight ? `${profile.weight} kg` : ''}
+                </span>
+              </div>
+            )}
+
+            {(profile.ethnicity || profile.originCity) && (
+              <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2 sm:col-span-1">
+                <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
+                  Origine &amp; Ethnie
+                </span>
+                <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
+                  {profile.ethnicity || profile.originCity}
+                </span>
+              </div>
+            )}
+
+            {(profile.hijabStatus || profile.religiousPracticeDetails) && (
+              <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2 sm:col-span-1">
+                <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
+                  Pratique / Tenue
+                </span>
+                <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
+                  {profile.hijabStatus || profile.religiousPracticeDetails}
+                </span>
+              </div>
+            )}
+
             {profile.familyImportance && (
               <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2">
                 <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
@@ -274,14 +309,68 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
           )}
 
           {/* Bio & Intentions */}
-          <div className="space-y-2 pt-2">
-            <h4 className="font-display text-sm font-bold text-[#211E1A]">
-              Présentation &amp; Attentes
+          <div className="space-y-3 pt-2">
+            <h4 className="font-display text-sm font-bold text-[#211E1A] flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-base text-[#0F5C4D]">description</span>
+              <span>Présentation Personnelle (Bio)</span>
             </h4>
             <p className="font-body text-xs sm:text-sm text-[#575147] leading-relaxed bg-[#FAF8F2] p-4 rounded-2xl border border-[#E8E3D7]">
-              "{profile.presentation || profile.bio}"
+              "{profile.bio || profile.presentation || 'Aucune description rédigée.'}"
             </p>
           </div>
+
+          {/* Ce que la personne cherche (Critères du conjoint) */}
+          {profile.partnerCriteria && (
+            <div className="space-y-2 pt-1">
+              <h4 className="font-display text-sm font-bold text-[#0F5C4D] flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base text-[#0F5C4D]">search_check</span>
+                <span>Ce que la personne cherche chez son conjoint</span>
+              </h4>
+              <div className="p-4 bg-[#0F5C4D]/5 rounded-2xl border border-[#0F5C4D]/20 text-xs sm:text-sm text-[#211E1A] leading-relaxed">
+                {profile.partnerCriteria}
+              </div>
+            </div>
+          )}
+
+          {/* Valeurs Cardinales du Foyer */}
+          {profile.values && profile.values.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <h4 className="font-display text-sm font-bold text-[#211E1A] flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base text-[#C9A45C]">stars</span>
+                <span>Valeurs Cardinales du Foyer</span>
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {profile.values.map((v, i) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1.5 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl text-xs font-semibold text-[#0F5C4D]"
+                  >
+                    {v}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Ce qu'elle n'accepte pas (Lignes Rouges) */}
+          {profile.dealBreakers && profile.dealBreakers.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <h4 className="font-display text-sm font-bold text-red-800 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base text-red-600">block</span>
+                <span>Ce qu'elle n'accepte pas (Lignes Rouges)</span>
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {profile.dealBreakers.map((db, i) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1.5 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-700"
+                  >
+                    {db}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Wali Reference Info */}
           {profile.waliReference && (

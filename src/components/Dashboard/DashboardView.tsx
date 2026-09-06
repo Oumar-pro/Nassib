@@ -43,108 +43,59 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fadeIn">
       {/* Welcome Header & Role Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Welcome Card */}
-        <div className="lg:col-span-2 rounded-[24px] p-6 sm:p-8 relative overflow-hidden flex flex-col justify-between bg-white border border-[#E8E3D7] shadow-sm">
-          <div className="relative z-10 flex flex-col justify-between h-full">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-block px-3 py-1 bg-[#8BAE9F]/20 text-[#0F5C4D] text-xs font-semibold rounded-full">
-                  {isWali ? 'Espace Tuteur Légal (Wali)' : 'Tableau de bord membre'}
-                </span>
-                <span className="inline-block px-3 py-1 bg-[#C9A45C]/15 text-[#735619] text-xs font-semibold rounded-full border border-[#C9A45C]/30">
-                  Saison 2026
-                </span>
-              </div>
-              <h2 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#211E1A] mb-2 tracking-tight">
-                Bienvenue, {user.name}.
-              </h2>
-              <p className="font-body text-sm sm:text-base text-[#575147] max-w-lg leading-relaxed">
-                {isWali
-                  ? "Suivi éthique, supervision bienveillante et validation des demandes d'accès aux informations de votre filleul(e)."
-                  : "Votre recherche d'une union sincère et bénie se poursuit. Retrouvez ici le suivi complet de votre visibilité et vos statistiques de compatibilité."}
-              </p>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <div className="inline-flex items-center gap-2 bg-[#8BAE9F]/15 text-[#0F5C4D] border border-[#8BAE9F]/30 px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold shadow-2xs">
-                <span className="w-2 h-2 rounded-full bg-[#C9A45C]"></span>
-                <span>Plateforme 100% Gratuite</span>
-              </div>
-
-              {user.isVerifiedNNI ? (
-                <div className="inline-flex items-center gap-2 bg-[#0F5C4D]/10 text-[#0F5C4D] px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold border border-[#0F5C4D]/20">
-                  <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    verified
-                  </span>
-                  Vérifié NNI
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onNavigateToTab('verification')}
-                  className="inline-flex items-center gap-2 bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/40 px-3.5 py-1.5 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#C9A45C]/25 transition-colors cursor-pointer shadow-2xs"
-                >
-                  <span className="material-symbols-outlined text-base">pending</span>
-                  <span>Vérifier mon NNI</span>
-                </button>
-              )}
-
-              {user.isWaliApproved ? (
-                <div className="inline-flex items-center gap-2 bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/40 px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold shadow-2xs">
-                  <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    shield
-                  </span>
-                  Approuvé par Wali
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onNavigateToTab('verification')}
-                  className="inline-flex items-center gap-2 bg-[#8BAE9F]/15 text-[#0F5C4D] border border-[#8BAE9F]/30 px-3.5 py-1.5 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#8BAE9F]/25 transition-colors cursor-pointer shadow-2xs"
-                >
-                  <span className="material-symbols-outlined text-base">family_restroom</span>
-                  <span>Ajouter un Wali</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => onNavigateToTab('imam')}
-                className="inline-flex items-center gap-2 bg-[#0F5C4D] text-white px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#0c4a3e] transition-all cursor-pointer shadow-sm"
-              >
-                <span className="material-symbols-outlined text-base text-[#C9A45C]">auto_awesome</span>
-                <span>Consulter Imam Oumar IA</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions Bento Banner */}
-        <div className="rounded-[24px] p-6 bg-gradient-to-br from-[#0F5C4D] to-[#0c4a3e] text-white flex flex-col justify-between shadow-md">
+      <div className="rounded-[24px] p-6 sm:p-8 relative overflow-hidden flex flex-col justify-between bg-white border border-[#E8E3D7] shadow-sm">
+        <div className="relative z-10 flex flex-col justify-between h-full">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="material-symbols-outlined text-[#C9A45C] text-2xl">auto_awesome</span>
-              <span className="font-body text-xs font-bold text-[#C9A45C] uppercase tracking-wider">
-                Conseiller Spirituel
+              <span className="inline-block px-3 py-1 bg-[#8BAE9F]/20 text-[#0F5C4D] text-xs font-semibold rounded-full">
+                {isWali ? 'Espace Tuteur Légal (Wali)' : 'Tableau de bord membre'}
+              </span>
+              <span className="inline-block px-3 py-1 bg-[#C9A45C]/15 text-[#735619] text-xs font-semibold rounded-full border border-[#C9A45C]/30">
+                Saison 2026
               </span>
             </div>
-            <h3 className="font-serif-display text-xl font-bold mb-2 text-white">
-              Guide Matrimonial Imam Oumar
-            </h3>
-            <p className="font-body text-xs text-emerald-100/90 leading-relaxed mb-4">
-              Des interrogations sur le rôle du Wali, la fixation de la dot ou l'éthique des fiançailles ? Posez vos questions à tout moment.
+            <h2 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#211E1A] mb-2 tracking-tight">
+              Bienvenue, {user.name}.
+            </h2>
+            <p className="font-body text-sm sm:text-base text-[#575147] max-w-lg leading-relaxed">
+              {isWali
+                ? "Suivi éthique, supervision bienveillante et validation des demandes d'accès aux informations de votre filleul(e)."
+                : "Votre recherche d'une union sincère et bénie se poursuit. Retrouvez ici le suivi complet de votre visibilité et vos statistiques de compatibilité."}
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => onNavigateToTab('imam')}
-            className="w-full py-3 px-4 rounded-xl bg-[#C9A45C] text-[#211E1A] font-display font-bold text-xs sm:text-sm hover:bg-[#b8944f] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
-          >
-            <span>Poser une question à l'Imam</span>
-            <span className="material-symbols-outlined text-base">arrow_forward</span>
-          </button>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {!user.isVerifiedNNI && (
+              <button
+                type="button"
+                onClick={() => onNavigateToTab('verification')}
+                className="inline-flex items-center gap-2 bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/40 px-3.5 py-1.5 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#C9A45C]/25 transition-colors cursor-pointer shadow-2xs"
+              >
+                <span className="material-symbols-outlined text-base">pending</span>
+                <span>Vérifier mon NNI</span>
+              </button>
+            )}
+
+            {!user.isWaliApproved && !user.waliInfo?.phone && !user.waliReference && (
+              <button
+                type="button"
+                onClick={() => onNavigateToTab('verification')}
+                className="inline-flex items-center gap-2 bg-[#8BAE9F]/15 text-[#0F5C4D] border border-[#8BAE9F]/30 px-3.5 py-1.5 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#8BAE9F]/25 transition-colors cursor-pointer shadow-2xs"
+              >
+                <span className="material-symbols-outlined text-base">family_restroom</span>
+                <span>Ajouter un Wali</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => onNavigateToTab('imam')}
+              className="inline-flex items-center gap-2 bg-[#0F5C4D] text-white px-4 py-2 rounded-full font-display text-xs sm:text-sm font-semibold hover:bg-[#0c4a3e] transition-all cursor-pointer shadow-sm"
+            >
+              <span className="material-symbols-outlined text-base text-[#C9A45C]">auto_awesome</span>
+              <span>Consulter Imam Oumar IA</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -154,7 +105,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <h3 className="font-serif-display text-xl font-bold text-[#211E1A] flex items-center gap-2">
               <span className="material-symbols-outlined text-[#0F5C4D]">analytics</span>
-              <span>Statistiques d'Activité &amp; Visibilité du Profil</span>
+              <span>Statistiques d'activité</span>
             </h3>
             <p className="font-body text-xs text-[#575147]">
               {isWali
@@ -554,27 +505,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Wali Profile Prompt Banner */}
-          <div className="rounded-[24px] p-6 border border-[#8BAE9F]/30 bg-[#FAF8F2] relative overflow-hidden shadow-2xs">
-            <div className="flex items-center gap-2 mb-2 text-[#735619]">
-              <span className="material-symbols-outlined text-[#C9A45C]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                shield_person
-              </span>
-              <span className="font-body text-xs font-bold uppercase tracking-wide">Éthique &amp; Confiance</span>
+          {/* Wali Profile Prompt Banner - shown only if wali step not done */}
+          {!user.isWaliApproved && !user.waliInfo?.phone && !user.waliReference && (
+            <div className="rounded-[24px] p-6 border border-[#8BAE9F]/30 bg-[#FAF8F2] relative overflow-hidden shadow-2xs">
+              <div className="flex items-center gap-2 mb-2 text-[#735619]">
+                <span className="material-symbols-outlined text-[#C9A45C]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  shield_person
+                </span>
+                <span className="font-body text-xs font-bold uppercase tracking-wide">Éthique &amp; Confiance</span>
+              </div>
+              <h3 className="font-display text-lg font-bold text-[#211E1A] mb-2">
+                Complétez votre profil Wali
+              </h3>
+              <p className="font-body text-xs text-[#575147] mb-4 leading-relaxed">
+                Ajouter les coordonnées de votre tuteur légal (Père, Frère, Oncle) augmente la confiance des membres et la visibilité de votre profil de +40%.
+              </p>
+              <button
+                onClick={() => onNavigateToTab('verification')}
+                className="text-[#0F5C4D] font-display text-sm font-bold flex items-center gap-1 hover:underline cursor-pointer"
+              >
+                Ajouter les détails du Wali <span className="material-symbols-outlined text-base">arrow_forward</span>
+              </button>
             </div>
-            <h3 className="font-display text-lg font-bold text-[#211E1A] mb-2">
-              Complétez votre profil Wali
-            </h3>
-            <p className="font-body text-xs text-[#575147] mb-4 leading-relaxed">
-              Ajouter les coordonnées de votre tuteur légal (Père, Frère, Oncle) augmente la confiance des membres et la visibilité de votre profil de +40%.
-            </p>
-            <button
-              onClick={() => onNavigateToTab('verification')}
-              className="text-[#0F5C4D] font-display text-sm font-bold flex items-center gap-1 hover:underline cursor-pointer"
-            >
-              Ajouter les détails du Wali <span className="material-symbols-outlined text-base">arrow_forward</span>
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </div>

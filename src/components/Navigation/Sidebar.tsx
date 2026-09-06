@@ -17,7 +17,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   user,
   onOpenAuth,
   onLogout,
-  unreadCount = 1
+  unreadCount = 0
 }) => {
   const navItems: { id: TabType; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard' },
