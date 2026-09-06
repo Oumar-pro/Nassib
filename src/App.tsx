@@ -41,7 +41,7 @@ import { OnboardingPage } from './components/Auth/OnboardingPage';
 import { OnboardingData } from './components/Auth/OnboardingModal';
 
 const EMPTY_USER: User = {
-  id: '', name: '', email: '', phone: '', role: 'candidate', gender: undefined,
+  id: '', profileId: undefined, name: '', email: '', phone: '', role: 'candidate', gender: undefined,
   isVerifiedNNI: false, isWaliApproved: false, isPremium: false,
   photoBlurringActive: true, photoUrl: '', planName: 'Sadaq (Gratuit)',
   waliInfo: { name: '', relation: '', phone: '' },
@@ -52,6 +52,7 @@ function accountToUser(account: AuthAccount, profile?: Profile | null): User {
   return {
     ...EMPTY_USER,
     id: account.id,
+    profileId: profile?.id,
     name: profile?.name || account.name,
     email: account.email,
     phone: account.phone,
@@ -88,8 +89,9 @@ export default function App() {
 
   const loadDatabaseState = useCallback(async (userId: string) => {
     if (!userId || !isSupabaseConfigured) return;
-    const [myProfile, dbProfiles, dbFavorites, dbConversations] = await Promise.all([
-      getMyProfile(userId), getProfiles(userId), getFavorites(userId), fetchConversationsFromSupabase(userId),
+    const myProfile = await getMyProfile(userId);
+    const [dbProfiles, dbFavorites, dbConversations] = await Promise.all([
+      getProfiles(userId), getFavorites(userId), fetchConversationsFromSupabase(myProfile?.id),
     ]);
     setProfiles(dbProfiles);
     setFavoriteProfileIds(dbFavorites);
@@ -127,18 +129,18 @@ export default function App() {
         const conversationId = (payload.new as any)?.conversation_id || (payload.old as any)?.conversation_id;
         if (conversationId && conversationId === activeConvId) {
           const remote = await fetchMessagesFromSupabase(conversationId);
-          setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.id })));
+          setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.profileId })));
         }
         reload();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user.id, activeConvId, loadDatabaseState]);
+  }, [user.id, user.profileId, activeConvId, loadDatabaseState]);
 
   useEffect(() => {
-    if (!activeConvId || !user.id) { setMessages([]); return; }
-    fetchMessagesFromSupabase(activeConvId).then((remote) => setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.id }))));
-  }, [activeConvId, user.id]);
+    if (!activeConvId || !user.profileId) { setMessages([]); return; }
+    fetchMessagesFromSupabase(activeConvId).then((remote) => setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.profileId }))));
+  }, [activeConvId, user.profileId]);
 
   const handleOpenAuth = (mode: 'login' | 'register') => { setAuthMode(mode); setCurrentTab('auth'); };
 
@@ -158,16 +160,16 @@ export default function App() {
 
   const handleSendMessage = async (text: string, targetConvId?: string) => {
     const convId = targetConvId || activeConvId;
-    if (!convId || !user.id) return;
-    const result = await sendMessageToSupabase(convId, user.id, user.name, user.photoUrl, text);
+    if (!convId || !user.profileId) return;
+    const result = await sendMessageToSupabase(convId, user.profileId, user.name, user.photoUrl, text);
     if (!result) return showToast('Impossible d’envoyer le message. Réessayez.');
     const remote = await fetchMessagesFromSupabase(convId);
-    setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.id })));
+    setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.profileId })));
   };
 
   const handleStartMessageWithProfile = async (profile: Profile) => {
-    if (!user.id) return showToast('Veuillez vous connecter pour contacter ce profil.');
-    const conversationId = await createOrGetConversationInSupabase(user.id, profile.id);
+    if (!user.profileId) return showToast('Veuillez vous connecter pour contacter ce profil.');
+    const conversationId = await createOrGetConversationInSupabase(user.profileId, profile.id);
     if (!conversationId) return showToast('Impossible d’ouvrir cette conversation.');
     await loadDatabaseState(user.id);
     setActiveConvId(conversationId); setSelectedProfile(null); setCurrentTab('messages');
@@ -175,13 +177,13 @@ export default function App() {
 
   const handleReportProfile = async (targetProfile: Profile, reason: string, description?: string) => {
     if (!user.id) return;
-    await reportUserOrProfileInSupabase({ reporterUserId: user.id, reportedProfileId: targetProfile.id, reason, description });
+    await reportUserOrProfileInSupabase({ reporterUserId: user.id, reportedProfileId: targetProfile.id, reportedUserId: targetProfile.userId, reason, description });
     showToast('Signalement enregistré. Merci.');
   };
 
   const handleBlockProfile = async (targetProfile: Profile, reason?: string) => {
-    if (!user.id) return;
-    const ok = await blockUserInSupabase(user.id, targetProfile.id, reason);
+    if (!user.id || !targetProfile.userId) return;
+    const ok = await blockUserInSupabase(user.id, targetProfile.userId, reason);
     if (ok !== false) { setProfiles((prev) => prev.filter((p) => p.id !== targetProfile.id)); showToast(`${targetProfile.name} a été bloqué(e).`); }
   };
 
