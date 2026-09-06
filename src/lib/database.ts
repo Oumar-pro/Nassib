@@ -1,4 +1,4 @@
-import { Profile, Conversation, Message } from '../types';
+import { Profile } from '../types';
 import { supabase } from './supabase';
 
 const mapProfile = (row: any): Profile => ({
@@ -76,21 +76,8 @@ export async function toggleFavorite(userId: string, profileId: string): Promise
   return !error;
 }
 
-export async function getConversations(userId: string): Promise<Conversation[]> {
-  if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('conversations').select('*').order('updated_at', { ascending: false });
-  if (error || !data) return [];
-  return data.filter((r: any) => r.candidate_id === userId || r.suitor_id === userId).map((r: any) => ({
-    id: r.id, participantId: r.candidate_id === userId ? r.suitor_id : r.candidate_id, participantName: r.participant_name || '',
-    participantAvatar: r.participant_avatar || '', participantCity: r.participant_city || '', isSupervised: Boolean(r.is_supervised),
-    isVerifiedNNI: Boolean(r.is_verified_nni), lastMessage: r.last_message || '', lastMessageTime: r.last_message_at || '',
-    unreadCount: r.unread_count ?? 0, onlineStatus: false,
-  })) as Conversation[];
-}
-
-export async function getMessages(conversationId: string): Promise<Message[]> {
-  if (!supabase || !conversationId) return [];
-  const { data, error } = await supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true });
-  if (error || !data) return [];
-  return data.map((r: any) => ({ id: r.id, conversationId: r.conversation_id, senderId: r.sender_id, senderName: r.sender_name || '', senderAvatar: r.sender_avatar || '', text: r.text || '', timestamp: r.created_at || '', isMine: false, isSupervised: Boolean(r.is_supervised), status: r.status || 'sent' })) as Message[];
-}
+// Conversations et messages passent exclusivement par src/lib/supabase.ts
+// (fetchConversationsFromSupabase / fetchMessagesFromSupabase), qui reflète
+// le vrai schéma de ces tables. Les anciennes fonctions getConversations()/
+// getMessages() ici lisaient des colonnes inexistantes (participant_name,
+// unread_count...) et n'étaient appelées nulle part : supprimées.
