@@ -11,6 +11,11 @@ const mapProfile = (row: any): Profile => ({
   drinksAlcohol: Boolean(row.drinks_alcohol), smokes: Boolean(row.smokes), presentation: row.presentation || '',
   personality: row.personality || '', familyImportance: row.family_importance || '', isAdmin: Boolean(row.is_admin),
   createdAt: row.created_at, updatedAt: row.updated_at, photos: row.photo_url ? [row.photo_url] : [],
+  height: row.height ?? undefined, weight: row.weight ?? undefined, ethnicity: row.ethnicity || undefined,
+  originCity: row.origin_city || undefined, hijabStatus: row.hijab_status || undefined,
+  religiousPracticeDetails: row.religious_practice_details || undefined,
+  values: Array.isArray(row.values) ? row.values : undefined, partnerCriteria: row.partner_criteria || undefined,
+  dealBreakers: Array.isArray(row.deal_breakers) ? row.deal_breakers : undefined,
 });
 
 export async function getProfiles(userId: string): Promise<Profile[]> {
@@ -41,6 +46,16 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
     hobbies: profile.hobbies?.trim() || null, interests: profile.interests?.trim() || null, drinks_alcohol: Boolean(profile.drinksAlcohol),
     smokes: Boolean(profile.smokes), presentation: profile.presentation?.trim() || null, personality: profile.personality?.trim() || null,
     family_importance: profile.familyImportance?.trim() || null,
+    // Champs étendus de l'onboarding — nécessitent la migration fix_missing_columns.sql
+    height: Number.isFinite(Number(profile.height)) ? Number(profile.height) : null,
+    weight: Number.isFinite(Number(profile.weight)) ? Number(profile.weight) : null,
+    ethnicity: profile.ethnicity?.trim() || null,
+    origin_city: profile.originCity?.trim() || null,
+    hijab_status: profile.hijabStatus?.trim() || null,
+    religious_practice_details: profile.religiousPracticeDetails?.trim() || null,
+    values: Array.isArray(profile.values) ? profile.values : null,
+    partner_criteria: profile.partnerCriteria?.trim() || null,
+    deal_breakers: Array.isArray(profile.dealBreakers) ? profile.dealBreakers : null,
   };
 
   const { data, error } = await supabase.from('profiles').upsert(payload, { onConflict: 'user_id' }).select('*').single();
