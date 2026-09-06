@@ -95,6 +95,7 @@ export interface UserWaliInfo {
 
 export interface User {
   id: string;
+  profileId?: string; // profiles.id (distinct from auth id) — requis pour messages/conversations
   name: string;
   email: string;
   phone: string;
