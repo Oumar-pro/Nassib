@@ -499,7 +499,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
       ) : (
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProfiles.slice(0, visibleCount).map((profile) => {
-            const isPhotoBlurred = profile.photoPrivate || (mahramModeActive && user.photoBlurringActive);
+            const isPhotoBlurred = Boolean(profile.photoPrivate || user.photoBlurringActive || mahramModeActive);
             const isFavorited = favoriteProfileIds.includes(profile.id);
 
             return (

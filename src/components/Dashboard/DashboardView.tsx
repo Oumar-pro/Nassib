@@ -296,7 +296,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <img
                       src={profile.photoUrl}
                       alt={profile.name}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full object-cover ${
+                        profile.photoPrivate || user.photoBlurringActive ? 'blur-md' : ''
+                      }`}
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF8F2] text-[#0F5C4D]">
@@ -389,7 +391,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           src={profile.photoUrl}
                           alt={profile.name}
                           className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
-                            profile.photoPrivate && user.photoBlurringActive ? 'blur-[3px]' : ''
+                            profile.photoPrivate || user.photoBlurringActive ? 'blur-xl scale-110' : ''
                           }`}
                         />
                       ) : (

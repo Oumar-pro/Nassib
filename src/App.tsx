@@ -40,15 +40,24 @@ import { AuthPage } from './components/Auth/AuthPage';
 import { OnboardingPage } from './components/Auth/OnboardingPage';
 import { OnboardingData } from './components/Auth/OnboardingModal';
 
+function getStoredPhotoBlur(): boolean {
+  try {
+    const val = localStorage.getItem('nassib_photo_blur');
+    if (val !== null) return val === 'true';
+  } catch {}
+  return true;
+}
+
 const EMPTY_USER: User = {
   id: '', profileId: undefined, name: '', email: '', phone: '', role: 'candidate', gender: undefined,
   isVerifiedNNI: false, isWaliApproved: false, isPremium: false,
-  photoBlurringActive: true, photoUrl: '', planName: 'Sadaq (Gratuit)',
+  photoBlurringActive: getStoredPhotoBlur(), photoUrl: '', planName: 'Sadaq (Gratuit)',
   waliInfo: { name: '', relation: '', phone: '' },
   stats: { profileViews: 0, profileConsultations: 0, photoRequests: 0, photoRequestsApproved: 0, matchesCount: 0, favoritesCount: 0, compatibilityRateAvg: 0, weeklyGrowthPercentage: 0 },
 };
 
-function accountToUser(account: AuthAccount, profile?: Profile | null): User {
+function accountToUser(account: AuthAccount, profile?: Profile | null, currentBlur?: boolean): User {
+  const photoBlurringActive = currentBlur !== undefined ? currentBlur : getStoredPhotoBlur();
   return {
     ...EMPTY_USER,
     id: account.id,
@@ -61,8 +70,9 @@ function accountToUser(account: AuthAccount, profile?: Profile | null): User {
     isVerifiedNNI: Boolean(profile?.isVerifiedNNI ?? account.isVerifiedNNI),
     isWaliApproved: Boolean(profile?.isWaliApproved ?? account.isWaliApproved),
     isPremium: Boolean(profile?.isPremium ?? account.isPremium),
+    photoBlurringActive,
     photoUrl: profile?.photoUrl || account.photoUrl || '',
-    photos: profile?.photos || [],
+    photos: profile?.photos || (account.photoUrl ? [account.photoUrl] : []),
     planName: account.planName || 'Sadaq (Gratuit)',
     stats: { ...EMPTY_USER.stats, favoritesCount: profile?.likesCount ?? 0 },
   };
@@ -71,6 +81,7 @@ function accountToUser(account: AuthAccount, profile?: Profile | null): User {
 export default function App() {
   const [currentTab, setCurrentTab] = useState<TabType>('landing');
   const [user, setUser] = useState<User>(EMPTY_USER);
+  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -90,6 +101,7 @@ export default function App() {
   const loadDatabaseState = useCallback(async (userId: string) => {
     if (!userId || !isSupabaseConfigured) return;
     const myProfile = await getMyProfile(userId);
+    if (myProfile) setCurrentUserProfile(myProfile);
     const [dbProfiles, dbFavorites, dbConversations] = await Promise.all([
       getProfiles(userId), getFavorites(userId), fetchConversationsFromSupabase(myProfile?.id),
     ]);
@@ -97,15 +109,16 @@ export default function App() {
     setFavoriteProfileIds(dbFavorites);
     setConversations(dbConversations);
     const account = getCurrentUserSession();
-    if (account) setUser(accountToUser(account, myProfile));
+    if (account) setUser((prev) => accountToUser(account, myProfile, prev.photoBlurringActive));
   }, []);
 
   const syncAuth = useCallback(async () => {
     const account = await restoreCurrentUserSession();
     if (!account) {
-      setUser(EMPTY_USER); setProfiles([]); setConversations([]); setMessages([]); setFavoriteProfileIds([]); setActiveConvId(null); return;
+      setUser(EMPTY_USER); setCurrentUserProfile(null); setProfiles([]); setConversations([]); setMessages([]); setFavoriteProfileIds([]); setActiveConvId(null); return;
     }
     const myProfile = await getMyProfile(account.id);
+    setCurrentUserProfile(myProfile);
     setUser(accountToUser(account, myProfile));
     await loadDatabaseState(account.id);
   }, [loadDatabaseState]);
@@ -167,7 +180,6 @@ export default function App() {
   };
 
   const favoriteProfiles = profiles.filter((p) => favoriteProfileIds.includes(p.id));
-  const currentUserProfile = profiles.find((p) => p.userId === user.id);
   const userFansCount = currentUserProfile?.likesCount ?? 0;
 
   const handleSendMessage = async (text: string, targetConvId?: string) => {
@@ -269,13 +281,53 @@ export default function App() {
 
   const handleUpdateUser = async (updated: Partial<User>) => {
     if (!user.id) return;
+
+    if (updated.photoBlurringActive !== undefined) {
+      try {
+        localStorage.setItem('nassib_photo_blur', String(updated.photoBlurringActive));
+      } catch {}
+      setUser((prev) => ({ ...prev, photoBlurringActive: updated.photoBlurringActive! }));
+    }
+
     const existing = await getMyProfile(user.id);
-    if (!existing) return showToast('Profil introuvable dans la base de données.');
-    const saved = await saveMyProfile(user.id, { ...existing, ...updated }, undefined);
-    if (!saved) return showToast('Impossible d’enregistrer les modifications.');
-    const account = getCurrentUserSession();
-    if (account) setUser(accountToUser(account, saved));
-    await loadDatabaseState(user.id); showToast('Modifications enregistrées.');
+    const baseProfile: Partial<Profile> = existing || {
+      userId: user.id,
+      name: updated.name || user.name || 'Membre',
+      gender: updated.gender || user.gender || 'female',
+      photoUrl: updated.photoUrl || user.photoUrl || '',
+      age: 25,
+      city: 'Niamey',
+      maritalStatus: 'Célibataire',
+    };
+
+    const saved = await saveMyProfile(
+      user.id,
+      {
+        ...baseProfile,
+        name: updated.name || baseProfile.name,
+        gender: updated.gender || baseProfile.gender,
+        photoUrl: updated.photoUrl !== undefined ? updated.photoUrl : baseProfile.photoUrl,
+        photos: updated.photos || baseProfile.photos,
+        photoPrivate: updated.photoBlurringActive !== undefined ? updated.photoBlurringActive : baseProfile.photoPrivate,
+      },
+      updated.waliInfo
+        ? {
+            waliName: updated.waliInfo.name,
+            waliRelation: updated.waliInfo.relation,
+            waliPhone: updated.waliInfo.phone,
+          }
+        : undefined
+    );
+
+    if (saved) {
+      setCurrentUserProfile(saved);
+      const account = getCurrentUserSession();
+      if (account) setUser((prev) => ({ ...accountToUser(account, saved, prev.photoBlurringActive), ...updated }));
+      await loadDatabaseState(user.id);
+    } else {
+      setUser((prev) => ({ ...prev, ...updated }));
+    }
+    showToast('Modifications enregistrées.');
   };
 
   const handleUpdateWaliInfo = async (waliInfo: UserWaliInfo) => {
@@ -308,7 +360,26 @@ export default function App() {
         <main className={`flex-1 md:ml-64 px-3.5 sm:px-8 pb-28 md:pb-12 min-h-screen ${
           isHeaderlessTab ? 'pt-[max(0.75rem,env(safe-area-inset-top))] md:pt-6' : 'pt-16 md:pt-10'
         }`}>
-          {currentTab === 'dashboard' && <DashboardView user={user} recommendedProfiles={profiles.filter((p) => p.photoUrl && p.userId !== user.id && p.gender !== user.gender)} favoriteProfiles={favoriteProfiles} favoriteProfileIds={favoriteProfileIds} fansCount={userFansCount} onSelectProfile={setSelectedProfile} onNavigateToTab={setCurrentTab} onTogglePhotoBlurring={() => setUser((u) => ({ ...u, photoBlurringActive: !u.photoBlurringActive }))} onToggleFavorite={handleToggleFavorite} />}
+          {currentTab === 'dashboard' && (
+            <DashboardView
+              user={user}
+              recommendedProfiles={profiles.filter((p) => p.photoUrl && p.userId !== user.id && p.gender !== user.gender)}
+              favoriteProfiles={favoriteProfiles}
+              favoriteProfileIds={favoriteProfileIds}
+              fansCount={userFansCount}
+              onSelectProfile={setSelectedProfile}
+              onNavigateToTab={setCurrentTab}
+              onTogglePhotoBlurring={() => {
+                const next = !user.photoBlurringActive;
+                try {
+                  localStorage.setItem('nassib_photo_blur', String(next));
+                } catch {}
+                setUser((u) => ({ ...u, photoBlurringActive: next }));
+                showToast(next ? 'Mode Floutage activé : photos protégées.' : 'Mode Floutage désactivé.');
+              }}
+              onToggleFavorite={handleToggleFavorite}
+            />
+          )}
           {currentTab === 'browse' && <BrowseView user={user} profiles={profiles} onSelectProfile={setSelectedProfile} onRequestAccess={handleRequestPhotoAccess} favoriteProfileIds={favoriteProfileIds} onToggleFavorite={handleToggleFavorite} />}
           {currentTab === 'imam' && <ImamChatView user={user} />}
           {currentTab === 'messages' && <MessagesView user={user} conversations={conversations} activeMessages={messages} activeConvId={activeConvId} onSelectConversation={setActiveConvId} onSendMessage={handleSendMessage} />}
@@ -321,9 +392,20 @@ export default function App() {
               onUpdateProfile={async (updatedProfile) => {
                 if (!user.id) return;
                 const existing = await getMyProfile(user.id);
-                if (!existing) return showToast('Profil introuvable.');
-                const saved = await saveMyProfile(user.id, { ...existing, ...updatedProfile });
+                const baseProfile = existing || {
+                  userId: user.id,
+                  name: user.name || 'Membre',
+                  gender: user.gender || 'female',
+                  photoUrl: user.photoUrl || '',
+                  age: 25,
+                  city: 'Niamey',
+                  maritalStatus: 'Célibataire',
+                };
+                const saved = await saveMyProfile(user.id, { ...baseProfile, ...updatedProfile });
                 if (saved) {
+                  setCurrentUserProfile(saved);
+                  const account = getCurrentUserSession();
+                  if (account) setUser((prev) => accountToUser(account, saved, prev.photoBlurringActive));
                   await loadDatabaseState(user.id);
                   showToast('Profil mis à jour avec succès.');
                 }

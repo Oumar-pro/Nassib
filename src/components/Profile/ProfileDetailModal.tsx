@@ -132,7 +132,9 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                 <img
                   src={profile.photoUrl}
                   alt={profile.name}
-                  className={`w-full h-full object-cover ${profile.photoPrivate ? 'blur-md' : ''}`}
+                  className={`w-full h-full object-cover transition-all duration-300 ${
+                    profile.photoPrivate || currentUser?.photoBlurringActive ? 'blur-xl scale-110' : ''
+                  }`}
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF8F2] text-[#0F5C4D]">
@@ -301,7 +303,13 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
               <div className="grid grid-cols-3 gap-2">
                 {profile.photos.filter((p) => Boolean(p) && p.trim() !== '').map((photoUrl, idx) => (
                   <div key={idx} className="h-32 rounded-2xl overflow-hidden border border-[#E8E3D7] bg-[#FAF8F2]">
-                    <img src={photoUrl} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                    <img
+                      src={photoUrl}
+                      alt={`Photo ${idx + 1}`}
+                      className={`w-full h-full object-cover ${
+                        profile.photoPrivate || currentUser?.photoBlurringActive ? 'blur-md' : ''
+                      }`}
+                    />
                   </div>
                 ))}
               </div>

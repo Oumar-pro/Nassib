@@ -284,6 +284,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         city,
         maritalStatus,
         education,
+        age: typeof profile?.age === 'number' && profile.age >= 18 ? profile.age : 25,
       });
     }
 
