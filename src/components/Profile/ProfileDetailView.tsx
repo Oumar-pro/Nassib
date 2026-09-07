@@ -20,6 +20,8 @@ interface ProfileDetailViewProps {
   onStartMessage?: (profile: Profile) => void;
   onAcceptContact?: (profileId: string) => Promise<void>;
   onRejectContact?: (profileId: string) => Promise<void>;
+  hasUploadedPhoto?: boolean;
+  onRequestPhotoUpload?: () => void;
 }
 
 export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
@@ -41,6 +43,8 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
   onStartMessage,
   onAcceptContact,
   onRejectContact,
+  hasUploadedPhoto = true,
+  onRequestPhotoUpload,
 }) => {
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState('Comportement inapproprié');
@@ -82,6 +86,33 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12 animate-fadeIn">
+      {!hasUploadedPhoto && (
+        <div className="p-4 bg-white border border-[#C9A45C]/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="material-symbols-outlined text-2xl text-[#C9A45C] shrink-0">
+              add_a_photo
+            </span>
+            <div>
+              <p className="font-display font-bold text-xs sm:text-sm text-[#211E1A]">
+                Mode consultation active
+              </p>
+              <p className="font-body text-xs text-[#575147]">
+                Vous pouvez lire et consulter tous les détails de ce profil. Pour lui envoyer une demande ou un message, ajoutez au moins une photo à votre profil.
+              </p>
+            </div>
+          </div>
+          {onRequestPhotoUpload && (
+            <button
+              type="button"
+              onClick={onRequestPhotoUpload}
+              className="px-4 py-2 bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white font-display text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+            >
+              Ajouter ma photo
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Top Navigation Bar */}
       <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E8E3D7] shadow-xs flex items-center justify-between">
         <button
@@ -96,7 +127,13 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
           {onToggleFavorite && (
             <button
               type="button"
-              onClick={() => onToggleFavorite(profile.id)}
+              onClick={() => {
+                if (!hasUploadedPhoto) {
+                  onRequestPhotoUpload?.();
+                  return;
+                }
+                onToggleFavorite(profile.id);
+              }}
               className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
                 isFavorited
                   ? 'bg-[#C9A45C]/15 border-[#C9A45C]/40 text-[#735619]'
@@ -132,6 +169,33 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
           </button>
         </div>
       </div>
+
+      {!hasUploadedPhoto && (
+        <div className="p-4 bg-white border border-[#C9A45C]/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="material-symbols-outlined text-2xl text-[#C9A45C] shrink-0">
+              add_a_photo
+            </span>
+            <div>
+              <p className="font-display font-bold text-xs sm:text-sm text-[#211E1A]">
+                Votre profil n'est pas visible dans l'application
+              </p>
+              <p className="font-body text-xs text-[#575147]">
+                Sans photo de profil, votre compte reste invisible aux autres membres et vous êtes en mode consultation seule. Ajoutez au moins une photo pour devenir visible et pouvoir échanger.
+              </p>
+            </div>
+          </div>
+          {onRequestPhotoUpload && (
+            <button
+              type="button"
+              onClick={onRequestPhotoUpload}
+              className="px-4 py-2 bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white font-display text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+            >
+              Ajouter ma photo
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Main Profile Header Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E3D7] shadow-xs space-y-6">
@@ -214,6 +278,10 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
               {contactState === 'NO_REQUEST' && (
                 <button
                   onClick={() => {
+                    if (!hasUploadedPhoto) {
+                      onRequestPhotoUpload?.();
+                      return;
+                    }
                     if (typeof onSendContactRequest === 'function') {
                       onSendContactRequest(profile);
                     } else if (typeof onStartMessage === 'function') {
@@ -242,6 +310,10 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
                   <button
                     disabled={actionLoading}
                     onClick={async () => {
+                      if (!hasUploadedPhoto) {
+                        onRequestPhotoUpload?.();
+                        return;
+                      }
                       setActionLoading(true);
                       if (typeof onAcceptContactRequest === 'function' && conversationId) {
                         await onAcceptContactRequest(conversationId);
@@ -258,6 +330,10 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
                   <button
                     disabled={actionLoading}
                     onClick={async () => {
+                      if (!hasUploadedPhoto) {
+                        onRequestPhotoUpload?.();
+                        return;
+                      }
                       setActionLoading(true);
                       if (typeof onRejectContactRequest === 'function' && conversationId) {
                         await onRejectContactRequest(conversationId);
@@ -276,6 +352,10 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
               {contactState === 'ACCEPTED' && (
                 <button
                   onClick={() => {
+                    if (!hasUploadedPhoto) {
+                      onRequestPhotoUpload?.();
+                      return;
+                    }
                     if (typeof onOpenConversation === 'function' && conversationId) {
                       onOpenConversation(conversationId);
                     } else if (typeof onStartMessage === 'function') {
@@ -312,6 +392,10 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
                   ) : (
                     <button
                       onClick={() => {
+                        if (!hasUploadedPhoto) {
+                          onRequestPhotoUpload?.();
+                          return;
+                        }
                         if (typeof onRequestPhotoAccess === 'function') {
                           onRequestPhotoAccess(profile);
                         }

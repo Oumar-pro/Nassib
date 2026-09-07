@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Profile, User, hasUploadedPhoto } from '../../types';
+import { Profile, User } from '../../types';
+import { hasUploadedPhotos } from '../../lib/database';
 
 interface BrowseViewProps {
   user: User;
@@ -12,7 +13,59 @@ interface BrowseViewProps {
   photoAccessMap?: Record<string, 'NO_REQUEST' | 'PENDING' | 'ALLOWED' | 'REJECTED'>;
   contactRelationshipMap?: Record<string, string>;
   onSendContactRequest?: (profile: Profile) => void;
+  hasUploadedPhoto?: boolean;
+  onRequestPhotoUpload?: () => void;
 }
+
+const NIGER_CITIES = [
+  'Niamey',
+  'Zinder',
+  'Maradi',
+  'Tahoua',
+  'Agadez',
+  'Dosso',
+  'Tillabéri',
+  'Diffa',
+];
+
+const AGE_RANGES = [
+  { id: '18-25', label: '18 - 25 ans' },
+  { id: '26-30', label: '26 - 30 ans' },
+  { id: '31-35', label: '31 - 35 ans' },
+  { id: '36-40', label: '36 - 40 ans' },
+  { id: '40+', label: '40 ans et +' },
+];
+
+const SORT_OPTIONS = [
+  { id: 'default', label: 'Recommandés (Par défaut)' },
+  { id: 'age-asc', label: 'Âge croissant (Plus jeune au plus âgé)' },
+  { id: 'age-desc', label: 'Âge décroissant (Plus âgé au plus jeune)' },
+  { id: 'city', label: 'Ville de résidence (A → Z)' },
+];
+
+const checkAgeMatch = (age: number, range: string): boolean => {
+  if (!range) return true;
+  if (range === '18-25') return age >= 18 && age <= 25;
+  if (range === '26-30') return age >= 26 && age <= 30;
+  if (range === '26-32') return age >= 26 && age <= 32;
+  if (range === '31-35') return age >= 31 && age <= 35;
+  if (range === '33-40') return age >= 33 && age <= 40;
+  if (range === '36-40') return age >= 36 && age <= 40;
+  if (range === '40+') return age >= 40;
+  if (range.includes('-')) {
+    const [min, max] = range.split('-').map(Number);
+    if (!isNaN(min) && !isNaN(max)) return age >= min && age <= max;
+  }
+  return true;
+};
+
+const checkCityMatch = (profileCity: string | undefined, targetCity: string): boolean => {
+  if (!targetCity) return true;
+  if (!profileCity) return false;
+  const pCity = profileCity.toLowerCase().trim();
+  const tCity = targetCity.toLowerCase().trim();
+  return pCity.includes(tCity) || tCity.includes(pCity);
+};
 
 export const BrowseView: React.FC<BrowseViewProps> = ({
   user,
@@ -25,11 +78,14 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
   photoAccessMap = {},
   contactRelationshipMap = {},
   onSendContactRequest,
+  hasUploadedPhoto = true,
+  onRequestPhotoUpload,
 }) => {
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedAgeRange, setSelectedAgeRange] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [onlyVerified, setOnlyVerified] = useState<boolean>(false);
+  const [sortBy, setSortBy] = useState<'default' | 'age-asc' | 'age-desc' | 'city'>('default');
   const [mahramModeActive, setMahramModeActive] = useState<boolean>(false);
   const [visibleCount, setVisibleCount] = useState<number>(12);
 
@@ -39,12 +95,14 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
   const [draftAgeRange, setDraftAgeRange] = useState<string>('');
   const [draftStatus, setDraftStatus] = useState<string>('');
   const [draftOnlyVerified, setDraftOnlyVerified] = useState<boolean>(false);
+  const [draftSortBy, setDraftSortBy] = useState<'default' | 'age-asc' | 'age-desc' | 'city'>('default');
 
   const openFilterModal = () => {
     setDraftCity(selectedCity);
     setDraftAgeRange(selectedAgeRange);
     setDraftStatus(selectedStatus);
     setDraftOnlyVerified(onlyVerified);
+    setDraftSortBy(sortBy);
     setIsFilterModalOpen(true);
   };
 
@@ -53,6 +111,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
     setSelectedAgeRange(draftAgeRange);
     setSelectedStatus(draftStatus);
     setOnlyVerified(draftOnlyVerified);
+    setSortBy(draftSortBy);
     setIsFilterModalOpen(false);
   };
 
@@ -61,6 +120,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
     setDraftAgeRange('');
     setDraftStatus('');
     setDraftOnlyVerified(false);
+    setDraftSortBy('default');
   };
 
   const clearAllActiveFilters = () => {
@@ -68,6 +128,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
     setSelectedAgeRange('');
     setSelectedStatus('');
     setOnlyVerified(false);
+    setSortBy('default');
   };
 
   const activeFiltersCount = useMemo(() => {
@@ -76,18 +137,25 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
     if (selectedAgeRange) count++;
     if (selectedStatus) count++;
     if (onlyVerified) count++;
+    if (sortBy !== 'default') count++;
     return count;
-  }, [selectedCity, selectedAgeRange, selectedStatus, onlyVerified]);
+  }, [selectedCity, selectedAgeRange, selectedStatus, onlyVerified, sortBy]);
 
   const activeFiltersSummary = useMemo(() => {
     const parts: string[] = [];
     if (selectedCity) parts.push(selectedCity);
-    if (selectedAgeRange) parts.push(`${selectedAgeRange} ans`);
+    if (selectedAgeRange) {
+      const match = AGE_RANGES.find(r => r.id === selectedAgeRange);
+      parts.push(match ? match.label : `${selectedAgeRange} ans`);
+    }
     if (selectedStatus) parts.push(selectedStatus);
     if (onlyVerified) parts.push('Vérifié NNI');
+    if (sortBy === 'age-asc') parts.push('Âge croissant');
+    if (sortBy === 'age-desc') parts.push('Âge décroissant');
+    if (sortBy === 'city') parts.push('Ville (A-Z)');
     if (parts.length === 0) return 'Tous critères • Aucune restriction';
     return parts.join(' • ');
-  }, [selectedCity, selectedAgeRange, selectedStatus, onlyVerified]);
+  }, [selectedCity, selectedAgeRange, selectedStatus, onlyVerified, sortBy]);
 
   // Helper to normalize gender strings safely
   const normalizeGender = (g?: string): 'male' | 'female' | 'unknown' => {
@@ -99,9 +167,9 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
   };
 
   const filteredProfiles = useMemo(() => {
-    return (profiles || []).filter((p) => {
+    let list = (profiles || []).filter((p) => {
       // 0. Tout profil qui n'a téléversé aucune photo ne doit pas être visible dans l'application
-      if (!hasUploadedPhoto(p)) return false;
+      if (!hasUploadedPhotos(p)) return false;
 
       // 1. Règle Halal Stricte :
       // - Si un garçon (homme) est connecté, il voit UNIQUEMENT tous les profils de filles (femmes).
@@ -122,23 +190,58 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
       if (user.name && p.name && user.name.trim().toLowerCase() === p.name.trim().toLowerCase()) return false;
 
       // 3. Filtres optionnels choisis par l'utilisateur
-      if (selectedCity && p.city !== selectedCity) return false;
+      if (selectedCity && !checkCityMatch(p.city, selectedCity)) return false;
       if (selectedStatus && p.maritalStatus !== selectedStatus) return false;
       if (onlyVerified && !p.isVerifiedNNI) return false;
 
-      if (selectedAgeRange) {
-        if (selectedAgeRange === '18-25' && (p.age < 18 || p.age > 25)) return false;
-        if (selectedAgeRange === '26-32' && (p.age < 26 || p.age > 32)) return false;
-        if (selectedAgeRange === '33-40' && (p.age < 33 || p.age > 40)) return false;
-        if (selectedAgeRange === '40+' && p.age < 40) return false;
+      if (selectedAgeRange && !checkAgeMatch(p.age, selectedAgeRange)) {
+        return false;
       }
 
       return true;
     });
-  }, [profiles, user.gender, user.id, user.email, user.name, selectedCity, selectedAgeRange, selectedStatus, onlyVerified]);
+
+    // Tri des profils
+    if (sortBy === 'age-asc') {
+      list = [...list].sort((a, b) => a.age - b.age);
+    } else if (sortBy === 'age-desc') {
+      list = [...list].sort((a, b) => b.age - a.age);
+    } else if (sortBy === 'city') {
+      list = [...list].sort((a, b) => (a.city || '').localeCompare(b.city || '', 'fr'));
+    }
+
+    return list;
+  }, [profiles, user.gender, user.id, user.email, user.name, selectedCity, selectedAgeRange, selectedStatus, onlyVerified, sortBy]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fadeIn relative pb-12">
+      {!hasUploadedPhoto && (
+        <div className="p-4 bg-white border border-[#C9A45C]/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="material-symbols-outlined text-2xl text-[#C9A45C] shrink-0">
+              add_a_photo
+            </span>
+            <div>
+              <p className="font-display font-bold text-xs sm:text-sm text-[#211E1A]">
+                Votre profil n'est pas visible dans l'application
+              </p>
+              <p className="font-body text-xs text-[#575147]">
+                Sans photo de profil, votre compte reste invisible aux autres membres et vous êtes en mode consultation seule. Ajoutez au moins une photo pour devenir visible et pouvoir échanger.
+              </p>
+            </div>
+          </div>
+          {onRequestPhotoUpload && (
+            <button
+              type="button"
+              onClick={onRequestPhotoUpload}
+              className="px-4 py-2 bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white font-display text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+            >
+              Ajouter une photo
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Title & Context - Positioned directly at the top outside the card */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="space-y-1">
@@ -172,7 +275,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
       </div>
 
       {/* Minimized Filter Trigger Card (few mm high, opens modal on click) */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div
           onClick={openFilterModal}
           className="bg-white rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-2.5 border border-[#E8E3D7] shadow-2xs hover:shadow-xs hover:border-[#0F5C4D]/40 transition-all cursor-pointer flex items-center justify-between gap-3 group"
@@ -197,20 +300,91 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0F5C4D] shrink-0">
-            <span className="hidden xs:inline text-xs">Filtrer</span>
+            <span className="hidden xs:inline text-xs">Tous les filtres</span>
             <span className="material-symbols-outlined text-base group-hover:translate-x-0.5 transition-transform">
               chevron_right
             </span>
           </div>
         </div>
 
+        {/* Quick Filter & Sort Options Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          {/* Ville de résidence selector */}
+          <div className="relative">
+            <div className="flex items-center bg-white border border-[#E8E3D7] rounded-xl px-3 py-2 shadow-2xs hover:border-[#0F5C4D]/50 focus-within:border-[#0F5C4D] focus-within:ring-1 focus-within:ring-[#0F5C4D] transition-all">
+              <span className="material-symbols-outlined text-[#0F5C4D] text-base mr-2 shrink-0">
+                location_on
+              </span>
+              <select
+                id="browse-city-select"
+                aria-label="Filtrer par ville de résidence"
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="w-full bg-transparent text-xs font-medium text-[#211E1A] focus:outline-none cursor-pointer pr-2"
+              >
+                <option value="">Ville de résidence (Toutes)</option>
+                {NIGER_CITIES.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Tranche d'âge selector */}
+          <div className="relative">
+            <div className="flex items-center bg-white border border-[#E8E3D7] rounded-xl px-3 py-2 shadow-2xs hover:border-[#0F5C4D]/50 focus-within:border-[#0F5C4D] focus-within:ring-1 focus-within:ring-[#0F5C4D] transition-all">
+              <span className="material-symbols-outlined text-[#0F5C4D] text-base mr-2 shrink-0">
+                cake
+              </span>
+              <select
+                id="browse-age-select"
+                aria-label="Filtrer par tranche d'âge"
+                value={selectedAgeRange}
+                onChange={(e) => setSelectedAgeRange(e.target.value)}
+                className="w-full bg-transparent text-xs font-medium text-[#211E1A] focus:outline-none cursor-pointer pr-2"
+              >
+                <option value="">Tranche d'âge (Toutes)</option>
+                {AGE_RANGES.map((range) => (
+                  <option key={range.id} value={range.id}>
+                    {range.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Trier par selector */}
+          <div className="relative">
+            <div className="flex items-center bg-white border border-[#E8E3D7] rounded-xl px-3 py-2 shadow-2xs hover:border-[#0F5C4D]/50 focus-within:border-[#0F5C4D] focus-within:ring-1 focus-within:ring-[#0F5C4D] transition-all">
+              <span className="material-symbols-outlined text-[#0F5C4D] text-base mr-2 shrink-0">
+                swap_vert
+              </span>
+              <select
+                id="browse-sort-select"
+                aria-label="Trier les profils"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="w-full bg-transparent text-xs font-medium text-[#211E1A] focus:outline-none cursor-pointer pr-2"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    Trier : {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
         {/* Active filter badges if any are active */}
         {activeFiltersCount > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap px-1">
+          <div className="flex items-center gap-1.5 flex-wrap px-1 pt-1">
             <span className="text-[11px] font-semibold text-[#575147]">Filtres appliqués :</span>
             {selectedCity && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] text-xs font-medium">
-                {selectedCity}
+                Ville : {selectedCity}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -225,7 +399,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
             )}
             {selectedAgeRange && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] text-xs font-medium">
-                {selectedAgeRange} ans
+                Âge : {AGE_RANGES.find(r => r.id === selectedAgeRange)?.label || `${selectedAgeRange} ans`}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -261,6 +435,21 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
                   onClick={(e) => {
                     e.stopPropagation();
                     setOnlyVerified(false);
+                  }}
+                  className="hover:text-red-500 cursor-pointer ml-0.5"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {sortBy !== 'default' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#C9A45C]/20 text-[#735619] text-xs font-medium border border-[#C9A45C]/30">
+                Tri : {SORT_OPTIONS.find(s => s.id === sortBy)?.label.split('(')[0].trim()}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSortBy('default');
                   }}
                   className="hover:text-red-500 cursor-pointer ml-0.5"
                 >
@@ -319,19 +508,12 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
               <div>
                 <label className="font-display text-xs font-bold text-[#211E1A] flex items-center gap-1.5 mb-2">
                   <span className="material-symbols-outlined text-sm text-[#0F5C4D]">location_on</span>
-                  Ville / Région
+                  Ville / Région de résidence
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
                     { id: '', label: 'Toutes les villes' },
-                    { id: 'Niamey', label: 'Niamey' },
-                    { id: 'Zinder', label: 'Zinder' },
-                    { id: 'Maradi', label: 'Maradi' },
-                    { id: 'Tahoua', label: 'Tahoua' },
-                    { id: 'Agadez', label: 'Agadez' },
-                    { id: 'Dosso', label: 'Dosso' },
-                    { id: 'Tillabéri', label: 'Tillabéri' },
-                    { id: 'Diffa', label: 'Diffa' },
+                    ...NIGER_CITIES.map(c => ({ id: c, label: c })),
                   ].map((c) => (
                     <button
                       key={c.id}
@@ -355,13 +537,10 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
                   <span className="material-symbols-outlined text-sm text-[#0F5C4D]">cake</span>
                   Tranche d'âge
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                   {[
                     { id: '', label: 'Tout âge' },
-                    { id: '18-25', label: '18-25 ans' },
-                    { id: '26-32', label: '26-32 ans' },
-                    { id: '33-40', label: '33-40 ans' },
-                    { id: '40+', label: '40 ans +' },
+                    ...AGE_RANGES,
                   ].map((a) => (
                     <button
                       key={a.id}
@@ -379,8 +558,38 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
                 </div>
               </div>
 
+              {/* Sorting Section */}
+              <div className="pt-2 border-t border-[#E8E3D7]">
+                <label className="font-display text-xs font-bold text-[#211E1A] flex items-center gap-1.5 mb-2">
+                  <span className="material-symbols-outlined text-sm text-[#0F5C4D]">swap_vert</span>
+                  Trier les profils
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    { id: 'default', label: 'Recommandés (Par défaut)', icon: 'auto_awesome' },
+                    { id: 'age-asc', label: 'Âge croissant (Plus jeune au plus âgé)', icon: 'arrow_upward' },
+                    { id: 'age-desc', label: 'Âge décroissant (Plus âgé au plus jeune)', icon: 'arrow_downward' },
+                    { id: 'city', label: 'Ville de résidence (A → Z)', icon: 'sort_by_alpha' },
+                  ].map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setDraftSortBy(s.id as any)}
+                      className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
+                        draftSortBy === s.id
+                          ? 'bg-[#0F5C4D] text-white shadow-xs font-semibold border-[#0F5C4D]'
+                          : 'bg-[#FAF8F2] text-[#575147] hover:bg-[#E8E3D7] border-[#E8E3D7]'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">{s.icon}</span>
+                      <span>{s.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Marital Status Filter */}
-              <div>
+              <div className="pt-2 border-t border-[#E8E3D7]">
                 <label className="font-display text-xs font-bold text-[#211E1A] flex items-center gap-1.5 mb-2">
                   <span className="material-symbols-outlined text-sm text-[#0F5C4D]">favorite</span>
                   Statut matrimonial
@@ -501,6 +710,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
               setSelectedAgeRange('');
               setSelectedStatus('');
               setOnlyVerified(false);
+              setSortBy('default');
             }}
             className="px-5 py-2.5 rounded-2xl bg-[#0F5C4D] text-white font-display text-xs font-bold hover:bg-[#0c4a3e] transition-all cursor-pointer shadow-sm"
           >

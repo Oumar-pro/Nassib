@@ -112,7 +112,7 @@ export const PwaInstallPrompt: React.FC = () => {
             </div>
             <div className="min-w-0">
               <p className="font-display text-xs font-bold text-[#0F5C4D] truncate">
-                Installer l'application NASSIB
+                Installer l'application Nassib
               </p>
               <p className="text-[11px] text-[#7D766C] truncate">
                 {isIOS ? 'Disponible sur votre iPhone (Safari)' : 'Accès rapide depuis votre écran'}
@@ -225,7 +225,7 @@ export const PwaInstallPrompt: React.FC = () => {
                   3
                 </div>
                 <div className="text-xs text-[#211E1A] leading-relaxed">
-                  Touchez <strong>« Ajouter »</strong> en haut à droite de l'écran. L'icône NASSIB est maintenant installée sur votre bureau d'iPhone et s'ouvrira en plein écran !
+                  Touchez <strong>« Ajouter »</strong> en haut à droite de l'écran. L'icône Nassib est maintenant installée sur votre bureau d'iPhone et s'ouvrira en plein écran !
                 </div>
               </div>
             </div>

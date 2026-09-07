@@ -23,26 +23,17 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5">
-        {/* Verification Status Pill */}
-        {user.isVerifiedNNI ? (
+        {/* Verification Status Pill - Uniquement pour les comptes vérifiés par carte */}
+        {user.isVerifiedNNI && (
           <button
             onClick={() => onSelectTab('verification')}
             className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] text-[11px] font-bold border border-[#0F5C4D]/20 active:scale-95 transition-transform"
-            title="Profil vérifié NNI"
+            title="Profil vérifié NNI (Identité vérifiée par carte)"
           >
             <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
               verified
             </span>
-            <span className="hidden xs:inline text-[10px]">NNI</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => onSelectTab('verification')}
-            className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#C9A45C]/15 text-[#735619] text-[10px] font-bold border border-[#C9A45C]/30 active:scale-95 transition-transform"
-            title="Vérifier mon identité"
-          >
-            <span className="material-symbols-outlined text-[13px]">shield</span>
-            <span className="text-[10px]">Vérif</span>
+            <span className="text-[10px]">Vérifié</span>
           </button>
         )}
       </div>

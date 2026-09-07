@@ -12,6 +12,8 @@ interface ProfileDetailModalProps {
   onToggleFavorite?: (profileId: string) => void;
   onReport?: (profile: Profile, reason: string, description?: string) => void;
   onBlock?: (profile: Profile, reason?: string) => void;
+  hasUploadedPhoto?: boolean;
+  onRequestPhotoUpload?: () => void;
 }
 
 export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
@@ -25,6 +27,8 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
   onToggleFavorite,
   onReport,
   onBlock,
+  hasUploadedPhoto = true,
+  onRequestPhotoUpload,
 }) => {
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState('Comportement inapproprié');
@@ -127,6 +131,36 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
 
         {/* Modal Content Scrollable */}
         <div className="p-6 overflow-y-auto space-y-6 custom-scrollbar">
+          {!hasUploadedPhoto && (
+            <div className="p-4 bg-white border border-[#C9A45C]/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start sm:items-center gap-3">
+                <span className="material-symbols-outlined text-2xl text-[#C9A45C] shrink-0">
+                  add_a_photo
+                </span>
+                <div>
+                  <p className="font-display font-bold text-xs sm:text-sm text-[#211E1A]">
+                    Votre profil n'est pas visible dans l'application
+                  </p>
+                  <p className="font-body text-xs text-[#575147]">
+                    Sans photo de profil, votre compte reste invisible aux autres membres et vous êtes en mode consultation seule. Ajoutez au moins une photo pour devenir visible et pouvoir interagir.
+                  </p>
+                </div>
+              </div>
+              {onRequestPhotoUpload && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onRequestPhotoUpload();
+                  }}
+                  className="px-4 py-2 bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white font-display text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+                >
+                  Ajouter ma photo
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Main Top Profile Summary */}
           <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
             <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-[#0F5C4D] shrink-0 bg-[#FAF8F2] flex items-center justify-center">
@@ -404,7 +438,13 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
           {onToggleFavorite && (
             <button
               type="button"
-              onClick={() => onToggleFavorite(profile.id)}
+              onClick={() => {
+                if (!hasUploadedPhoto) {
+                  onRequestPhotoUpload?.();
+                  return;
+                }
+                onToggleFavorite(profile.id);
+              }}
               className={`px-4 py-3 rounded-xl font-display text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 border cursor-pointer ${
                 isFavorited
                   ? 'bg-[#C9A45C]/20 border-[#C9A45C]/50 text-[#735619] hover:bg-[#C9A45C]/30'
@@ -434,7 +474,13 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
               </div>
             ) : (
               <button
-                onClick={() => onRequestPhotoAccess(profile)}
+                onClick={() => {
+                  if (!hasUploadedPhoto) {
+                    onRequestPhotoUpload?.();
+                    return;
+                  }
+                  onRequestPhotoAccess(profile);
+                }}
                 className="flex-1 py-3 bg-white border border-[#E8E3D7] text-[#211E1A] rounded-xl font-display text-xs font-bold hover:bg-[#FAF8F2] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
               >
                 <span className="material-symbols-outlined text-sm">visibility</span>
@@ -444,7 +490,13 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
           ) : null}
 
           <button
-            onClick={() => onStartMessage(profile)}
+            onClick={() => {
+              if (!hasUploadedPhoto) {
+                onRequestPhotoUpload?.();
+                return;
+              }
+              onStartMessage(profile);
+            }}
             className="flex-1 py-3 bg-[#0F5C4D] text-white rounded-xl font-display text-xs sm:text-sm font-bold hover:bg-[#0c4a3e] transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
           >
             <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>

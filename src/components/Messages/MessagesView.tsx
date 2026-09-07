@@ -12,6 +12,8 @@ interface MessagesViewProps {
   onAcceptContact?: (conversationId: string) => Promise<void>;
   onRejectContact?: (conversationId: string) => Promise<void>;
   onOpenProfile?: (profileId: string) => void;
+  hasUploadedPhoto?: boolean;
+  onRequestPhotoUpload?: () => void;
 }
 
 export const MessagesView: React.FC<MessagesViewProps> = ({
@@ -24,6 +26,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   onAcceptContact,
   onRejectContact,
   onOpenProfile,
+  hasUploadedPhoto = true,
+  onRequestPhotoUpload,
 }) => {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(activeConvId);
   const [inputText, setInputText] = useState<string>('');
@@ -45,6 +49,10 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasUploadedPhoto) {
+      onRequestPhotoUpload?.();
+      return;
+    }
     if (!inputText.trim() || !selectedConvId) return;
     onSendMessage(inputText.trim(), selectedConvId);
     setInputText('');
@@ -82,6 +90,33 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
           >
             {/* Conversations Header (directly on background) */}
             <div className="space-y-4">
+              {!hasUploadedPhoto && (
+                <div className="p-4 bg-white border border-[#C9A45C]/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-start sm:items-center gap-3">
+                    <span className="material-symbols-outlined text-2xl text-[#C9A45C] shrink-0">
+                      add_a_photo
+                    </span>
+                    <div>
+                      <p className="font-display font-bold text-xs sm:text-sm text-[#211E1A]">
+                        Photo de profil requise pour envoyer des messages
+                      </p>
+                      <p className="font-body text-xs text-[#575147]">
+                        Vous pouvez lire les profils et vos discussions. Pour envoyer un message, vous devez ajouter au moins une photo.
+                      </p>
+                    </div>
+                  </div>
+                  {onRequestPhotoUpload && (
+                    <button
+                      type="button"
+                      onClick={onRequestPhotoUpload}
+                      className="px-4 py-2 bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white font-display text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+                    >
+                      Ajouter une photo
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h1 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#0F5C4D]">
@@ -541,7 +576,27 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
             {/* Message Input Form (Docked at bottom of viewport) */}
             <div className="sticky bottom-0 pt-2 pb-2 bg-[#FAF8F2]/95 backdrop-blur-md border-t border-[#E8E3D7]">
-              {currentConv.status === 'pending' || currentConv.status === 'rejected' ? (
+              {!hasUploadedPhoto ? (
+                <div className="p-3.5 bg-white border border-[#C9A45C]/50 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left max-w-4xl mx-auto shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <span className="material-symbols-outlined text-xl text-[#C9A45C] shrink-0">
+                      add_a_photo
+                    </span>
+                    <p className="text-xs font-body text-[#575147]">
+                      <strong className="text-[#211E1A]">Photo requise :</strong> Vous devez ajouter au moins une photo de profil pour envoyer des messages.
+                    </p>
+                  </div>
+                  {onRequestPhotoUpload && (
+                    <button
+                      type="button"
+                      onClick={onRequestPhotoUpload}
+                      className="px-3.5 py-1.5 bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white text-xs font-display font-bold rounded-xl shadow-xs transition-colors cursor-pointer shrink-0"
+                    >
+                      Ajouter une photo
+                    </button>
+                  )}
+                </div>
+              ) : currentConv.status === 'pending' || currentConv.status === 'rejected' ? (
                 <div className="p-3 bg-white border border-[#E8E3D7] rounded-2xl text-center text-xs font-body text-[#7D766C] max-w-4xl mx-auto shadow-2xs">
                   {currentConv.status === 'rejected'
                     ? 'Cette conversation est clôturée.'

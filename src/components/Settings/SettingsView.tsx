@@ -1273,7 +1273,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           <div className="min-w-0">
             <h3 className="font-display font-bold text-sm text-[#211E1A] truncate">
-              Installer l'application NASSIB
+              Installer l'application Nassib
             </h3>
             <p className="font-body text-xs text-[#7D766C] truncate mt-0.5">
               Accès direct sur iPhone, iPad ou Android
@@ -1328,7 +1328,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     Installer sur iPhone (iOS)
                   </h3>
                   <p className="text-xs text-[#7D766C]">
-                    Ajouter NASSIB sur votre écran d'accueil
+                    Ajouter Nassib sur votre écran d'accueil
                   </p>
                 </div>
               </div>
@@ -1407,7 +1407,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   3
                 </div>
                 <div className="text-xs text-[#211E1A] leading-relaxed">
-                  Appuyez sur <span className="font-bold text-[#0F5C4D]">« Ajouter »</span> en haut à droite. L'application NASSIB s'ouvrira en plein écran comme une vraie application !
+                  Appuyez sur <span className="font-bold text-[#0F5C4D]">« Ajouter »</span> en haut à droite. L'application Nassib s'ouvrira en plein écran comme une vraie application !
                 </div>
               </div>
             </div>

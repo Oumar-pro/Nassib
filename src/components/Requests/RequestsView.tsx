@@ -40,6 +40,8 @@ interface RequestsViewProps {
   onRejectPhotoRequest: (requestId: string) => Promise<void>;
   onOpenConversation: (conversationId: string) => void;
   onViewProfile: (profileId: string) => void;
+  hasUploadedPhoto?: boolean;
+  onRequestPhotoUpload?: () => void;
 }
 
 export const RequestsView: React.FC<RequestsViewProps> = ({
@@ -56,6 +58,8 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
   onRejectPhotoRequest,
   onOpenConversation,
   onViewProfile,
+  hasUploadedPhoto = true,
+  onRequestPhotoUpload,
 }) => {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
   const [filterType, setFilterType] = useState<'all' | 'contact' | 'photo'>('all');
@@ -92,6 +96,10 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
   const totalReceivedPending = (receivedContactRequests || []).length + pendingReceivedPhotos.length;
 
   const handleAction = async (id: string, actionFn: (id: string) => Promise<void>) => {
+    if (!hasUploadedPhoto) {
+      onRequestPhotoUpload?.();
+      return;
+    }
     setProcessingId(id);
     try {
       await actionFn(id);
@@ -102,6 +110,33 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {!hasUploadedPhoto && (
+        <div className="p-4 bg-white border border-[#C9A45C]/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="material-symbols-outlined text-2xl text-[#C9A45C] shrink-0">
+              add_a_photo
+            </span>
+            <div>
+              <p className="font-display font-bold text-xs sm:text-sm text-[#211E1A]">
+                Photo de profil requise pour interagir
+              </p>
+              <p className="font-body text-xs text-[#575147]">
+                Vous pouvez consulter les profils. Pour accepter une demande ou échanger, vous devez ajouter au moins une photo.
+              </p>
+            </div>
+          </div>
+          {onRequestPhotoUpload && (
+            <button
+              type="button"
+              onClick={onRequestPhotoUpload}
+              className="px-4 py-2 bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white font-display text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+            >
+              Ajouter une photo
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E3D7] shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

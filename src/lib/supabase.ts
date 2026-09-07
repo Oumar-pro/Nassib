@@ -11,7 +11,14 @@ export const isSupabaseConfigured = Boolean(
 
 // Initialize Supabase Client
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      },
+    })
   : null;
 
 /**
@@ -715,15 +722,26 @@ export async function respondToPhotoAccessRequestInSupabase(
  * 8. VERIFICATION_REQUESTS TABLE & 7. PROFILE_PRIVATE TABLE:
  * Submit official verification request (NNI or Wali)
  */
+export interface VerificationRequestInfo {
+  id: string;
+  verificationType: 'nni' | 'wali';
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  documentPath: string | null;
+  submittedAt: string;
+  adminNote: string | null;
+}
+
 export async function submitVerificationRequestInSupabase(params: {
   profileId: string;
   userId: string;
   verificationType: 'nni' | 'wali';
   documentPath?: string;
   adminNote?: string;
+  status?: 'pending' | 'under_review' | 'approved';
 }): Promise<boolean> {
   if (!supabase || !isValidUuid(params.profileId) || !isValidUuid(params.userId)) return false;
 
+  const requestStatus = params.status || 'pending';
   try {
     // Insert verification request
     const { error: reqErr } = await supabase.from('verification_requests').insert([
@@ -731,7 +749,7 @@ export async function submitVerificationRequestInSupabase(params: {
         profile_id: params.profileId,
         user_id: params.userId,
         verification_type: params.verificationType,
-        status: 'pending',
+        status: requestStatus,
         document_path: params.documentPath || null,
         submitted_at: new Date().toISOString(),
         admin_note: params.adminNote || null,
@@ -743,7 +761,17 @@ export async function submitVerificationRequestInSupabase(params: {
     }
 
     // Update profile_private
-    const updateField = params.verificationType === 'nni' ? { nni_status: 'submitted' } : { wali_status: 'submitted' };
+    const updateField =
+      params.verificationType === 'nni'
+        ? {
+            nni_status: requestStatus === 'approved' ? 'verified' : 'submitted',
+            ...(requestStatus === 'approved' ? { nni_verified_at: new Date().toISOString() } : {}),
+          }
+        : {
+            wali_status: requestStatus === 'approved' ? 'approved' : 'submitted',
+            ...(requestStatus === 'approved' ? { wali_approved_at: new Date().toISOString() } : {}),
+          };
+
     await supabase.from('profile_private').upsert(
       [
         {
@@ -756,10 +784,55 @@ export async function submitVerificationRequestInSupabase(params: {
       { onConflict: 'profile_id' }
     );
 
+    // If approved, also update profiles table
+    if (requestStatus === 'approved') {
+      const profileField =
+        params.verificationType === 'nni'
+          ? { is_verified_nni: true }
+          : { is_wali_approved: true };
+      await supabase.from('profiles').update(profileField).eq('id', params.profileId);
+    }
+
     return true;
   } catch (err) {
     console.warn('Supabase submitVerificationRequest error:', err);
     return false;
+  }
+}
+
+export async function fetchMyVerificationRequestInSupabase(
+  userId: string,
+  verificationType: 'nni' | 'wali' = 'nni'
+): Promise<VerificationRequestInfo | null> {
+  if (!supabase || !isValidUuid(userId)) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('verification_requests')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('verification_type', verificationType)
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Notice fetching verification request:', error.message);
+      return null;
+    }
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      verificationType: data.verification_type,
+      status: data.status,
+      documentPath: data.document_path,
+      submittedAt: data.submitted_at,
+      adminNote: data.admin_note,
+    };
+  } catch (err) {
+    console.warn('Supabase fetchMyVerificationRequest error:', err);
+    return null;
   }
 }
 

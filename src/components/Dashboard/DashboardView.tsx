@@ -13,6 +13,8 @@ interface DashboardViewProps {
   onToggleFavorite?: (profileId: string) => void;
   approvedPhotoIds?: string[];
   photoAccessMap?: Record<string, 'NO_REQUEST' | 'PENDING' | 'ALLOWED' | 'REJECTED'>;
+  hasUploadedPhoto?: boolean;
+  onRequestPhotoUpload?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -27,6 +29,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onToggleFavorite,
   approvedPhotoIds = [],
   photoAccessMap = {},
+  hasUploadedPhoto = true,
+  onRequestPhotoUpload,
 }) => {
   const isWali = user.role === 'wali';
 
@@ -46,6 +50,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fadeIn">
+      {!hasUploadedPhoto && (
+        <div className="p-4 bg-white border border-[#C9A45C]/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="material-symbols-outlined text-2xl text-[#C9A45C] shrink-0">
+              add_a_photo
+            </span>
+            <div>
+              <p className="font-display font-bold text-xs sm:text-sm text-[#211E1A]">
+                Votre profil n'est pas visible dans l'application
+              </p>
+              <p className="font-body text-xs text-[#575147]">
+                Tant que vous n'avez pas ajouté de photo, votre profil reste invisible aux autres membres et vous êtes en mode consultation seule. Ajoutez au moins une photo pour devenir visible et pouvoir échanger.
+              </p>
+            </div>
+          </div>
+          {onRequestPhotoUpload && (
+            <button
+              type="button"
+              onClick={onRequestPhotoUpload}
+              className="px-4 py-2 bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white font-display text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+            >
+              Ajouter ma photo
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Welcome Header & Role Card */}
       <div className="rounded-[24px] p-6 sm:p-8 relative overflow-hidden flex flex-col justify-between bg-white border border-[#E8E3D7] shadow-sm">
         <div className="relative z-10 flex flex-col justify-between h-full">

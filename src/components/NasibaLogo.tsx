@@ -192,12 +192,12 @@ export const NasibaLogo: React.FC<NasibaLogoProps> = ({
 }) => {
   // Dimensions for the vector emblem & typographic logo (slightly enhanced, refined sizing)
   const dimMap = {
-    xs: { icon: 22, title: 'text-sm font-bold', dot: 'w-1.5 h-1.5' },
-    sm: { icon: 28, title: 'text-lg font-bold', dot: 'w-1.5 h-1.5 sm:w-2 sm:h-2' },
-    md: { icon: 34, title: 'text-xl font-bold', dot: 'w-2 h-2' },
-    lg: { icon: 42, title: 'text-2xl font-bold', dot: 'w-2.5 h-2.5' },
-    xl: { icon: 50, title: 'text-3xl font-bold', dot: 'w-2.5 h-2.5' },
-    '2xl': { icon: 60, title: 'text-4xl font-bold', dot: 'w-3 h-3' },
+    xs: { icon: 24, title: 'text-sm font-bold', dot: 'w-1.5 h-1.5' },
+    sm: { icon: 32, title: 'text-xl font-bold', dot: 'w-2 h-2' },
+    md: { icon: 38, title: 'text-2xl font-bold', dot: 'w-2.5 h-2.5' },
+    lg: { icon: 46, title: 'text-3xl font-bold', dot: 'w-3 h-3' },
+    xl: { icon: 54, title: 'text-4xl font-bold', dot: 'w-3.5 h-3.5' },
+    '2xl': { icon: 66, title: 'text-5xl font-bold', dot: 'w-4 h-4' },
   };
 
   const currentDim = dimMap[size] || dimMap.md;

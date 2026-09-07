@@ -15,7 +15,34 @@ export interface AuthAccount {
   photoUrl?: string;
 }
 
-let currentAccount: AuthAccount | null = null;
+const LOCAL_SESSION_KEY = 'nassib_user_session_v1';
+const LOCAL_ACTIVE_TAB_KEY = 'nassib_active_tab_v1';
+
+export function getCachedAccount(): AuthAccount | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = localStorage.getItem(LOCAL_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && parsed.id ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedAccount(account: AuthAccount | null): void {
+  try {
+    if (typeof window === 'undefined') return;
+    if (account && account.id) {
+      localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(account));
+    } else {
+      localStorage.removeItem(LOCAL_SESSION_KEY);
+      localStorage.removeItem(LOCAL_ACTIVE_TAB_KEY);
+    }
+  } catch {}
+}
+
+let currentAccount: AuthAccount | null = getCachedAccount();
 
 async function accountFromAuthUser(authUser: any): Promise<AuthAccount> {
   const metadata = authUser?.user_metadata || {};
@@ -92,6 +119,7 @@ export async function registerAccount(data: {
         return { user: null, error: 'Compte créé avec succès. Veuillez vérifier votre boîte email pour confirmer votre inscription.' };
       }
       currentAccount = await accountFromAuthUser(signUpData.user);
+      setCachedAccount(currentAccount);
       return { user: currentAccount, error: null };
     }
     return { user: null, error: "Impossible de créer l'utilisateur." };
@@ -123,6 +151,7 @@ export async function loginAccount(data: { email: string; password?: string }): 
 
     if (signInData.user) {
       currentAccount = await accountFromAuthUser(signInData.user);
+      setCachedAccount(currentAccount);
       return { user: currentAccount, error: null };
     }
     return { user: null, error: 'Utilisateur introuvable dans la base de données.' };
@@ -132,22 +161,38 @@ export async function loginAccount(data: { email: string; password?: string }): 
 }
 
 export function getCurrentUserSession(): AuthAccount | null {
+  if (!currentAccount) {
+    currentAccount = getCachedAccount();
+  }
   return currentAccount;
 }
 
 export async function restoreCurrentUserSession(): Promise<AuthAccount | null> {
+  // Use cached session if available for immediate responsiveness
+  if (!currentAccount) {
+    currentAccount = getCachedAccount();
+  }
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase.auth.getSession();
       if (!error && data.session?.user) {
         currentAccount = await accountFromAuthUser(data.session.user);
+        setCachedAccount(currentAccount);
         return currentAccount;
+      } else if (!error && !data.session) {
+        // Supabase has confirmed there is no active session
+        currentAccount = null;
+        setCachedAccount(null);
+        return null;
       }
-    } catch {}
+    } catch {
+      // In case of network glitch or timeout on mobile, return existing cached session
+      if (currentAccount) return currentAccount;
+    }
   }
 
-  currentAccount = null;
-  return null;
+  return currentAccount;
 }
 
 export async function refreshCurrentSessionFromDB(): Promise<AuthAccount | null> {
@@ -157,6 +202,7 @@ export async function refreshCurrentSessionFromDB(): Promise<AuthAccount | null>
 export function saveCurrentUserSession(updates: Partial<AuthAccount>) {
   if (!currentAccount) return null;
   currentAccount = { ...currentAccount, ...updates };
+  setCachedAccount(currentAccount);
   return currentAccount;
 }
 
@@ -166,6 +212,7 @@ export function updateAccountPlanAndStatus(_identifier: string, _updates: Partia
 
 export async function logoutUserSession() {
   currentAccount = null;
+  setCachedAccount(null);
   if (supabase) {
     try {
       await supabase.auth.signOut();

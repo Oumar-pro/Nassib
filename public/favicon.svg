@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-27 -81 540 540" width="512" height="512" fill="none">
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-90 -145 660 660" width="512" height="512" fill="none">
+  
   
   <defs>
     <!-- Deep Emerald Green Gradient for Male Figure -->
@@ -49,7 +51,6 @@
     </linearGradient>
   </defs>
 
-  
   <!-- Male Head -->
   <circle cx="191" cy="69" r="26" fill="url(#nassibMaleHead)" />
 
@@ -113,5 +114,4 @@
        Z"
     fill="url(#nassibStar)"
   />
-
 </svg>
