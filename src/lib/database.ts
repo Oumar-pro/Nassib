@@ -1,382 +1,183 @@
 import { Profile } from '../types';
 import { supabase } from './supabase';
+import { calculateCompatibility } from './compatibility';
 
 export function hasUploadedPhotos(profile: Partial<Profile> | null | undefined): boolean {
   if (!profile) return false;
-  const hasValidPhotoUrl = Boolean(profile.photoUrl && typeof profile.photoUrl === 'string' && profile.photoUrl.trim() !== '');
-  const hasValidGallery = Array.isArray(profile.photos) && profile.photos.some((p) => Boolean(p) && typeof p === 'string' && p.trim() !== '');
-  return hasValidPhotoUrl || hasValidGallery;
+  const hasPhoto = Boolean(profile.photoUrl?.trim());
+  const hasGallery = Array.isArray(profile.photos) && profile.photos.some((p) => typeof p === 'string' && p.trim());
+  return hasPhoto || hasGallery;
 }
 
 const mapProfile = (row: any): Profile => {
-  const photoUrl = (row.photo_url || '').trim();
+  const photoUrl = typeof row.photo_url === 'string' ? row.photo_url.trim() : '';
   const photos = Array.isArray(row.photos)
-    ? row.photos.filter((p: any) => typeof p === 'string' && p.trim() !== '')
-    : photoUrl
-    ? [photoUrl]
-    : [];
-
+    ? row.photos.filter((p: any) => typeof p === 'string' && p.trim())
+    : photoUrl ? [photoUrl] : [];
   return {
-    id: row.id,
-    userId: row.user_id,
-    name: row.name || '',
-    age: row.age,
-    profession: row.profession || '',
-    city: row.city || '',
-    maritalStatus: row.marital_status || '',
-    religion: row.religion || '',
-    education: row.education || '',
-    matchPercentage: row.match_percentage ?? 85,
-    isVerifiedNNI: Boolean(row.is_verified_nni),
-    isWaliApproved: Boolean(row.is_wali_approved),
-    isPremium: Boolean(row.is_premium),
-    photoUrl: photoUrl || (photos.length > 0 ? photos[0] : ''),
-    photoPrivate: row.photo_private === true || row.photo_private === 'true' || row.photo_private === 't' || row.photo_private === 1,
-    bio: row.bio || '',
-    waliReference: '',
+    id: row.id, userId: row.user_id, name: row.name || '', age: row.age, profession: row.profession || '',
+    city: row.city || '', maritalStatus: row.marital_status || '', religion: row.religion || '', education: row.education || '',
+    matchPercentage: Number.isFinite(row.match_percentage) ? row.match_percentage : 0,
+    isVerifiedNNI: Boolean(row.is_verified_nni), isWaliApproved: Boolean(row.is_wali_approved), isPremium: Boolean(row.is_premium),
+    photoUrl: photoUrl || photos[0] || '',
+    photoPrivate: Boolean(row.photo_private), bio: row.bio || '', waliReference: '',
     gender: row.gender === 'male' || row.gender === 'female' ? row.gender : undefined,
-    viewsCount: row.views_count ?? 0,
-    likesCount: row.likes_count ?? 0,
-    hobbies: row.hobbies || '',
-    interests: row.interests || '',
-    drinksAlcohol: Boolean(row.drinks_alcohol),
-    smokes: Boolean(row.smokes),
-    presentation: row.presentation || '',
-    personality: row.personality || '',
-    familyImportance: row.family_importance || '',
-    isAdmin: Boolean(row.is_admin),
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    photos: photos.length > 0 ? photos : (photoUrl ? [photoUrl] : []),
-    height: row.height ?? undefined,
-    weight: row.weight ?? undefined,
-    ethnicity: row.ethnicity || undefined,
-    originCity: row.origin_city || undefined,
-    hijabStatus: row.hijab_status || undefined,
-    religiousPracticeDetails: row.religious_practice_details || undefined,
-    values: Array.isArray(row.values) ? row.values : undefined,
-    partnerCriteria: row.partner_criteria || undefined,
-    dealBreakers: Array.isArray(row.deal_breakers) ? row.deal_breakers : undefined,
+    viewsCount: row.views_count ?? 0, likesCount: row.likes_count ?? 0,
+    hobbies: row.hobbies || '', interests: row.interests || '', drinksAlcohol: row.drinks_alcohol ?? undefined,
+    smokes: row.smokes ?? undefined, presentation: row.presentation || '', personality: row.personality || '',
+    familyImportance: row.family_importance || '', isAdmin: Boolean(row.is_admin), createdAt: row.created_at, updatedAt: row.updated_at,
+    photos, height: row.height ?? undefined, weight: row.weight ?? undefined, ethnicity: row.ethnicity || undefined,
+    originCity: row.origin_city || undefined, hijabStatus: row.hijab_status || undefined,
+    religiousPracticeDetails: row.religious_practice_details || undefined, values: Array.isArray(row.values) ? row.values : undefined,
+    partnerCriteria: row.partner_criteria || undefined, dealBreakers: Array.isArray(row.deal_breakers) ? row.deal_breakers : undefined,
   };
 };
 
 export async function getProfiles(userId?: string): Promise<Profile[]> {
   if (!supabase) return [];
-
   try {
-    let query = supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
+    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    if (error) {
+      console.warn('getProfiles Supabase error:', error.message);
+      return [];
+    }
+    let profiles = (data || []).map(mapProfile).filter(hasUploadedPhotos);
     if (userId) {
-      query = query.neq('user_id', userId);
+      profiles = profiles.filter((p) => p.userId !== userId);
+      const { data: me, error: meError } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
+      if (!meError && me) {
+        const myProfile = mapProfile(me);
+        profiles = profiles.map((p) => ({ ...p, matchPercentage: calculateCompatibility(myProfile, p) }));
+      }
     }
-
-    const { data, error } = await query;
-    if (!error && data && data.length > 0) {
-      return data.map(mapProfile).filter(hasUploadedPhotos);
-    }
-
-    // Try public_profiles view if available
-    const { data: viewData, error: viewError } = await supabase
-      .from('public_profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!viewError && viewData && viewData.length > 0) {
-      const filtered = userId ? viewData.filter((p: any) => p.user_id !== userId) : viewData;
-      return filtered.map(mapProfile).filter(hasUploadedPhotos);
-    }
+    return profiles;
   } catch (err) {
-    console.warn('Database getProfiles exception:', err);
+    console.warn('getProfiles exception:', err);
+    return [];
   }
-
-  // All data comes strictly from the database: no mock or seed profiles
-  return [];
 }
 
 export async function getProfileById(profileId: string): Promise<Profile | null> {
   if (!profileId || !supabase) return null;
   try {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', profileId).maybeSingle();
-    if (!error && data) {
-      return mapProfile(data);
-    }
-  } catch (err) {
-    console.warn('getProfileById error:', err);
-  }
-  return null;
+    if (error) { console.warn('getProfileById error:', error.message); return null; }
+    return data ? mapProfile(data) : null;
+  } catch (err) { console.warn('getProfileById exception:', err); return null; }
 }
 
 export async function getMyProfile(userId: string): Promise<Profile | null> {
   if (!userId || !supabase) return null;
-
   try {
     const { data, error } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
-    if (!error && data) {
-      const mapped = mapProfile(data);
-      try {
-        const { data: priv } = await supabase
-          .from('profile_private')
-          .select('wali_reference')
-          .eq('user_id', userId)
-          .maybeSingle();
-        if (priv?.wali_reference) {
-          mapped.waliReference = priv.wali_reference;
-        }
-      } catch {
-        // Ignore if table unavailable
-      }
-      return mapped;
-    }
-  } catch (err) {
-    console.warn('getMyProfile error:', err);
-  }
-
-  return null;
+    if (error) { console.warn('getMyProfile error:', error.message); return null; }
+    if (!data) return null;
+    const mapped = mapProfile(data);
+    const { data: priv, error: privError } = await supabase.from('profile_private').select('wali_reference').eq('user_id', userId).maybeSingle();
+    if (privError) console.warn('getMyProfile private data error:', privError.message);
+    if (priv?.wali_reference) mapped.waliReference = priv.wali_reference;
+    return mapped;
+  } catch (err) { console.warn('getMyProfile exception:', err); return null; }
 }
 
 export async function updatePhotoPrivacy(userId: string, photoPrivate: boolean): Promise<boolean> {
   if (!userId || !supabase) return false;
-
-  const isPrivate = Boolean(photoPrivate);
-
   try {
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        photo_private: isPrivate,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', userId);
+    const { data, error } = await supabase.from('profiles').update({ photo_private: Boolean(photoPrivate) }).eq('user_id', userId).select('photo_private').maybeSingle();
+    if (error) { console.warn('updatePhotoPrivacy error:', error.message); return false; }
+    return data?.photo_private === Boolean(photoPrivate);
+  } catch (err) { console.warn('updatePhotoPrivacy exception:', err); return false; }
+}
 
-    if (error) {
-      console.warn('Error updating photo_private in profiles table:', error.message || error);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.warn('Exception updating photo_private in profiles table:', err);
-    return false;
-  }
+export async function recordProfileView(profileId: string): Promise<boolean> {
+  if (!supabase || !profileId) return false;
+  const { data, error } = await supabase.rpc('record_profile_view', { target_profile_id: profileId });
+  if (error) { console.warn('recordProfileView error:', error.message); return false; }
+  return data === true;
+}
+
+export interface ProfileStats {
+  profileViews: number; profileConsultations: number; photoRequests: number; photoRequestsApproved: number;
+  matchesCount: number; favoritesCount: number; weeklyGrowthPercentage: number;
+}
+
+export async function getMyProfileStats(): Promise<ProfileStats | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('get_my_profile_stats');
+  if (error) { console.warn('getMyProfileStats error:', error.message); return null; }
+  if (!data || typeof data !== 'object') return null;
+  return {
+    profileViews: Number(data.profileViews ?? 0), profileConsultations: Number(data.profileConsultations ?? 0),
+    photoRequests: Number(data.photoRequests ?? 0), photoRequestsApproved: Number(data.photoRequestsApproved ?? 0),
+    matchesCount: Number(data.matchesCount ?? 0), favoritesCount: Number(data.favoritesCount ?? 0),
+    weeklyGrowthPercentage: Number(data.weeklyGrowthPercentage ?? 0),
+  };
 }
 
 export async function saveMyProfile(userId: string, profile: Partial<Profile>, onboardingData?: any): Promise<Profile | null> {
-  if (!userId) return null;
-
-  // Safe defaults respecting the PostgreSQL CHECK constraints
+  if (!userId || !supabase) return null;
   const rawAge = Number(profile.age);
   const age = Number.isFinite(rawAge) && rawAge >= 18 && rawAge <= 100 ? rawAge : 25;
-  const name = profile.name?.trim() || 'Membre Nassib';
-  const city = profile.city?.trim() || 'Niamey';
-  const maritalStatus = profile.maritalStatus?.trim() || 'Célibataire';
-  const gender = profile.gender === 'male' ? 'male' : 'female';
+  const corePayload: Record<string, any> = {
+    user_id: userId, name: profile.name?.trim() || 'Membre Nassib', age,
+    profession: profile.profession?.trim() || null, city: profile.city?.trim() || 'Niamey',
+    marital_status: profile.maritalStatus?.trim() || 'Célibataire', religion: profile.religion?.trim() || 'Sunnite',
+    education: profile.education?.trim() || null, photo_url: profile.photoUrl?.trim() || null,
+    photo_private: Boolean(profile.photoPrivate), bio: profile.bio?.trim() || null,
+    gender: profile.gender === 'male' ? 'male' : 'female', hobbies: profile.hobbies?.trim() || null,
+    interests: profile.interests?.trim() || null, drinks_alcohol: profile.drinksAlcohol ?? null, smokes: profile.smokes ?? null,
+    presentation: profile.presentation?.trim() || null, personality: profile.personality?.trim() || null,
+    family_importance: profile.familyImportance?.trim() || null,
+    height: Number.isFinite(Number(profile.height)) ? Number(profile.height) : null,
+    weight: Number.isFinite(Number(profile.weight)) ? Number(profile.weight) : null,
+    ethnicity: profile.ethnicity?.trim() || null, origin_city: profile.originCity?.trim() || null,
+    hijab_status: profile.hijabStatus?.trim() || null, religious_practice_details: profile.religiousPracticeDetails?.trim() || null,
+    values: Array.isArray(profile.values) ? profile.values : null, partner_criteria: profile.partnerCriteria?.trim() || null,
+    deal_breakers: Array.isArray(profile.dealBreakers) ? profile.dealBreakers : null,
+  };
+  const { data, error } = await supabase.from('profiles').upsert(corePayload, { onConflict: 'user_id' }).select('*').single();
+  if (error || !data) { console.warn('saveMyProfile error:', error?.message); return null; }
 
   const waliReference = onboardingData?.waliName?.trim() && onboardingData?.waliPhone?.trim()
     ? `${onboardingData.waliRelation?.trim() || ''} : ${onboardingData.waliName.trim()} (${onboardingData.waliPhone.trim()})`
-    : profile.waliReference || null;
-
-  // Strict core schema fields matching public.profiles (wali_reference is in profile_private)
-  const corePayload: Record<string, any> = {
-    user_id: userId,
-    name,
-    age,
-    profession: profile.profession?.trim() || null,
-    city,
-    marital_status: maritalStatus,
-    religion: profile.religion?.trim() || 'Sunnite',
-    education: profile.education?.trim() || null,
-    match_percentage: Number.isFinite(Number(profile.matchPercentage)) ? Number(profile.matchPercentage) : 85,
-    is_verified_nni: Boolean(profile.isVerifiedNNI),
-    is_wali_approved: Boolean(profile.isWaliApproved),
-    is_premium: Boolean(profile.isPremium),
-    photo_url: profile.photoUrl || null,
-    photo_private: Boolean(profile.photoPrivate),
-    bio: profile.bio?.trim() || null,
-    gender,
-    hobbies: profile.hobbies?.trim() || null,
-    interests: profile.interests?.trim() || null,
-    drinks_alcohol: Boolean(profile.drinksAlcohol),
-    smokes: Boolean(profile.smokes),
-    presentation: profile.presentation?.trim() || null,
-    personality: profile.personality?.trim() || null,
-    family_importance: profile.familyImportance?.trim() || null,
-  };
-
-  // Extended payload if extra columns exist
-  const extendedPayload: Record<string, any> = {
-    ...corePayload,
-    height: Number.isFinite(Number(profile.height)) ? Number(profile.height) : null,
-    weight: Number.isFinite(Number(profile.weight)) ? Number(profile.weight) : null,
-    ethnicity: profile.ethnicity?.trim() || null,
-    origin_city: profile.originCity?.trim() || null,
-    hijab_status: profile.hijabStatus?.trim() || null,
-    religious_practice_details: profile.religiousPracticeDetails?.trim() || null,
-    values: Array.isArray(profile.values) ? profile.values : null,
-    partner_criteria: profile.partnerCriteria?.trim() || null,
-    deal_breakers: Array.isArray(profile.dealBreakers) ? profile.dealBreakers : null,
-  };
-
-  let savedData: any = null;
-  if (supabase) {
-    // Try with extended fields first
-    try {
-      const { data: extData, error: extError } = await supabase
-        .from('profiles')
-        .upsert(extendedPayload, { onConflict: 'user_id' })
-        .select('*')
-        .single();
-
-      if (!extError && extData) {
-        savedData = extData;
-      } else {
-        console.warn('Extended profile upsert notice, retrying with core schema columns:', extError?.message);
-        const { data: coreData, error: coreError } = await supabase
-          .from('profiles')
-          .upsert(corePayload, { onConflict: 'user_id' })
-          .select('*')
-          .single();
-
-        if (coreError || !coreData) {
-          if (coreError?.code === '42703' || String(coreError?.message || '').includes('wali_reference')) {
-            const { data: existingData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', userId)
-              .maybeSingle();
-
-            savedData = {
-              ...(existingData || {}),
-              ...corePayload,
-              id: existingData?.id || userId,
-              created_at: existingData?.created_at || new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            };
-          }
-        } else {
-          savedData = coreData;
-        }
-      }
-    } catch (dbErr) {
-      console.warn('Supabase profile save error:', dbErr);
-    }
-  }
-
-  if (!savedData) {
-    return null;
-  }
-
-  // Save private data (Wali, NNI verification) in profile_private table
-  if (supabase && waliReference) {
-    try {
-      await supabase.from('profile_private').upsert({
-        profile_id: savedData.id,
-        user_id: userId,
-        wali_reference: waliReference,
-        nni_status: 'pending',
-        wali_status: 'pending',
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'profile_id' });
-    } catch (privErr) {
-      console.warn('Notice saving profile_private:', privErr);
-    }
-  }
-
-  // Save gallery photos if provided
-  if (supabase && Array.isArray(profile.photos)) {
-    try {
-      await supabase.from('profile_photos').delete().eq('profile_id', savedData.id).eq('user_id', userId);
-      const photos = profile.photos.filter(Boolean).map((storage_path: string, index: number) => ({
-        profile_id: savedData.id,
-        user_id: userId,
-        storage_path,
-        sort_order: index,
-        is_primary: index === 0,
-      }));
-      if (photos.length) await supabase.from('profile_photos').insert(photos);
-    } catch (photoErr) {
-      console.warn('Notice saving profile_photos:', photoErr);
-    }
-  }
-
-  const mapped = mapProfile(savedData);
+    : profile.waliReference?.trim() || null;
   if (waliReference) {
-    mapped.waliReference = waliReference;
+    const { error: privError } = await supabase.from('profile_private').upsert({ profile_id: data.id, user_id: userId, wali_reference: waliReference }, { onConflict: 'profile_id' });
+    if (privError) console.warn('saveMyProfile private data error:', privError.message);
   }
-  if (Array.isArray(profile.photos) && profile.photos.length > 0) {
-    mapped.photos = profile.photos;
+  if (Array.isArray(profile.photos)) {
+    const { error: deleteError } = await supabase.from('profile_photos').delete().eq('profile_id', data.id).eq('user_id', userId);
+    if (deleteError) console.warn('saveMyProfile photo cleanup error:', deleteError.message);
+    const rows = profile.photos.filter((p): p is string => Boolean(p && p.trim())).map((storage_path, index) => ({ profile_id: data.id, user_id: userId, storage_path, sort_order: index, is_primary: index === 0 }));
+    if (rows.length) { const { error: photoError } = await supabase.from('profile_photos').insert(rows); if (photoError) console.warn('saveMyProfile photo insert error:', photoError.message); }
   }
-
-  return mapped;
+  const saved = mapProfile(data); if (waliReference) saved.waliReference = waliReference; if (Array.isArray(profile.photos)) saved.photos = profile.photos;
+  return saved;
 }
 
 export async function getFavorites(userId: string): Promise<string[]> {
   if (!userId || !supabase) return [];
-
-  try {
-    const { data, error } = await supabase
-      .from('user_favorites')
-      .select('profile_id')
-      .eq('user_id', userId);
-
-    if (error || !data) return [];
-    return data.map((row: any) => String(row.profile_id));
-  } catch (err) {
-    console.warn('Supabase getFavorites notice:', err);
-    return [];
-  }
+  const { data, error } = await supabase.from('user_favorites').select('profile_id').eq('user_id', userId);
+  if (error) { console.warn('getFavorites error:', error.message); return []; }
+  return (data || []).map((row: any) => String(row.profile_id));
 }
 
 export async function toggleFavorite(userId: string, profileId: string): Promise<boolean> {
   if (!userId || !profileId || !supabase) return false;
-
-  try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const effectiveUserId = sessionData?.session?.user?.id || userId;
-
-    const { data: existing, error: checkErr } = await supabase
-      .from('user_favorites')
-      .select('id')
-      .eq('user_id', effectiveUserId)
-      .eq('profile_id', profileId)
-      .maybeSingle();
-
-    if (!checkErr && existing) {
-      await supabase
-        .from('user_favorites')
-        .delete()
-        .eq('id', existing.id);
-      return false; // Removed
-    } else if (!checkErr && !existing) {
-      await supabase
-        .from('user_favorites')
-        .insert({ user_id: effectiveUserId, profile_id: profileId });
-      return true; // Added
-    }
-  } catch (err) {
-    console.warn('Supabase toggleFavorite error:', err);
-  }
-
-  return true;
+  const { data, error } = await supabase.rpc('toggle_favorite', { target_profile_id: profileId });
+  if (error) { console.warn('toggleFavorite error:', error.message); return false; }
+  const { data: sessionData } = await supabase.auth.getSession();
+  const effectiveUserId = sessionData.session?.user?.id;
+  if (!effectiveUserId || effectiveUserId !== userId) return false;
+  const { data: row, error: verifyError } = await supabase.from('user_favorites').select('id').eq('user_id', effectiveUserId).eq('profile_id', profileId).maybeSingle();
+  if (verifyError) { console.warn('toggleFavorite verification error:', verifyError.message); return false; }
+  const expectedPresent = data === true;
+  return expectedPresent === Boolean(row);
 }
 
 export async function getPricingPlansFromDB(): Promise<any[]> {
   if (!supabase) return [];
-  try {
-    const { data, error } = await supabase
-      .from('pricing_plans')
-      .select('*')
-      .order('price', { ascending: true });
-    if (!error && data) return data;
-  } catch (err) {
-    console.warn('Error fetching pricing_plans:', err);
-  }
-  return [];
+  const { data, error } = await supabase.from('pricing_plans').select('*').order('price', { ascending: true });
+  if (error) { console.warn('getPricingPlansFromDB error:', error.message); return []; }
+  return data || [];
 }
-
-// Conversations et messages passent exclusivement par src/lib/supabase.ts
-// (fetchConversationsFromSupabase / fetchMessagesFromSupabase), qui reflète
-// le vrai schéma de ces tables. Les anciennes fonctions getConversations()/
-// getMessages() ici lisaient des colonnes inexistantes (participant_name,
-// unread_count...) et n'étaient appelées nulle part : supprimées.
