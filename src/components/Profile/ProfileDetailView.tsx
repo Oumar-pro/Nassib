@@ -302,7 +302,7 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
                   {photoAccessState === 'ALLOWED' ? (
                     <span className="px-3.5 py-2 rounded-xl bg-[#8BAE9F]/20 border border-[#8BAE9F]/40 text-[#0F5C4D] font-display text-xs font-bold flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-sm">lock_open</span>
-                      Photos déverrouillées
+                      Photos débloquées (Acceptée)
                     </span>
                   ) : photoAccessState === 'PENDING' ? (
                     <span className="px-3.5 py-2 rounded-xl bg-[#C9A45C]/15 border border-[#C9A45C]/30 text-[#735619] font-display text-xs font-bold flex items-center gap-1.5">

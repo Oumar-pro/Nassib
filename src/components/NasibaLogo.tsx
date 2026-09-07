@@ -13,14 +13,14 @@ export interface NasibaLogoProps {
  * with a 4-point central blessing star.
  */
 export const NassibLogoIcon: React.FC<{ size?: number | string; className?: string }> = ({
-  size = 36,
+  size = 28,
   className = '',
 }) => {
   const idPrefix = React.useId().replace(/:/g, '');
 
   return (
     <svg
-      viewBox="85 30 316 316"
+      viewBox="3 -50 480 480"
       width={size}
       height={size}
       fill="none"
@@ -190,14 +190,14 @@ export const NasibaLogo: React.FC<NasibaLogoProps> = ({
   className = '',
   lightMode = false,
 }) => {
-  // Dimensions for the vector emblem & typographic logo
+  // Dimensions for the vector emblem & typographic logo (slightly enhanced, refined sizing)
   const dimMap = {
-    xs: { icon: 26, title: 'text-[17px] font-bold' },
-    sm: { icon: 34, title: 'text-[22px] font-extrabold' },
-    md: { icon: 42, title: 'text-[26px] font-extrabold' },
-    lg: { icon: 50, title: 'text-2xl font-extrabold' },
-    xl: { icon: 62, title: 'text-3xl font-extrabold' },
-    '2xl': { icon: 78, title: 'text-4xl font-extrabold' },
+    xs: { icon: 22, title: 'text-sm font-bold', dot: 'w-1.5 h-1.5' },
+    sm: { icon: 28, title: 'text-lg font-bold', dot: 'w-1.5 h-1.5 sm:w-2 sm:h-2' },
+    md: { icon: 34, title: 'text-xl font-bold', dot: 'w-2 h-2' },
+    lg: { icon: 42, title: 'text-2xl font-bold', dot: 'w-2.5 h-2.5' },
+    xl: { icon: 50, title: 'text-3xl font-bold', dot: 'w-2.5 h-2.5' },
+    '2xl': { icon: 60, title: 'text-4xl font-bold', dot: 'w-3 h-3' },
   };
 
   const currentDim = dimMap[size] || dimMap.md;
@@ -219,7 +219,7 @@ export const NasibaLogo: React.FC<NasibaLogoProps> = ({
           >
             Nassib
           </span>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#C99355] shrink-0 translate-y-[-1px]"></span>
+          <span className={`rounded-full bg-[#C99355] shrink-0 translate-y-[-1px] ${currentDim.dot}`}></span>
         </div>
       )}
     </div>

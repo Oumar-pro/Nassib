@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="85 30 316 316" width="512" height="512" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-27 -81 540 540" width="512" height="512" fill="none">
+  <rect x="-27" y="-81" width="540" height="540" fill="#FAF8F2"/>
+  
   <defs>
     <!-- Deep Emerald Green Gradient for Male Figure -->
     <linearGradient id="nassibMaleBody" x1="120" y1="100" x2="290" y2="330" gradientUnits="userSpaceOnUse">
@@ -48,9 +50,7 @@
     </linearGradient>
   </defs>
 
-  <rect x="85" y="30" width="316" height="316" rx="64" fill="#FAF8F2"/>
-
-  <!-- ==================== LEFT FIGURE (MALE - DEEP EMERALD) ==================== -->
+  
   <!-- Male Head -->
   <circle cx="191" cy="69" r="26" fill="url(#nassibMaleHead)" />
 
@@ -86,7 +86,6 @@
     fill="url(#nassibMaleSheen)"
   />
 
-  <!-- ==================== RIGHT FIGURE (FEMALE - WARM BRONZE GOLD) ==================== -->
   <!-- Female Head -->
   <circle cx="316.5" cy="103" r="23" fill="url(#nassibFemaleHead)" />
 
@@ -105,7 +104,7 @@
     fill="url(#nassibFemaleBody)"
   />
 
-  <!-- ==================== CENTRAL STAR (BLESSING SPARKLE) ==================== -->
+  <!-- Central Star (Sparkle) -->
   <path
     d="M 245 248
        C 245 265, 233 281, 217 281
@@ -115,4 +114,5 @@
        Z"
     fill="url(#nassibStar)"
   />
+
 </svg>

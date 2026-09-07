@@ -246,8 +246,10 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                           )}
                           {conv.isSupervised && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#8BAE9F]/15 border border-[#8BAE9F]/30 text-[#0F5C4D] text-[11px] font-bold">
-                              <span className="material-symbols-outlined text-[13px] text-[#0F5C4D]">security</span>
-                              Supervisé par Wali
+                              <span className="material-symbols-outlined text-[13px] text-[#0F5C4D]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                favorite
+                              </span>
+                              Démarche mariage
                             </span>
                           )}
                           {conv.unreadCount > 0 && (

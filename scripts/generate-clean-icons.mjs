@@ -1,5 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-27 -81 540 540" width="512" height="512" fill="none">
-  
+import fs from 'fs';
+import sharp from 'sharp';
+
+// Perfectly proportioned vector emblem with generous breathing room (padding)
+// Emblem bounds: X from 113 to 373 (w=260), Y from 43 to 335 (h=292). Center: (243, 189)
+// For desktop install icons and favicon, we use a 540x540 canvas centered at (243, 189):
+// viewBox="-27 -81 540 540" -> provides ~25% safe margin around emblem so it never touches edges or squircle boundaries.
+
+const getSvgDefs = () => `
   <defs>
     <!-- Deep Emerald Green Gradient for Male Figure -->
     <linearGradient id="nassibMaleBody" x1="120" y1="100" x2="290" y2="330" gradientUnits="userSpaceOnUse">
@@ -48,8 +55,9 @@
       <stop offset="100%" stop-color="#8A5826"/>
     </linearGradient>
   </defs>
+`;
 
-  
+const getEmblemPaths = () => `
   <!-- Male Head -->
   <circle cx="191" cy="69" r="26" fill="url(#nassibMaleHead)" />
 
@@ -113,5 +121,67 @@
        Z"
     fill="url(#nassibStar)"
   />
+`;
 
+// 1. Transparent SVG for favicon & general web logo (with refined proportion & ~25% padding)
+const transparentSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-27 -81 540 540" width="512" height="512" fill="none">
+  ${getSvgDefs()}
+  ${getEmblemPaths()}
 </svg>
+`.trim();
+
+// 2. Solid Background SVG for Apple Touch Icon & PWA Desktop Icon (safe zone padding, solid background)
+const solidBgSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-27 -81 540 540" width="512" height="512" fill="none">
+  <rect x="-27" y="-81" width="540" height="540" fill="#FAF8F2"/>
+  ${getSvgDefs()}
+  ${getEmblemPaths()}
+</svg>
+`.trim();
+
+async function generate() {
+  // Save SVG files
+  fs.writeFileSync('public/favicon.svg', transparentSvg);
+  fs.writeFileSync('public/logo.svg', transparentSvg);
+  fs.writeFileSync('public/favicon-maskable.svg', solidBgSvg);
+
+  const svgBuffer = Buffer.from(solidBgSvg);
+
+  // Generate PNGs with solid background and generous margin for iPhone & Desktop
+  await sharp(svgBuffer)
+    .resize(180, 180)
+    .png()
+    .toFile('public/apple-touch-icon.png');
+
+  await sharp(svgBuffer)
+    .resize(180, 180)
+    .png()
+    .toFile('public/apple-touch-icon-precomposed.png');
+
+  await sharp(svgBuffer)
+    .resize(192, 192)
+    .png()
+    .toFile('public/pwa-192x192.png');
+
+  await sharp(svgBuffer)
+    .resize(512, 512)
+    .png()
+    .toFile('public/pwa-512x512.png');
+
+  // Favicons (transparent or clean bg)
+  const faviconSvgBuffer = Buffer.from(transparentSvg);
+  await sharp(faviconSvgBuffer)
+    .resize(32, 32)
+    .png()
+    .toFile('public/favicon-32x32.png');
+
+  await sharp(faviconSvgBuffer)
+    .resize(16, 16)
+    .png()
+    .toFile('public/favicon-16x16.png');
+
+  console.log('All icons generated successfully with reduced size and ideal safe-zone padding!');
+}
+
+generate().catch(console.error);

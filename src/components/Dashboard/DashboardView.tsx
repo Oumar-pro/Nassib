@@ -11,6 +11,8 @@ interface DashboardViewProps {
   onNavigateToTab: (tab: any) => void;
   onTogglePhotoBlurring: () => void;
   onToggleFavorite?: (profileId: string) => void;
+  approvedPhotoIds?: string[];
+  photoAccessMap?: Record<string, 'NO_REQUEST' | 'PENDING' | 'ALLOWED' | 'REJECTED'>;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -23,6 +25,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigateToTab,
   onTogglePhotoBlurring,
   onToggleFavorite,
+  approvedPhotoIds = [],
+  photoAccessMap = {},
 }) => {
   const isWali = user.role === 'wali';
 
@@ -285,7 +289,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {favoriteProfiles.map((profile) => (
+            {favoriteProfiles.map((profile) => {
+              const hasPhotoAccess = (approvedPhotoIds && approvedPhotoIds.includes(profile.id)) || (photoAccessMap && photoAccessMap[profile.id] === 'ALLOWED');
+              const isPhotoBlurred = profile.photoPrivate && !hasPhotoAccess;
+
+              return (
               <div
                 key={profile.id}
                 onClick={() => onSelectProfile(profile)}
@@ -297,12 +305,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       src={profile.photoUrl}
                       alt={profile.name}
                       className={`w-full h-full object-cover ${
-                        profile.photoPrivate ? 'blur-md' : ''
+                        isPhotoBlurred ? 'blur-md' : ''
                       }`}
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF8F2] text-[#0F5C4D]">
                       <span className="material-symbols-outlined text-2xl text-[#8BAE9F]">person</span>
+                    </div>
+                  )}
+                  {profile.photoPrivate && hasPhotoAccess && (
+                    <div className="absolute bottom-0 right-0 bg-[#0F5C4D] text-white p-0.5 rounded-full shadow-xs" title="Photos débloquées">
+                      <span className="material-symbols-outlined text-[10px]">lock_open</span>
                     </div>
                   )}
                 </div>
@@ -333,7 +346,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </button>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -377,6 +391,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             ) : (
               recommendedProfiles.slice(0, 2).map((profile) => {
                 const isFavorited = favoriteProfileIds.includes(profile.id);
+                const hasPhotoAccess = (approvedPhotoIds && approvedPhotoIds.includes(profile.id)) || (photoAccessMap && photoAccessMap[profile.id] === 'ALLOWED');
+                const isPhotoBlurred = profile.photoPrivate && !hasPhotoAccess;
+                const isPhotoPending = profile.photoPrivate && !hasPhotoAccess && photoAccessMap && photoAccessMap[profile.id] === 'PENDING';
 
                 return (
                   <div
@@ -391,13 +408,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           src={profile.photoUrl}
                           alt={profile.name}
                           className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
-                            profile.photoPrivate ? 'blur-xl scale-110' : ''
+                            isPhotoBlurred ? 'blur-xl scale-110' : ''
                           }`}
                         />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF8F2] text-[#0F5C4D]">
                           <span className="material-symbols-outlined text-4xl mb-1 text-[#8BAE9F]">person</span>
                           <span className="font-display font-bold text-xs text-[#0F5C4D]">{profile.name}</span>
+                        </div>
+                      )}
+                      {profile.photoPrivate && hasPhotoAccess && (
+                        <div className="absolute top-3 left-3 bg-[#0F5C4D]/90 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1 text-[10px] font-bold text-white shadow-xs border border-white/20">
+                          <span className="material-symbols-outlined text-xs">lock_open</span>
+                          Photos débloquées
+                        </div>
+                      )}
+                      {isPhotoPending && (
+                        <div className="absolute top-3 left-3 bg-[#C9A45C]/90 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1 text-[10px] font-bold text-white shadow-xs border border-white/20">
+                          <span className="material-symbols-outlined text-xs animate-pulse">hourglass_top</span>
+                          Accès photo en attente
                         </div>
                       )}
                       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1 text-xs font-semibold text-[#0F5C4D] shadow-xs border border-[#E8E3D7]">

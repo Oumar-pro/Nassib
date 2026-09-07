@@ -508,7 +508,7 @@ export async function sendPhotoAccessRequestInSupabase(params: {
       .maybeSingle();
 
     if (existing) {
-      if (existing.status === 'accepted') {
+      if (existing.status === 'accepted' || existing.status === 'approved') {
         return { success: true, error: 'Vous avez déjà accès aux photos de ce profil.' };
       }
       if (existing.status === 'pending') {

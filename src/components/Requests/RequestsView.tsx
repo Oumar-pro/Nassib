@@ -277,15 +277,20 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
             <div className="space-y-3 pt-4">
               <h2 className="font-display text-sm font-bold text-[#575147] uppercase tracking-wider px-1 flex items-center gap-2">
                 <span className="material-symbols-outlined text-base text-[#0F5C4D]">visibility</span>
-                Demandes d'accès aux photos reçues ({pendingReceivedPhotos.length})
+                Demandes d'accès aux photos reçues ({receivedPhotoRequests.length})
               </h2>
 
-              {pendingReceivedPhotos.length === 0 ? (
+              {receivedPhotoRequests.length === 0 ? (
                 <div className="bg-white rounded-2xl p-6 border border-[#E8E3D7] text-center text-xs text-[#7D766C]">
-                  Aucune demande d'accès aux photos en attente.
+                  Aucune demande d'accès aux photos reçue.
                 </div>
               ) : (
-                pendingReceivedPhotos.map((req) => (
+                receivedPhotoRequests.map((req) => {
+                  const isAccepted = req.status === 'accepted' || (req as any).status === 'approved';
+                  const isRejected = req.status === 'rejected';
+                  const isPending = req.status === 'pending';
+
+                  return (
                   <div
                     key={req.id}
                     className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs hover:border-[#8BAE9F]/60 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
@@ -303,13 +308,13 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-[#8BAE9F]">
-                            <span className="material-symbols-outlined text-2xl">lock_open</span>
+                            <span className="material-symbols-outlined text-2xl">person</span>
                           </div>
                         )}
                       </div>
 
                       <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => onViewProfile(req.requester_profile_id)}
                             className="font-display font-bold text-base text-[#211E1A] hover:text-[#0F5C4D] text-left transition-colors cursor-pointer"
@@ -321,9 +326,31 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
                               {req.requester.city}
                             </span>
                           )}
+                          {isAccepted && (
+                            <span className="bg-[#8BAE9F]/20 text-[#0F5C4D] border border-[#8BAE9F]/40 font-display text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="material-symbols-outlined text-xs">check_circle</span>
+                              Acceptée • Accès accordé
+                            </span>
+                          )}
+                          {isRejected && (
+                            <span className="bg-[#D9534F]/10 text-[#D9534F] border border-[#D9534F]/30 font-display text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="material-symbols-outlined text-xs">cancel</span>
+                              Refusée
+                            </span>
+                          )}
+                          {isPending && (
+                            <span className="bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/30 font-display text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="material-symbols-outlined text-xs animate-pulse">hourglass_top</span>
+                              En attente
+                            </span>
+                          )}
                         </div>
                         <p className="font-body text-xs text-[#575147]">
-                          Demande la permission de voir vos photos sans floutage.
+                          {isAccepted
+                            ? 'Vous avez autorisé ce membre à voir vos photos de profil.'
+                            : isRejected
+                            ? 'Vous avez refusé la demande d’accès aux photos.'
+                            : 'Demande la permission de voir vos photos sans floutage.'}
                         </p>
                       </div>
                     </div>
@@ -335,24 +362,29 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
                       >
                         Voir profil
                       </button>
-                      <button
-                        disabled={processingId === req.id}
-                        onClick={() => handleAction(req.id, onRejectPhotoRequest)}
-                        className="px-3.5 py-2 rounded-xl border border-[#D9534F]/30 text-[#D9534F] font-display text-xs font-semibold hover:bg-[#D9534F]/10 transition-colors cursor-pointer disabled:opacity-50"
-                      >
-                        Refuser
-                      </button>
-                      <button
-                        disabled={processingId === req.id}
-                        onClick={() => handleAction(req.id, onAcceptPhotoRequest)}
-                        className="px-4 py-2 rounded-xl bg-[#0F5C4D] text-white font-display text-xs font-bold hover:bg-[#0c4a3e] transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                      >
-                        <span className="material-symbols-outlined text-sm">lock_open</span>
-                        Autoriser
-                      </button>
+                      {isPending && (
+                        <>
+                          <button
+                            disabled={processingId === req.id}
+                            onClick={() => handleAction(req.id, onRejectPhotoRequest)}
+                            className="px-3.5 py-2 rounded-xl border border-[#D9534F]/30 text-[#D9534F] font-display text-xs font-semibold hover:bg-[#D9534F]/10 transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            Refuser
+                          </button>
+                          <button
+                            disabled={processingId === req.id}
+                            onClick={() => handleAction(req.id, onAcceptPhotoRequest)}
+                            className="px-4 py-2 rounded-xl bg-[#0F5C4D] text-white font-display text-xs font-bold hover:bg-[#0c4a3e] transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                          >
+                            <span className="material-symbols-outlined text-sm">lock_open</span>
+                            Autoriser
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
@@ -449,7 +481,7 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
               ) : (
                 sentPhotoRequests.map((req) => {
                   const targetName = req.target?.name || 'Membre NASSIB';
-                  const isAccepted = req.status === 'accepted';
+                  const isAccepted = req.status === 'accepted' || (req as any).status === 'approved';
                   const isRejected = req.status === 'rejected';
 
                   return (
@@ -492,12 +524,12 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
                         {isAccepted ? (
                           <span className="bg-[#8BAE9F]/20 text-[#0F5C4D] border border-[#8BAE9F]/40 font-display text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5">
                             <span className="material-symbols-outlined text-sm">check_circle</span>
-                            Accès accordé
+                            Acceptée • Photos débloquées
                           </span>
                         ) : isRejected ? (
                           <span className="bg-[#D9534F]/10 text-[#D9534F] border border-[#D9534F]/30 font-display text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5">
                             <span className="material-symbols-outlined text-sm">cancel</span>
-                            Refusé
+                            Refusée
                           </span>
                         ) : (
                           <span className="bg-[#C9A45C]/15 text-[#735619] border border-[#C9A45C]/30 font-display text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5">

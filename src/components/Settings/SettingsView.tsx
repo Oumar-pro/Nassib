@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, TabType, Profile, calculateProfileCompletion, isProfileVisible } from '../../types';
+import { NassibLogoIcon } from '../NasibaLogo';
 
 interface SettingsViewProps {
   user: User;
@@ -55,6 +56,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // Navigation inside Settings: null = main hub, or specific sub-screen
   const [activeSection, setActiveSection] = useState<SettingsSection>(null);
   const [showAllActions, setShowAllActions] = useState<boolean>(true);
+  const [showInstallHelp, setShowInstallHelp] = useState<boolean>(false);
+  const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
+
+  useEffect(() => {
+    const handlePrompt = (e: any) => {
+      e.preventDefault();
+      setInstallPromptEvent(e);
+    };
+    window.addEventListener('beforeinstallprompt', handlePrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handlePrompt);
+  }, []);
 
   // Account state
   const [name, setName] = useState<string>(user.name || '');
@@ -1253,6 +1265,41 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         )}
       </div>
 
+      {/* PWA / App Installation Option (iPhone & Android) */}
+      <div className="bg-white rounded-3xl p-5 border border-[#E8E3D7] shadow-xs flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-11 h-11 rounded-2xl bg-[#EAF5F2] text-[#0F5C4D] flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-2xl">install_mobile</span>
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-display font-bold text-sm text-[#211E1A] truncate">
+              Installer l'application NASSIB
+            </h3>
+            <p className="font-body text-xs text-[#7D766C] truncate mt-0.5">
+              Accès direct sur iPhone, iPad ou Android
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={async () => {
+            if (installPromptEvent) {
+              await installPromptEvent.prompt();
+              const choice = await installPromptEvent.userChoice;
+              if (choice?.outcome === 'accepted') {
+                setInstallPromptEvent(null);
+              }
+            } else {
+              setShowInstallHelp(true);
+            }
+          }}
+          className="bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white text-xs font-bold py-2.5 px-4 rounded-xl shrink-0 cursor-pointer shadow-2xs transition-all active:scale-95"
+        >
+          Installer
+        </button>
+      </div>
+
       {/* Account actions & Logout */}
       {onLogout && (
         <div className="pt-2 flex justify-center">
@@ -1264,6 +1311,117 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <span className="material-symbols-outlined text-base">logout</span>
             <span>Déconnexion du compte</span>
           </button>
+        </div>
+      )}
+
+      {/* iOS Safari / Mobile Installation Guide Modal */}
+      {showInstallHelp && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-[#FAF8F2] w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl border border-[#E8E3D7] shadow-2xl p-5 sm:p-6 animate-slideUp">
+            <div className="flex items-start justify-between pb-4 border-b border-[#E8E3D7]">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white border border-[#E8E3D7] flex items-center justify-center shadow-xs shrink-0">
+                  <NassibLogoIcon size={30} />
+                </div>
+                <div>
+                  <h3 className="font-serif-display font-bold text-lg text-[#0F5C4D]">
+                    Installer sur iPhone (iOS)
+                  </h3>
+                  <p className="text-xs text-[#7D766C]">
+                    Ajouter NASSIB sur votre écran d'accueil
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInstallHelp(false)}
+                className="p-1 text-[#7D766C] hover:text-[#211E1A] cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            {/* Note if in iframe or non-safari browser */}
+            <div className="my-3.5 p-3 rounded-2xl bg-[#C9A45C]/10 border border-[#C9A45C]/30 text-xs text-[#735619] space-y-2">
+              <div className="flex items-start gap-2">
+                <span className="material-symbols-outlined text-base text-[#735619] shrink-0 mt-0.5">info</span>
+                <p className="leading-snug">
+                  Sur iPhone, l'installation se fait exclusivement via le navigateur <strong>Safari officiel</strong> (Apple ne permet pas l'installation depuis Chrome ou les navigateurs intégrés).
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => window.open(window.location.href, '_blank')}
+                  className="px-3 py-1.5 rounded-lg bg-[#0F5C4D] text-white font-bold text-[11px] hover:bg-[#0c4a3e] transition-colors inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-xs">open_in_new</span>
+                  Ouvrir dans Safari
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      navigator.clipboard.writeText(window.location.href);
+                      showSaved("Lien de l'application copié !");
+                    } catch {
+                      // Fallback
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-white border border-[#C9A45C]/40 text-[#735619] font-medium text-[11px] hover:bg-[#FAF8F2] transition-colors inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-xs">content_copy</span>
+                  Copier l'adresse
+                </button>
+              </div>
+            </div>
+
+            <div className="py-2 space-y-3">
+              <div className="flex items-start gap-3 bg-white p-3 rounded-2xl border border-[#E8E3D7]">
+                <div className="w-7 h-7 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center font-bold text-xs shrink-0">
+                  1
+                </div>
+                <div className="text-xs text-[#211E1A] leading-relaxed">
+                  Sur Safari iPhone, touchez le bouton <span className="font-bold text-[#0F5C4D]">Partager</span> :
+                  <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF8F2] border border-[#E8E3D7] text-[#0F5C4D] font-bold text-[11px]">
+                    <span className="material-symbols-outlined text-sm">ios_share</span>
+                    <span>Bouton Partager (en bas)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-white p-3 rounded-2xl border border-[#E8E3D7]">
+                <div className="w-7 h-7 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center font-bold text-xs shrink-0">
+                  2
+                </div>
+                <div className="text-xs text-[#211E1A] leading-relaxed">
+                  Faites défiler le menu et appuyez sur :
+                  <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF8F2] border border-[#E8E3D7] text-[#0F5C4D] font-bold text-[11px]">
+                    <span className="material-symbols-outlined text-sm">add_box</span>
+                    <span>Sur l'écran d'accueil</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-white p-3 rounded-2xl border border-[#E8E3D7]">
+                <div className="w-7 h-7 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center font-bold text-xs shrink-0">
+                  3
+                </div>
+                <div className="text-xs text-[#211E1A] leading-relaxed">
+                  Appuyez sur <span className="font-bold text-[#0F5C4D]">« Ajouter »</span> en haut à droite. L'application NASSIB s'ouvrira en plein écran comme une vraie application !
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowInstallHelp(false)}
+                className="w-full bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl cursor-pointer transition-all"
+              >
+                J'ai compris
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -7,6 +7,7 @@ interface ProfileDetailModalProps {
   onClose: () => void;
   onStartMessage: (profile: Profile) => void;
   onRequestPhotoAccess: (profile: Profile) => void;
+  photoAccessState?: 'NO_REQUEST' | 'PENDING' | 'ALLOWED' | 'REJECTED';
   isFavorited?: boolean;
   onToggleFavorite?: (profileId: string) => void;
   onReport?: (profile: Profile, reason: string, description?: string) => void;
@@ -19,6 +20,7 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
   onClose,
   onStartMessage,
   onRequestPhotoAccess,
+  photoAccessState = 'NO_REQUEST',
   isFavorited = false,
   onToggleFavorite,
   onReport,
@@ -133,7 +135,7 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                   src={profile.photoUrl}
                   alt={profile.name}
                   className={`w-full h-full object-cover transition-all duration-300 ${
-                    profile.photoPrivate ? 'blur-xl scale-110' : ''
+                    profile.photoPrivate && photoAccessState !== 'ALLOWED' ? 'blur-xl scale-110' : ''
                   }`}
                 />
               ) : (
@@ -420,13 +422,25 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
           )}
 
           {profile.photoPrivate ? (
-            <button
-              onClick={() => onRequestPhotoAccess(profile)}
-              className="flex-1 py-3 bg-white border border-[#E8E3D7] text-[#211E1A] rounded-xl font-display text-xs font-bold hover:bg-[#FAF8F2] transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-sm">visibility</span>
-              Demander Accès à la Photo
-            </button>
+            photoAccessState === 'ALLOWED' ? (
+              <div className="flex-1 py-3 px-3 bg-[#8BAE9F]/20 border border-[#8BAE9F]/40 text-[#0F5C4D] rounded-xl font-display text-xs font-bold flex items-center justify-center gap-1.5">
+                <span className="material-symbols-outlined text-sm">lock_open</span>
+                Photos débloquées (Acceptée)
+              </div>
+            ) : photoAccessState === 'PENDING' ? (
+              <div className="flex-1 py-3 px-3 bg-[#C9A45C]/15 border border-[#C9A45C]/30 text-[#735619] rounded-xl font-display text-xs font-bold flex items-center justify-center gap-1.5">
+                <span className="material-symbols-outlined text-sm animate-pulse">hourglass_top</span>
+                Demande d'accès en attente
+              </div>
+            ) : (
+              <button
+                onClick={() => onRequestPhotoAccess(profile)}
+                className="flex-1 py-3 bg-white border border-[#E8E3D7] text-[#211E1A] rounded-xl font-display text-xs font-bold hover:bg-[#FAF8F2] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+              >
+                <span className="material-symbols-outlined text-sm">visibility</span>
+                Demander Accès à la Photo
+              </button>
+            )
           ) : null}
 
           <button

@@ -9,6 +9,7 @@ interface BrowseViewProps {
   favoriteProfileIds?: string[];
   onToggleFavorite?: (profileId: string) => void;
   approvedPhotoIds?: string[];
+  photoAccessMap?: Record<string, 'NO_REQUEST' | 'PENDING' | 'ALLOWED' | 'REJECTED'>;
   contactRelationshipMap?: Record<string, string>;
   onSendContactRequest?: (profile: Profile) => void;
 }
@@ -21,6 +22,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
   favoriteProfileIds = [],
   onToggleFavorite,
   approvedPhotoIds = [],
+  photoAccessMap = {},
   contactRelationshipMap = {},
   onSendContactRequest,
 }) => {
@@ -508,8 +510,9 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
       ) : (
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProfiles.slice(0, visibleCount).map((profile) => {
-            const hasPhotoAccess = approvedPhotoIds.includes(profile.id);
+            const hasPhotoAccess = approvedPhotoIds.includes(profile.id) || (photoAccessMap && photoAccessMap[profile.id] === 'ALLOWED');
             const isPhotoBlurred = Boolean((profile.photoPrivate && !hasPhotoAccess) || mahramModeActive);
+            const photoState = photoAccessMap ? photoAccessMap[profile.id] : (hasPhotoAccess ? 'ALLOWED' : 'NO_REQUEST');
             const isFavorited = favoriteProfileIds.includes(profile.id);
             const contactState = contactRelationshipMap[profile.id] || 'NO_REQUEST';
 
@@ -583,6 +586,18 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
                         <span className="font-body text-[10px] font-bold text-[#211E1A]">VÉRIFIÉ NNI</span>
                       </span>
                     )}
+                    {profile.photoPrivate && hasPhotoAccess && (
+                      <span className="bg-[#0F5C4D]/90 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs border border-white/30 w-fit text-white">
+                        <span className="material-symbols-outlined text-xs">lock_open</span>
+                        <span className="font-body text-[10px] font-bold">PHOTOS DÉBLOQUÉES</span>
+                      </span>
+                    )}
+                    {profile.photoPrivate && !hasPhotoAccess && photoState === 'PENDING' && (
+                      <span className="bg-[#C9A45C]/90 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs border border-white/30 w-fit text-white">
+                        <span className="material-symbols-outlined text-xs animate-pulse">hourglass_top</span>
+                        <span className="font-body text-[10px] font-bold">ACCÈS EN ATTENTE</span>
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -610,7 +625,15 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
 
                   {/* Footer Action */}
                   <div className="mt-auto pt-3 border-t border-[#E8E3D7] flex items-center justify-between gap-2">
-                    {profile.isWaliApproved ? (
+                    {profile.photoPrivate && hasPhotoAccess ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[#0F5C4D] font-semibold">
+                        <span className="material-symbols-outlined text-xs text-[#0F5C4D]">lock_open</span> Photos visibles
+                      </span>
+                    ) : profile.photoPrivate && !hasPhotoAccess && photoState === 'PENDING' ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[#735619] font-semibold">
+                        <span className="material-symbols-outlined text-xs text-[#C9A45C] animate-pulse">hourglass_top</span> En attente
+                      </span>
+                    ) : profile.isWaliApproved ? (
                       <span className="inline-flex items-center gap-1 text-[11px] text-[#735619] font-semibold">
                         <span className="material-symbols-outlined text-xs text-[#C9A45C]">shield_person</span> Wali Approuvé
                       </span>
