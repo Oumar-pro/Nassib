@@ -62,44 +62,17 @@ Comment puis-je vous guider aujourd'hui ?`,
     if (!textToSend) setInput('');
     setIsLoading(true);
 
-    try {
-      const historyPayload = [...messages, userMsg].map((m) => ({
-        sender: m.sender,
-        text: m.text,
-      }));
-
-      const res = await fetch('/api/imam-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: historyPayload,
-          userRole: user.role,
-          userName: user.name,
-        }),
-      });
-
-      const data = await res.json();
-
+    // Réponse automatique codée sans appel à l'IA
+    setTimeout(() => {
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
         sender: 'assistant',
-        text: data.reply || "As-salamu alaykum. Qu'Allah vous accorde la sérénité dans votre recherche.",
+        text: "As-salamu alaykum. Le service de l'Imam Oumar est indisponible pour le moment. Il sera très bientôt disponible in sha Allah.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch (err) {
-      console.error('Error contacting Imam Oumar:', err);
-      const fallbackMsg: ChatMessage = {
-        id: `assistant-err-${Date.now()}`,
-        sender: 'assistant',
-        text: "As-salamu alaykum. Une petite interruption réseau s'est produite. Rappelez-vous ce précepte du Prophète (PBSL) : 'Le meilleur mariage est le plus simple et le plus béni'. N'hésitez pas à reposer votre question.",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, fallbackMsg]);
-    } finally {
       setIsLoading(false);
-    }
+    }, 600);
   };
 
   return (
