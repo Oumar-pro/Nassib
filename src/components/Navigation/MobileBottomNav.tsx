@@ -5,16 +5,19 @@ interface MobileBottomNavProps {
   currentTab: TabType;
   onSelectTab: (tab: TabType) => void;
   unreadCount?: number;
+  pendingRequestsCount?: number;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   currentTab,
   onSelectTab,
-  unreadCount = 0
+  unreadCount = 0,
+  pendingRequestsCount = 0,
 }) => {
   const tabs: { id: TabType; label: string; icon: string; badge?: number; special?: boolean }[] = [
     { id: 'dashboard', label: 'Accueil', icon: 'home' },
     { id: 'browse', label: 'Découvrir', icon: 'explore' },
+    { id: 'requests', label: 'Demandes', icon: 'mark_email_unread', badge: pendingRequestsCount },
     { id: 'messages', label: 'Messages', icon: 'chat_bubble', badge: unreadCount },
     { id: 'settings', label: 'Paramètres', icon: 'settings' },
   ];

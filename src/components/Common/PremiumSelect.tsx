@@ -29,7 +29,7 @@ export const PremiumSelect: React.FC<PremiumSelectProps> = ({
   label,
   value,
   onChange,
-  options,
+  options = [],
   placeholder = 'Sélectionnez une option',
   icon,
   searchable = false,
@@ -44,7 +44,7 @@ export const PremiumSelect: React.FC<PremiumSelectProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Normalize options to PremiumSelectOption
-  const normalizedOptions: PremiumSelectOption[] = options.map((opt) => {
+  const normalizedOptions: PremiumSelectOption[] = (options || []).map((opt) => {
     if (typeof opt === 'string') {
       return { value: opt, label: opt };
     }

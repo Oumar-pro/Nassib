@@ -133,7 +133,7 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                   src={profile.photoUrl}
                   alt={profile.name}
                   className={`w-full h-full object-cover transition-all duration-300 ${
-                    profile.photoPrivate || currentUser?.photoBlurringActive ? 'blur-xl scale-110' : ''
+                    profile.photoPrivate ? 'blur-xl scale-110' : ''
                   }`}
                 />
               ) : (
@@ -307,7 +307,7 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                       src={photoUrl}
                       alt={`Photo ${idx + 1}`}
                       className={`w-full h-full object-cover ${
-                        profile.photoPrivate || currentUser?.photoBlurringActive ? 'blur-md' : ''
+                        profile.photoPrivate ? 'blur-md' : ''
                       }`}
                     />
                   </div>

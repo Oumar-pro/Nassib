@@ -3,7 +3,7 @@ import { Profile, User } from '../../types';
 
 interface DashboardViewProps {
   user: User;
-  recommendedProfiles: Profile[];
+  recommendedProfiles?: Profile[];
   favoriteProfiles?: Profile[];
   favoriteProfileIds?: string[];
   fansCount?: number;
@@ -15,7 +15,7 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   user,
-  recommendedProfiles,
+  recommendedProfiles = [],
   favoriteProfiles = [],
   favoriteProfileIds = [],
   fansCount,
@@ -26,19 +26,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const isWali = user.role === 'wali';
 
-  // Dynamic user stats with fallback defaults
-  const stats = user.stats || {
-    profileViews: isWali ? 186 : 148,
-    profileConsultations: isWali ? 42 : 36,
-    photoRequests: isWali ? 14 : 8,
-    photoRequestsApproved: isWali ? 11 : 5,
-    matchesCount: isWali ? 18 : 12,
-    favoritesCount: isWali ? 31 : 24,
-    compatibilityRateAvg: 92,
-    weeklyGrowthPercentage: 18,
+  // Real stats from database
+  const stats = {
+    profileViews: user.stats?.profileViews ?? 0,
+    profileConsultations: user.stats?.profileConsultations ?? 0,
+    photoRequests: user.stats?.photoRequests ?? 0,
+    photoRequestsApproved: user.stats?.photoRequestsApproved ?? 0,
+    matchesCount: user.stats?.matchesCount ?? 0,
+    favoritesCount: user.stats?.favoritesCount ?? 0,
+    compatibilityRateAvg: user.stats?.compatibilityRateAvg ?? 0,
+    weeklyGrowthPercentage: user.stats?.weeklyGrowthPercentage ?? 0,
   };
 
-  const actualFansCount = fansCount !== undefined ? fansCount : (stats.favoritesCount ?? (isWali ? 31 : 24));
+  const actualFansCount = fansCount !== undefined ? fansCount : (user.stats?.favoritesCount ?? 0);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fadeIn">
@@ -297,7 +297,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       src={profile.photoUrl}
                       alt={profile.name}
                       className={`w-full h-full object-cover ${
-                        profile.photoPrivate || user.photoBlurringActive ? 'blur-md' : ''
+                        profile.photoPrivate ? 'blur-md' : ''
                       }`}
                     />
                   ) : (
@@ -391,7 +391,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           src={profile.photoUrl}
                           alt={profile.name}
                           className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
-                            profile.photoPrivate || user.photoBlurringActive ? 'blur-xl scale-110' : ''
+                            profile.photoPrivate ? 'blur-xl scale-110' : ''
                           }`}
                         />
                       ) : (

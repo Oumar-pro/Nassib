@@ -1,83 +1,169 @@
 import { Profile } from '../types';
 import { supabase } from './supabase';
 
-const mapProfile = (row: any): Profile => ({
-  id: row.id, userId: row.user_id, name: row.name || '', age: row.age, profession: row.profession || '',
-  city: row.city || '', maritalStatus: row.marital_status || '', religion: row.religion || '', education: row.education || '',
-  matchPercentage: row.match_percentage ?? 0, isVerifiedNNI: Boolean(row.is_verified_nni), isWaliApproved: Boolean(row.is_wali_approved),
-  isPremium: Boolean(row.is_premium), photoUrl: row.photo_url || '', photoPrivate: Boolean(row.photo_private), bio: row.bio || '',
-  waliReference: '', gender: row.gender === 'male' || row.gender === 'female' ? row.gender : undefined,
-  viewsCount: row.views_count ?? 0, likesCount: row.likes_count ?? 0, hobbies: row.hobbies || '', interests: row.interests || '',
-  drinksAlcohol: Boolean(row.drinks_alcohol), smokes: Boolean(row.smokes), presentation: row.presentation || '',
-  personality: row.personality || '', familyImportance: row.family_importance || '', isAdmin: Boolean(row.is_admin),
-  createdAt: row.created_at, updatedAt: row.updated_at, photos: row.photo_url ? [row.photo_url] : [],
-  height: row.height ?? undefined, weight: row.weight ?? undefined, ethnicity: row.ethnicity || undefined,
-  originCity: row.origin_city || undefined, hijabStatus: row.hijab_status || undefined,
-  religiousPracticeDetails: row.religious_practice_details || undefined,
-  values: Array.isArray(row.values) ? row.values : undefined, partnerCriteria: row.partner_criteria || undefined,
-  dealBreakers: Array.isArray(row.deal_breakers) ? row.deal_breakers : undefined,
-});
+export function hasUploadedPhotos(profile: Partial<Profile> | null | undefined): boolean {
+  if (!profile) return false;
+  const hasValidPhotoUrl = Boolean(profile.photoUrl && typeof profile.photoUrl === 'string' && profile.photoUrl.trim() !== '');
+  const hasValidGallery = Array.isArray(profile.photos) && profile.photos.some((p) => Boolean(p) && typeof p === 'string' && p.trim() !== '');
+  return hasValidPhotoUrl || hasValidGallery;
+}
 
-export async function getProfiles(userId: string): Promise<Profile[]> {
-  if (!supabase || !userId) return [];
+const mapProfile = (row: any): Profile => {
+  const photoUrl = (row.photo_url || '').trim();
+  const photos = Array.isArray(row.photos)
+    ? row.photos.filter((p: any) => typeof p === 'string' && p.trim() !== '')
+    : photoUrl
+    ? [photoUrl]
+    : [];
+
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name || '',
+    age: row.age,
+    profession: row.profession || '',
+    city: row.city || '',
+    maritalStatus: row.marital_status || '',
+    religion: row.religion || '',
+    education: row.education || '',
+    matchPercentage: row.match_percentage ?? 85,
+    isVerifiedNNI: Boolean(row.is_verified_nni),
+    isWaliApproved: Boolean(row.is_wali_approved),
+    isPremium: Boolean(row.is_premium),
+    photoUrl: photoUrl || (photos.length > 0 ? photos[0] : ''),
+    photoPrivate: row.photo_private === true || row.photo_private === 'true' || row.photo_private === 't' || row.photo_private === 1,
+    bio: row.bio || '',
+    waliReference: '',
+    gender: row.gender === 'male' || row.gender === 'female' ? row.gender : undefined,
+    viewsCount: row.views_count ?? 0,
+    likesCount: row.likes_count ?? 0,
+    hobbies: row.hobbies || '',
+    interests: row.interests || '',
+    drinksAlcohol: Boolean(row.drinks_alcohol),
+    smokes: Boolean(row.smokes),
+    presentation: row.presentation || '',
+    personality: row.personality || '',
+    familyImportance: row.family_importance || '',
+    isAdmin: Boolean(row.is_admin),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    photos: photos.length > 0 ? photos : (photoUrl ? [photoUrl] : []),
+    height: row.height ?? undefined,
+    weight: row.weight ?? undefined,
+    ethnicity: row.ethnicity || undefined,
+    originCity: row.origin_city || undefined,
+    hijabStatus: row.hijab_status || undefined,
+    religiousPracticeDetails: row.religious_practice_details || undefined,
+    values: Array.isArray(row.values) ? row.values : undefined,
+    partnerCriteria: row.partner_criteria || undefined,
+    dealBreakers: Array.isArray(row.deal_breakers) ? row.deal_breakers : undefined,
+  };
+};
+
+export async function getProfiles(userId?: string): Promise<Profile[]> {
+  if (!supabase) return [];
+
   try {
-    const { data, error } = await supabase
+    let query = supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (userId) {
+      query = query.neq('user_id', userId);
+    }
+
+    const { data, error } = await query;
+    if (!error && data && data.length > 0) {
+      return data.map(mapProfile).filter(hasUploadedPhotos);
+    }
+
+    // Try public_profiles view if available
+    const { data: viewData, error: viewError } = await supabase
       .from('public_profiles')
       .select('*')
-      .neq('user_id', userId)
       .order('created_at', { ascending: false });
-    if (!error && data) return data.map(mapProfile);
-  } catch {
-    // Fallback to profiles table
+
+    if (!viewError && viewData && viewData.length > 0) {
+      const filtered = userId ? viewData.filter((p: any) => p.user_id !== userId) : viewData;
+      return filtered.map(mapProfile).filter(hasUploadedPhotos);
+    }
+  } catch (err) {
+    console.warn('Database getProfiles exception:', err);
   }
-  const { data: fallbackData, error: fbError } = await supabase
-    .from('profiles')
-    .select('*')
-    .neq('user_id', userId)
-    .order('created_at', { ascending: false });
-  if (fbError || !fallbackData) {
-    console.error('Failed to load profiles from database:', fbError);
-    return [];
+
+  // All data comes strictly from the database: no mock or seed profiles
+  return [];
+}
+
+export async function getProfileById(profileId: string): Promise<Profile | null> {
+  if (!profileId || !supabase) return null;
+  try {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', profileId).maybeSingle();
+    if (!error && data) {
+      return mapProfile(data);
+    }
+  } catch (err) {
+    console.warn('getProfileById error:', err);
   }
-  return fallbackData.map(mapProfile);
+  return null;
 }
 
 export async function getMyProfile(userId: string): Promise<Profile | null> {
-  if (!supabase || !userId) return null;
+  if (!userId || !supabase) return null;
 
-  const localCacheKey = `nassib_profile_${userId}`;
-  let cachedProfile: Profile | null = null;
   try {
-    const raw = localStorage.getItem(localCacheKey);
-    if (raw) cachedProfile = JSON.parse(raw);
-  } catch {}
-
-  const { data, error } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
-  if (error || !data) {
-    return cachedProfile || null;
-  }
-  const mapped = mapProfile(data);
-  try {
-    const { data: priv } = await supabase
-      .from('profile_private')
-      .select('wali_reference')
-      .eq('user_id', userId)
-      .maybeSingle();
-    if (priv?.wali_reference) {
-      mapped.waliReference = priv.wali_reference;
+    const { data, error } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
+    if (!error && data) {
+      const mapped = mapProfile(data);
+      try {
+        const { data: priv } = await supabase
+          .from('profile_private')
+          .select('wali_reference')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (priv?.wali_reference) {
+          mapped.waliReference = priv.wali_reference;
+        }
+      } catch {
+        // Ignore if table unavailable
+      }
+      return mapped;
     }
-  } catch {
-    // Ignore if table unavailable or offline
+  } catch (err) {
+    console.warn('getMyProfile error:', err);
   }
 
-  if (cachedProfile) {
-    return { ...mapped, ...cachedProfile };
+  return null;
+}
+
+export async function updatePhotoPrivacy(userId: string, photoPrivate: boolean): Promise<boolean> {
+  if (!userId || !supabase) return false;
+
+  const isPrivate = Boolean(photoPrivate);
+
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        photo_private: isPrivate,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId);
+
+    if (error) {
+      console.warn('Error updating photo_private in profiles table:', error.message || error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Exception updating photo_private in profiles table:', err);
+    return false;
   }
-  return mapped;
 }
 
 export async function saveMyProfile(userId: string, profile: Partial<Profile>, onboardingData?: any): Promise<Profile | null> {
-  if (!supabase || !userId) return null;
+  if (!userId) return null;
 
   // Safe defaults respecting the PostgreSQL CHECK constraints
   const rawAge = Number(profile.age);
@@ -133,54 +219,56 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
   };
 
   let savedData: any = null;
-  // Try with extended fields first
-  const { data: extData, error: extError } = await supabase
-    .from('profiles')
-    .upsert(extendedPayload, { onConflict: 'user_id' })
-    .select('*')
-    .single();
+  if (supabase) {
+    // Try with extended fields first
+    try {
+      const { data: extData, error: extError } = await supabase
+        .from('profiles')
+        .upsert(extendedPayload, { onConflict: 'user_id' })
+        .select('*')
+        .single();
 
-  if (!extError && extData) {
-    savedData = extData;
-  } else {
-    // If error is due to missing columns or trigger conflict, retry with core schema payload
-    console.warn('Extended profile upsert notice, retrying with core schema columns:', extError?.message);
-    const { data: coreData, error: coreError } = await supabase
-      .from('profiles')
-      .upsert(corePayload, { onConflict: 'user_id' })
-      .select('*')
-      .single();
-
-    if (coreError || !coreData) {
-      if (coreError?.code === '42703' || String(coreError?.message || '').includes('wali_reference')) {
-        console.warn(
-          'PostgreSQL trigger compatibility notice on profiles (code 42703). Saving profile in private storage and local cache:',
-          coreError?.message
-        );
-        const { data: existingData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        savedData = {
-          ...(existingData || {}),
-          ...corePayload,
-          id: existingData?.id || userId,
-          created_at: existingData?.created_at || new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
+      if (!extError && extData) {
+        savedData = extData;
       } else {
-        console.warn('Notice saving profile in database:', coreError?.message || coreError);
-        return null;
+        console.warn('Extended profile upsert notice, retrying with core schema columns:', extError?.message);
+        const { data: coreData, error: coreError } = await supabase
+          .from('profiles')
+          .upsert(corePayload, { onConflict: 'user_id' })
+          .select('*')
+          .single();
+
+        if (coreError || !coreData) {
+          if (coreError?.code === '42703' || String(coreError?.message || '').includes('wali_reference')) {
+            const { data: existingData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', userId)
+              .maybeSingle();
+
+            savedData = {
+              ...(existingData || {}),
+              ...corePayload,
+              id: existingData?.id || userId,
+              created_at: existingData?.created_at || new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+          }
+        } else {
+          savedData = coreData;
+        }
       }
-    } else {
-      savedData = coreData;
+    } catch (dbErr) {
+      console.warn('Supabase profile save error:', dbErr);
     }
   }
 
+  if (!savedData) {
+    return null;
+  }
+
   // Save private data (Wali, NNI verification) in profile_private table
-  if (waliReference) {
+  if (supabase && waliReference) {
     try {
       await supabase.from('profile_private').upsert({
         profile_id: savedData.id,
@@ -196,7 +284,7 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
   }
 
   // Save gallery photos if provided
-  if (Array.isArray(profile.photos)) {
+  if (supabase && Array.isArray(profile.photos)) {
     try {
       await supabase.from('profile_photos').delete().eq('profile_id', savedData.id).eq('user_id', userId);
       const photos = profile.photos.filter(Boolean).map((storage_path: string, index: number) => ({
@@ -220,65 +308,29 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
     mapped.photos = profile.photos;
   }
 
-  try {
-    localStorage.setItem(`nassib_profile_${userId}`, JSON.stringify(mapped));
-  } catch {
-    // Ignore localStorage quota
-  }
-
   return mapped;
 }
 
 export async function getFavorites(userId: string): Promise<string[]> {
-  if (!userId) return [];
-  const localKey = `nassib_favorites_${userId}`;
-  let localFavs: string[] = [];
-  try {
-    const raw = localStorage.getItem(localKey);
-    if (raw) localFavs = JSON.parse(raw);
-  } catch {
-    // Ignore local storage parse error
-  }
-
-  if (!supabase) return localFavs;
+  if (!userId || !supabase) return [];
 
   try {
-    const { data, error } = await supabase.from('user_favorites').select('profile_id').eq('user_id', userId);
-    if (error || !data) return localFavs;
-    const dbFavs = data.map((row: any) => String(row.profile_id));
-    const merged = Array.from(new Set([...dbFavs, ...localFavs]));
-    try {
-      localStorage.setItem(localKey, JSON.stringify(merged));
-    } catch {}
-    return merged;
-  } catch {
-    return localFavs;
+    const { data, error } = await supabase
+      .from('user_favorites')
+      .select('profile_id')
+      .eq('user_id', userId);
+
+    if (error || !data) return [];
+    return data.map((row: any) => String(row.profile_id));
+  } catch (err) {
+    console.warn('Supabase getFavorites notice:', err);
+    return [];
   }
 }
 
 export async function toggleFavorite(userId: string, profileId: string): Promise<boolean> {
-  if (!userId || !profileId) return false;
+  if (!userId || !profileId || !supabase) return false;
 
-  const localKey = `nassib_favorites_${userId}`;
-
-  // 1. Immediately persist change locally so user is never blocked or fails
-  try {
-    const raw = localStorage.getItem(localKey);
-    const favs: string[] = raw ? JSON.parse(raw) : [];
-    if (favs.includes(profileId)) {
-      const updated = favs.filter((id) => id !== profileId);
-      localStorage.setItem(localKey, JSON.stringify(updated));
-    } else {
-      favs.push(profileId);
-      localStorage.setItem(localKey, JSON.stringify(favs));
-    }
-  } catch (err) {
-    console.warn('LocalStorage notice in toggleFavorite:', err);
-  }
-
-  if (!supabase) return true;
-
-  // 2. Synchronize with Supabase
   try {
     const { data: sessionData } = await supabase.auth.getSession();
     const effectiveUserId = sessionData?.session?.user?.id || userId;
@@ -291,22 +343,36 @@ export async function toggleFavorite(userId: string, profileId: string): Promise
       .maybeSingle();
 
     if (!checkErr && existing) {
-      const { error: delErr } = await supabase
+      await supabase
         .from('user_favorites')
         .delete()
         .eq('id', existing.id);
-      if (delErr) console.warn('Supabase favorite delete notice:', delErr.message);
+      return false; // Removed
     } else if (!checkErr && !existing) {
-      const { error: insErr } = await supabase
+      await supabase
         .from('user_favorites')
         .insert({ user_id: effectiveUserId, profile_id: profileId });
-      if (insErr) console.warn('Supabase favorite insert notice:', insErr.message);
+      return true; // Added
     }
   } catch (err) {
-    console.warn('Supabase sync notice in toggleFavorite:', err);
+    console.warn('Supabase toggleFavorite error:', err);
   }
 
   return true;
+}
+
+export async function getPricingPlansFromDB(): Promise<any[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from('pricing_plans')
+      .select('*')
+      .order('price', { ascending: true });
+    if (!error && data) return data;
+  } catch (err) {
+    console.warn('Error fetching pricing_plans:', err);
+  }
+  return [];
 }
 
 // Conversations et messages passent exclusivement par src/lib/supabase.ts

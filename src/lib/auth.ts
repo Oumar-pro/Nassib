@@ -46,10 +46,6 @@ async function accountFromAuthUser(authUser: any): Promise<AuthAccount> {
   };
 }
 
-function configurationError() {
-  return "Le service d'authentification n'est pas configuré. Ajoutez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans les variables d'environnement Vercel, puis redéployez l'application.";
-}
-
 export async function registerAccount(data: {
   email: string;
   password?: string;
@@ -68,38 +64,40 @@ export async function registerAccount(data: {
   if (!name || !phone) {
     return { user: null, error: 'Veuillez renseigner votre nom et votre numéro de téléphone.' };
   }
+
   if (!isSupabaseConfigured || !supabase) {
-    return { user: null, error: configurationError() };
+    return { user: null, error: 'Connexion à la base de données non configurée.' };
   }
 
-  const { data: signUpData, error } = await supabase.auth.signUp({
-    email,
-    password: data.password,
-    options: {
-      data: {
-        name,
-        phone,
-        role: data.role || 'candidate',
-        gender: data.gender,
+  try {
+    const { data: signUpData, error } = await supabase.auth.signUp({
+      email,
+      password: data.password,
+      options: {
+        data: {
+          name,
+          phone,
+          role: data.role || 'candidate',
+          gender: data.gender,
+        },
       },
-    },
-  });
+    });
 
-  if (error) {
-    return { user: null, error: error.message };
-  }
-  if (!signUpData.user) {
-    return { user: null, error: 'Impossible de créer le compte.' };
-  }
+    if (error) {
+      return { user: null, error: error.message || "Erreur lors de l'inscription." };
+    }
 
-  // When Supabase email confirmation is enabled, signUp intentionally returns no session.
-  // The account exists in auth.users and the user must confirm the email before logging in.
-  if (!signUpData.session) {
-    return { user: null, error: 'Compte créé. Vérifiez votre adresse email puis connectez-vous.' };
+    if (signUpData.user) {
+      if (!signUpData.session) {
+        return { user: null, error: 'Compte créé avec succès. Veuillez vérifier votre boîte email pour confirmer votre inscription.' };
+      }
+      currentAccount = await accountFromAuthUser(signUpData.user);
+      return { user: currentAccount, error: null };
+    }
+    return { user: null, error: "Impossible de créer l'utilisateur." };
+  } catch (e: any) {
+    return { user: null, error: e?.message || "Une erreur est survenue lors de l'inscription." };
   }
-
-  currentAccount = await accountFromAuthUser(signUpData.user);
-  return { user: currentAccount, error: null };
 }
 
 export async function loginAccount(data: { email: string; password?: string }): Promise<{ user: AuthAccount | null; error: string | null }> {
@@ -108,21 +106,29 @@ export async function loginAccount(data: { email: string; password?: string }): 
   if (!email || !data.password) {
     return { user: null, error: 'Veuillez saisir votre adresse email et mot de passe.' };
   }
+
   if (!isSupabaseConfigured || !supabase) {
-    return { user: null, error: configurationError() };
+    return { user: null, error: 'Connexion à la base de données non configurée.' };
   }
 
-  const { data: signInData, error } = await supabase.auth.signInWithPassword({
-    email,
-    password: data.password,
-  });
+  try {
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: data.password,
+    });
 
-  if (error || !signInData.user) {
-    return { user: null, error: error?.message || 'Adresse email ou mot de passe incorrect.' };
+    if (error) {
+      return { user: null, error: error.message || 'Adresse email ou mot de passe incorrect.' };
+    }
+
+    if (signInData.user) {
+      currentAccount = await accountFromAuthUser(signInData.user);
+      return { user: currentAccount, error: null };
+    }
+    return { user: null, error: 'Utilisateur introuvable dans la base de données.' };
+  } catch (e: any) {
+    return { user: null, error: e?.message || 'Erreur lors de la connexion.' };
   }
-
-  currentAccount = await accountFromAuthUser(signInData.user);
-  return { user: currentAccount, error: null };
 }
 
 export function getCurrentUserSession(): AuthAccount | null {
@@ -130,16 +136,18 @@ export function getCurrentUserSession(): AuthAccount | null {
 }
 
 export async function restoreCurrentUserSession(): Promise<AuthAccount | null> {
-  if (!isSupabaseConfigured || !supabase) return null;
-
-  const { data, error } = await supabase.auth.getSession();
-  if (error || !data.session?.user) {
-    currentAccount = null;
-    return null;
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (!error && data.session?.user) {
+        currentAccount = await accountFromAuthUser(data.session.user);
+        return currentAccount;
+      }
+    } catch {}
   }
 
-  currentAccount = await accountFromAuthUser(data.session.user);
-  return currentAccount;
+  currentAccount = null;
+  return null;
 }
 
 export async function refreshCurrentSessionFromDB(): Promise<AuthAccount | null> {
@@ -153,10 +161,14 @@ export function saveCurrentUserSession(updates: Partial<AuthAccount>) {
 }
 
 export function updateAccountPlanAndStatus(_identifier: string, _updates: Partial<Pick<AuthAccount, 'isPremium' | 'planName' | 'isVerifiedNNI' | 'isWaliApproved'>>) {
-  // Privileged account changes must be made by the admin/server layer, never locally.
+  // Privileged account changes
 }
 
 export async function logoutUserSession() {
   currentAccount = null;
-  if (supabase) await supabase.auth.signOut();
+  if (supabase) {
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+  }
 }

@@ -9,6 +9,7 @@ interface SidebarProps {
   onOpenAuth?: (mode: 'login' | 'register') => void;
   onLogout?: () => void;
   unreadCount?: number;
+  pendingRequestsCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -17,11 +18,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   user,
   onOpenAuth,
   onLogout,
-  unreadCount = 0
+  unreadCount = 0,
+  pendingRequestsCount = 0,
 }) => {
   const navItems: { id: TabType; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard' },
     { id: 'browse', label: 'Parcourir', icon: 'search' },
+    { id: 'requests', label: 'Demandes reçues', icon: 'mark_email_unread', badge: pendingRequestsCount },
     { id: 'messages', label: 'Messages', icon: 'chat_bubble', badge: unreadCount },
     { id: 'imam', label: 'Imam Oumar IA', icon: 'auto_awesome' },
     { id: 'verification', label: 'Vérification Wali', icon: 'verified_user' },

@@ -63,12 +63,15 @@ CREATE TABLE IF NOT EXISTS public.conversations (
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   candidate_id uuid NOT NULL,
   suitor_id uuid NOT NULL,
+  requester_id uuid,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'accepted'::text, 'rejected'::text])),
   last_message text,
   last_message_time timestamp with time zone DEFAULT timezone('utc'::text, now()),
   is_supervised boolean DEFAULT true,
   CONSTRAINT conversations_pkey PRIMARY KEY (id),
   CONSTRAINT conversations_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
-  CONSTRAINT conversations_suitor_id_fkey FOREIGN KEY (suitor_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+  CONSTRAINT conversations_suitor_id_fkey FOREIGN KEY (suitor_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT conversations_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.profiles(id) ON DELETE SET NULL
 );
 
 -- 3. MESSAGES
@@ -230,6 +233,21 @@ CREATE TABLE IF NOT EXISTS public.reports (
   CONSTRAINT reports_reported_profile_id_fkey FOREIGN KEY (reported_profile_id) REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 
+-- 14. PHOTO_ACCESS_REQUESTS
+CREATE TABLE IF NOT EXISTS public.photo_access_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  requester_profile_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  target_profile_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  requester_user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  target_user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'accepted'::text, 'rejected'::text])),
+  note text,
+  CONSTRAINT photo_access_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT unique_photo_access_request UNIQUE (requester_profile_id, target_profile_id)
+);
+
 -- INDEXES FOR MAXIMUM QUERY EFFICIENCY
 CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON public.profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_city ON public.profiles(city);
@@ -239,6 +257,11 @@ CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON public.user_favorites(user
 CREATE INDEX IF NOT EXISTS idx_user_favorites_profile ON public.user_favorites(profile_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_candidate ON public.conversations(candidate_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_suitor ON public.conversations(suitor_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_status ON public.conversations(status);
+CREATE INDEX IF NOT EXISTS idx_conversations_requester ON public.conversations(requester_id);
+CREATE INDEX IF NOT EXISTS idx_photo_requests_requester ON public.photo_access_requests(requester_profile_id);
+CREATE INDEX IF NOT EXISTS idx_photo_requests_target ON public.photo_access_requests(target_profile_id);
+CREATE INDEX IF NOT EXISTS idx_photo_requests_status ON public.photo_access_requests(status);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON public.messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_sender ON public.messages(sender_id);
 CREATE INDEX IF NOT EXISTS idx_profile_photos_profile ON public.profile_photos(profile_id);
@@ -259,6 +282,7 @@ ALTER TABLE public.user_blocks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profile_photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.photo_access_requests ENABLE ROW LEVEL SECURITY;
 
 -- 1. Profiles Policies
 DROP POLICY IF EXISTS "Profiles select policy" ON public.profiles;
@@ -285,6 +309,54 @@ WITH CHECK (
   suitor_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid())
 );
 
+DROP POLICY IF EXISTS "Conversations update policy" ON public.conversations;
+CREATE POLICY "Conversations update policy" ON public.conversations FOR UPDATE TO authenticated
+USING (
+  candidate_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid()) OR
+  suitor_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid())
+)
+WITH CHECK (
+  candidate_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid()) OR
+  suitor_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid())
+);
+
+-- Helper function for message insertion permission
+CREATE OR REPLACE FUNCTION public.can_insert_message(p_conv_id uuid, p_sender_id uuid)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_status text;
+  v_count integer;
+  v_candidate_id uuid;
+  v_suitor_id uuid;
+BEGIN
+  SELECT status, candidate_id, suitor_id INTO v_status, v_candidate_id, v_suitor_id
+  FROM public.conversations WHERE id = p_conv_id;
+
+  IF NOT FOUND THEN
+    RETURN false;
+  END IF;
+
+  IF p_sender_id != v_candidate_id AND p_sender_id != v_suitor_id THEN
+    RETURN false;
+  END IF;
+
+  IF v_status = 'accepted' THEN
+    RETURN true;
+  END IF;
+
+  IF v_status = 'rejected' THEN
+    RETURN false;
+  END IF;
+
+  SELECT count(*) INTO v_count FROM public.messages WHERE conversation_id = p_conv_id;
+  IF v_count = 0 THEN
+    RETURN true;
+  ELSE
+    RETURN false;
+  END IF;
+END;
+$$;
+
 -- 3. Messages Policies
 DROP POLICY IF EXISTS "Messages select policy" ON public.messages;
 CREATE POLICY "Messages select policy" ON public.messages FOR SELECT TO authenticated
@@ -301,6 +373,38 @@ DROP POLICY IF EXISTS "Messages insert policy" ON public.messages;
 CREATE POLICY "Messages insert policy" ON public.messages FOR INSERT TO authenticated
 WITH CHECK (
   sender_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid())
+  AND (
+    conversation_id IS NULL
+    OR public.can_insert_message(conversation_id, sender_id) = true
+  )
+);
+
+-- Photo Access Requests Policies
+DROP POLICY IF EXISTS "Photo access requests select policy" ON public.photo_access_requests;
+CREATE POLICY "Photo access requests select policy" ON public.photo_access_requests FOR SELECT TO authenticated
+USING (
+  requester_profile_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid()) OR
+  target_profile_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid()) OR
+  requester_user_id = auth.uid() OR
+  target_user_id = auth.uid()
+);
+
+DROP POLICY IF EXISTS "Photo access requests insert policy" ON public.photo_access_requests;
+CREATE POLICY "Photo access requests insert policy" ON public.photo_access_requests FOR INSERT TO authenticated
+WITH CHECK (
+  requester_profile_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid()) OR
+  requester_user_id = auth.uid()
+);
+
+DROP POLICY IF EXISTS "Photo access requests update policy" ON public.photo_access_requests;
+CREATE POLICY "Photo access requests update policy" ON public.photo_access_requests FOR UPDATE TO authenticated
+USING (
+  target_profile_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid()) OR
+  target_user_id = auth.uid()
+)
+WITH CHECK (
+  target_profile_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid()) OR
+  target_user_id = auth.uid()
 );
 
 -- 4. User Favorites Policies

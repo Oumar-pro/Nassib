@@ -46,6 +46,15 @@ export interface Database {
           personality: string | null; // text
           family_importance: string | null; // text
           is_admin: boolean | null; // boolean DEFAULT false
+          height: number | null; // integer
+          weight: number | null; // integer
+          ethnicity: string | null; // text
+          origin_city: string | null; // text
+          hijab_status: string | null; // text
+          religious_practice_details: string | null; // text
+          values: string[] | null; // ARRAY
+          partner_criteria: string | null; // text
+          deal_breakers: string[] | null; // ARRAY
         };
         Insert: {
           id?: string;
@@ -78,6 +87,15 @@ export interface Database {
           personality?: string | null;
           family_importance?: string | null;
           is_admin?: boolean | null;
+          height?: number | null;
+          weight?: number | null;
+          ethnicity?: string | null;
+          origin_city?: string | null;
+          hijab_status?: string | null;
+          religious_practice_details?: string | null;
+          values?: string[] | null;
+          partner_criteria?: string | null;
+          deal_breakers?: string[] | null;
         };
         Update: {
           id?: string;
@@ -110,6 +128,15 @@ export interface Database {
           personality?: string | null;
           family_importance?: string | null;
           is_admin?: boolean | null;
+          height?: number | null;
+          weight?: number | null;
+          ethnicity?: string | null;
+          origin_city?: string | null;
+          hijab_status?: string | null;
+          religious_practice_details?: string | null;
+          values?: string[] | null;
+          partner_criteria?: string | null;
+          deal_breakers?: string[] | null;
         };
       };
 
@@ -120,6 +147,8 @@ export interface Database {
           updated_at: string; // timestamptz
           candidate_id: string; // uuid -> profiles(id)
           suitor_id: string; // uuid -> profiles(id)
+          requester_id: string | null; // uuid -> profiles(id)
+          status: 'pending' | 'accepted' | 'rejected' | null;
           last_message: string | null; // text
           last_message_time: string | null; // timestamptz
           is_supervised: boolean | null; // boolean DEFAULT true
@@ -130,6 +159,8 @@ export interface Database {
           updated_at?: string;
           candidate_id: string;
           suitor_id: string;
+          requester_id?: string | null;
+          status?: 'pending' | 'accepted' | 'rejected' | null;
           last_message?: string | null;
           last_message_time?: string | null;
           is_supervised?: boolean | null;
@@ -140,6 +171,8 @@ export interface Database {
           updated_at?: string;
           candidate_id?: string;
           suitor_id?: string;
+          requester_id?: string | null;
+          status?: 'pending' | 'accepted' | 'rejected' | null;
           last_message?: string | null;
           last_message_time?: string | null;
           is_supervised?: boolean | null;
@@ -493,6 +526,42 @@ export interface Database {
           status?: 'pending' | 'reviewed' | 'dismissed' | null;
         };
       };
+
+      photo_access_requests: {
+        Row: {
+          id: string; // uuid PRIMARY KEY
+          created_at: string; // timestamptz
+          updated_at: string; // timestamptz
+          requester_profile_id: string; // uuid -> profiles(id)
+          target_profile_id: string; // uuid -> profiles(id)
+          requester_user_id: string | null; // uuid -> auth.users(id)
+          target_user_id: string | null; // uuid -> auth.users(id)
+          status: 'pending' | 'accepted' | 'rejected';
+          note: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          requester_profile_id: string;
+          target_profile_id: string;
+          requester_user_id?: string | null;
+          target_user_id?: string | null;
+          status?: 'pending' | 'accepted' | 'rejected';
+          note?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          requester_profile_id?: string;
+          target_profile_id?: string;
+          requester_user_id?: string | null;
+          target_user_id?: string | null;
+          status?: 'pending' | 'accepted' | 'rejected';
+          note?: string | null;
+        };
+      };
     };
   };
 }
@@ -510,3 +579,4 @@ export type DbUserBlock = Database['public']['Tables']['user_blocks']['Row'];
 export type DbUserReport = Database['public']['Tables']['user_reports']['Row'];
 export type DbProfilePhoto = Database['public']['Tables']['profile_photos']['Row'];
 export type DbReport = Database['public']['Tables']['reports']['Row'];
+export type DbPhotoAccessRequest = Database['public']['Tables']['photo_access_requests']['Row'];

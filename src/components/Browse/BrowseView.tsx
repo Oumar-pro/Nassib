@@ -1,22 +1,28 @@
 import React, { useState, useMemo } from 'react';
-import { Profile, User, isProfileVisible } from '../../types';
+import { Profile, User, hasUploadedPhoto } from '../../types';
 
 interface BrowseViewProps {
   user: User;
-  profiles: Profile[];
+  profiles?: Profile[];
   onSelectProfile: (profile: Profile) => void;
   onRequestAccess: (profile: Profile) => void;
   favoriteProfileIds?: string[];
   onToggleFavorite?: (profileId: string) => void;
+  approvedPhotoIds?: string[];
+  contactRelationshipMap?: Record<string, string>;
+  onSendContactRequest?: (profile: Profile) => void;
 }
 
 export const BrowseView: React.FC<BrowseViewProps> = ({
   user,
-  profiles,
+  profiles = [],
   onSelectProfile,
   onRequestAccess,
   favoriteProfileIds = [],
   onToggleFavorite,
+  approvedPhotoIds = [],
+  contactRelationshipMap = {},
+  onSendContactRequest,
 }) => {
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedAgeRange, setSelectedAgeRange] = useState<string>('');
@@ -91,7 +97,10 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
   };
 
   const filteredProfiles = useMemo(() => {
-    return profiles.filter((p) => {
+    return (profiles || []).filter((p) => {
+      // 0. Tout profil qui n'a téléversé aucune photo ne doit pas être visible dans l'application
+      if (!hasUploadedPhoto(p)) return false;
+
       // 1. Règle Halal Stricte :
       // - Si un garçon (homme) est connecté, il voit UNIQUEMENT tous les profils de filles (femmes).
       // - Si une fille (femme) est connectée, elle voit UNIQUEMENT tous les profils de garçons (hommes).
@@ -499,8 +508,10 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
       ) : (
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProfiles.slice(0, visibleCount).map((profile) => {
-            const isPhotoBlurred = Boolean(profile.photoPrivate || user.photoBlurringActive || mahramModeActive);
+            const hasPhotoAccess = approvedPhotoIds.includes(profile.id);
+            const isPhotoBlurred = Boolean((profile.photoPrivate && !hasPhotoAccess) || mahramModeActive);
             const isFavorited = favoriteProfileIds.includes(profile.id);
+            const contactState = contactRelationshipMap[profile.id] || 'NO_REQUEST';
 
             return (
               <article
@@ -556,7 +567,9 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
                         visibility_off
                       </span>
                       <p className="font-display text-sm font-bold text-[#211E1A]">Photo Privée</p>
-                      <p className="font-body text-[11px] text-[#575147] mt-0.5">Demander l'accès pour voir</p>
+                      <p className="font-body text-[11px] text-[#575147] mt-0.5">
+                        {profile.photoPrivate ? 'Accès réservé sur demande' : 'Mode Mahram actif'}
+                      </p>
                     </div>
                   )}
 
@@ -597,27 +610,22 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
 
                   {/* Footer Action */}
                   <div className="mt-auto pt-3 border-t border-[#E8E3D7] flex items-center justify-between gap-2">
-                    {profile.isWaliApproved && (
+                    {profile.isWaliApproved ? (
                       <span className="inline-flex items-center gap-1 text-[11px] text-[#735619] font-semibold">
                         <span className="material-symbols-outlined text-xs text-[#C9A45C]">shield_person</span> Wali Approuvé
                       </span>
+                    ) : (
+                      <span className="text-[11px] text-[#7D766C]">
+                        {contactState === 'PENDING_SENT' ? 'Demande envoyée' : contactState === 'ACCEPTED' ? 'Connecté' : ''}
+                      </span>
                     )}
 
-                    {isPhotoBlurred ? (
-                      <button
-                        onClick={() => onRequestAccess(profile)}
-                        className="bg-[#FAF8F2] border border-[#E8E3D7] text-[#211E1A] px-3.5 py-2 rounded-xl font-display text-xs font-semibold hover:bg-[#E8E3D7] transition-colors ml-auto cursor-pointer"
-                      >
-                        Demander Accès
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => onSelectProfile(profile)}
-                        className="px-4 py-2 rounded-xl font-display text-xs font-semibold transition-all ml-auto bg-[#0F5C4D] text-white hover:bg-[#0c4a3e] cursor-pointer shadow-2xs"
-                      >
-                        Voir le Profil
-                      </button>
-                    )}
+                    <button
+                      onClick={() => onSelectProfile(profile)}
+                      className="px-4 py-2 rounded-xl font-display text-xs font-semibold transition-all ml-auto bg-[#0F5C4D] text-white hover:bg-[#0c4a3e] cursor-pointer shadow-2xs"
+                    >
+                      Voir le Profil
+                    </button>
                   </div>
                 </div>
               </article>

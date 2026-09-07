@@ -4,25 +4,32 @@ import { Message, Conversation, User } from '../../types';
 
 interface MessagesViewProps {
   user: User;
-  conversations: Conversation[];
-  activeMessages: Message[];
+  conversations?: Conversation[];
+  activeMessages?: Message[];
   activeConvId?: string | null;
   onSelectConversation?: (convId: string | null) => void;
   onSendMessage: (text: string, convId: string) => void;
+  onAcceptContact?: (conversationId: string) => Promise<void>;
+  onRejectContact?: (conversationId: string) => Promise<void>;
+  onOpenProfile?: (profileId: string) => void;
 }
 
 export const MessagesView: React.FC<MessagesViewProps> = ({
   user,
-  conversations,
-  activeMessages,
+  conversations = [],
+  activeMessages = [],
   activeConvId = null,
   onSelectConversation,
-  onSendMessage
+  onSendMessage,
+  onAcceptContact,
+  onRejectContact,
+  onOpenProfile,
 }) => {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(activeConvId);
   const [inputText, setInputText] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterTab, setFilterTab] = useState<'all' | 'unread' | 'supervised'>('all');
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Sync selectedConvId when activeConvId prop changes
   React.useEffect(() => {
@@ -34,7 +41,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     onSelectConversation?.(id);
   };
 
-  const currentConv = conversations.find((c) => c.id === selectedConvId);
+  const currentConv = (conversations || []).find((c) => c.id === selectedConvId);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,11 +50,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     setInputText('');
   };
 
-  const conversationMessages = activeMessages.filter(
+  const conversationMessages = (activeMessages || []).filter(
     (msg) => msg.conversationId === selectedConvId
   );
 
-  const filteredConversations = conversations.filter((conv) => {
+  const filteredConversations = (conversations || []).filter((conv) => {
     const matchesSearch =
       conv.participantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -225,9 +232,21 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                         </p>
 
                         <div className="flex flex-wrap items-center gap-2">
+                          {conv.status === 'pending' && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#C9A45C]/20 border border-[#C9A45C]/40 text-[#735619] text-[11px] font-bold">
+                              <span className="material-symbols-outlined text-[13px] text-[#C9A45C] animate-pulse">hourglass_top</span>
+                              Demande en attente
+                            </span>
+                          )}
+                          {conv.status === 'rejected' && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-100 border border-red-200 text-red-700 text-[11px] font-bold">
+                              <span className="material-symbols-outlined text-[13px]">block</span>
+                              Demande refusée
+                            </span>
+                          )}
                           {conv.isSupervised && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#C9A45C]/15 border border-[#C9A45C]/30 text-[#735619] text-[11px] font-bold">
-                              <span className="material-symbols-outlined text-[13px] text-[#C9A45C]">security</span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#8BAE9F]/15 border border-[#8BAE9F]/30 text-[#0F5C4D] text-[11px] font-bold">
+                              <span className="material-symbols-outlined text-[13px] text-[#0F5C4D]">security</span>
                               Supervisé par Wali
                             </span>
                           )}
@@ -275,32 +294,65 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
                 <div className="h-6 w-px bg-[#E8E3D7] mx-0.5 shrink-0"></div>
 
-                {currentConv.participantAvatar ? (
-                  <img
-                    src={currentConv.participantAvatar}
-                    alt={currentConv.participantName}
-                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover border border-[#E8E3D7] shrink-0"
-                  />
-                ) : (
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#8BAE9F]/20 text-[#0F5C4D] border border-[#8BAE9F]/30 flex items-center justify-center font-display font-bold text-sm shrink-0">
-                    {currentConv.participantName ? currentConv.participantName.charAt(0).toUpperCase() : 'M'}
-                  </div>
-                )}
-                <div className="min-w-0 truncate">
-                  <h2 className="font-display text-sm sm:text-base font-bold text-[#211E1A] leading-tight truncate">
-                    {currentConv.participantName}
-                  </h2>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="w-2 h-2 rounded-full bg-[#0F5C4D]"></span>
-                    <span className="font-body text-xs text-[#575147] truncate">
-                      En ligne • {currentConv.participantCity}
-                    </span>
+                <div
+                  onClick={() => {
+                    const otherProfileId =
+                      currentConv.candidateId === user.profileId
+                        ? currentConv.requesterId
+                        : currentConv.candidateId;
+                    if (otherProfileId) {
+                      onOpenProfile?.(otherProfileId);
+                    }
+                  }}
+                  className="flex items-center gap-2.5 min-w-0 cursor-pointer group"
+                  title="Voir la fiche profil"
+                >
+                  {currentConv.participantAvatar ? (
+                    <img
+                      src={currentConv.participantAvatar}
+                      alt={currentConv.participantName}
+                      className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover border border-[#E8E3D7] shrink-0 group-hover:ring-2 group-hover:ring-[#0F5C4D]/40 transition-all"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#8BAE9F]/20 text-[#0F5C4D] border border-[#8BAE9F]/30 flex items-center justify-center font-display font-bold text-sm shrink-0 group-hover:ring-2 group-hover:ring-[#0F5C4D]/40 transition-all">
+                      {currentConv.participantName ? currentConv.participantName.charAt(0).toUpperCase() : 'M'}
+                    </div>
+                  )}
+                  <div className="min-w-0 truncate">
+                    <h2 className="font-display text-sm sm:text-base font-bold text-[#211E1A] leading-tight truncate group-hover:text-[#0F5C4D] transition-colors flex items-center gap-1">
+                      <span>{currentConv.participantName}</span>
+                      <span className="material-symbols-outlined text-xs text-[#7D766C] opacity-70 group-hover:opacity-100">open_in_new</span>
+                    </h2>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="w-2 h-2 rounded-full bg-[#0F5C4D]"></span>
+                      <span className="font-body text-xs text-[#575147] truncate">
+                        En ligne • {currentConv.participantCity}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Supervision Badge (No audio/video call buttons) */}
+              {/* Supervision Badge & Action buttons */}
               <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const otherProfileId =
+                      currentConv.candidateId === user.profileId
+                        ? currentConv.requesterId
+                        : currentConv.candidateId;
+                    if (otherProfileId) {
+                      onOpenProfile?.(otherProfileId);
+                    }
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-[#E8E3D7] bg-white text-[#0F5C4D] font-display text-xs font-semibold hover:bg-[#8BAE9F]/15 transition-all shadow-2xs cursor-pointer"
+                  title="Voir la fiche profil"
+                >
+                  <span className="material-symbols-outlined text-sm">person</span>
+                  <span className="hidden sm:inline">Voir profil</span>
+                </button>
+
                 <div className="hidden sm:flex items-center gap-2 bg-[#C9A45C]/15 border border-[#C9A45C]/30 px-3 py-1.5 rounded-2xl">
                   <span
                     className="material-symbols-outlined text-[#C9A45C] text-base"
@@ -332,6 +384,86 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 Supervisé par le Wali ({user.waliInfo?.name || 'Tuteur'})
               </span>
             </div>
+
+            {/* Status Banners for Contact Request */}
+            {(() => {
+              const myProfileId = user.profileId || user.id;
+              const isRequester = currentConv.requesterId
+                ? currentConv.requesterId === myProfileId
+                : currentConv.candidateId === myProfileId;
+
+              if (currentConv.status === 'pending') {
+                if (!isRequester) {
+                  return (
+                    <div className="bg-[#FAF8F2] border border-[#C9A45C]/40 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 my-2">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-[#C9A45C] text-2xl">mail</span>
+                        <div>
+                          <h4 className="font-display font-bold text-sm text-[#211E1A]">
+                            Demande de contact reçue
+                          </h4>
+                          <p className="font-body text-xs text-[#575147]">
+                            Ce membre vous a envoyé son premier message. Acceptez-vous d'engager cette mise en relation ?
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 self-end sm:self-center">
+                        <button
+                          disabled={actionLoading}
+                          onClick={async () => {
+                            if (!onRejectContact) return;
+                            setActionLoading(true);
+                            await onRejectContact(currentConv.id);
+                            setActionLoading(false);
+                          }}
+                          className="px-3.5 py-2 rounded-xl border border-[#D9534F]/30 text-[#D9534F] font-display text-xs font-semibold hover:bg-[#D9534F]/10 cursor-pointer disabled:opacity-50"
+                        >
+                          Refuser
+                        </button>
+                        <button
+                          disabled={actionLoading}
+                          onClick={async () => {
+                            if (!onAcceptContact) return;
+                            setActionLoading(true);
+                            await onAcceptContact(currentConv.id);
+                            setActionLoading(false);
+                          }}
+                          className="px-4 py-2 rounded-xl bg-[#0F5C4D] text-white font-display text-xs font-bold hover:bg-[#0c4a3e] cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-sm">check</span>
+                          Accepter la demande
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="bg-[#FAF8F2] border border-[#C9A45C]/30 rounded-2xl p-4 text-center my-2">
+                    <div className="flex items-center justify-center gap-2 text-[#735619] font-display text-xs font-bold">
+                      <span className="material-symbols-outlined text-base animate-pulse">hourglass_top</span>
+                      Demande de contact en attente d'acceptation
+                    </div>
+                    <p className="font-body text-xs text-[#575147] mt-1">
+                      Vous ne pouvez pas envoyer de message supplémentaire tant que {currentConv.participantName} n'a pas accepté votre démarche.
+                    </p>
+                  </div>
+                );
+              }
+
+              if (currentConv.status === 'rejected') {
+                return (
+                  <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 text-center my-2">
+                    <div className="flex items-center justify-center gap-2 text-stone-700 font-display text-xs font-bold">
+                      <span className="material-symbols-outlined text-base">block</span>
+                      Cette demande de contact a été refusée.
+                    </div>
+                  </div>
+                );
+              }
+
+              return null;
+            })()}
 
             {/* Messages Stream (Directly on app background) */}
             <div className="flex-grow py-4 px-1 sm:px-2 overflow-y-auto flex flex-col gap-4 custom-scrollbar">
@@ -407,43 +539,51 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
             {/* Message Input Form (Docked at bottom of viewport) */}
             <div className="sticky bottom-0 pt-2 pb-2 bg-[#FAF8F2]/95 backdrop-blur-md border-t border-[#E8E3D7]">
-              <form onSubmit={handleSend} className="flex gap-2 sm:gap-3 items-center max-w-4xl mx-auto">
-                <button
-                  type="button"
-                  className="p-2.5 text-[#7D766C] hover:text-[#0F5C4D] hover:bg-white rounded-2xl transition-colors shrink-0 cursor-pointer"
-                  title="Joindre un fichier"
-                >
-                  <span className="material-symbols-outlined">attach_file</span>
-                </button>
-
-                <div className="flex-grow bg-white border border-[#E8E3D7] rounded-2xl overflow-hidden focus-within:border-[#0F5C4D] focus-within:ring-2 focus-within:ring-[#0F5C4D]/20 transition-all shadow-2xs">
-                  <textarea
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend(e);
-                      }
-                    }}
-                    placeholder="Rédigez un message respectueux..."
-                    rows={1}
-                    className="w-full bg-transparent border-none resize-none p-3 text-xs sm:text-sm font-body focus:ring-0 text-[#211E1A] placeholder:text-[#7D766C]"
-                  />
+              {currentConv.status === 'pending' || currentConv.status === 'rejected' ? (
+                <div className="p-3 bg-white border border-[#E8E3D7] rounded-2xl text-center text-xs font-body text-[#7D766C] max-w-4xl mx-auto shadow-2xs">
+                  {currentConv.status === 'rejected'
+                    ? 'Cette conversation est clôturée.'
+                    : "L'envoi de messages est désactivé tant que la demande de contact n'est pas acceptée."}
                 </div>
+              ) : (
+                <form onSubmit={handleSend} className="flex gap-2 sm:gap-3 items-center max-w-4xl mx-auto">
+                  <button
+                    type="button"
+                    className="p-2.5 text-[#7D766C] hover:text-[#0F5C4D] hover:bg-white rounded-2xl transition-colors shrink-0 cursor-pointer"
+                    title="Joindre un fichier"
+                  >
+                    <span className="material-symbols-outlined">attach_file</span>
+                  </button>
 
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  type="submit"
-                  disabled={!inputText.trim()}
-                  className="w-11 h-11 bg-[#0F5C4D] text-white rounded-2xl flex items-center justify-center hover:bg-[#0c4a3e] disabled:opacity-40 transition-colors shadow-2xs shrink-0 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    send
-                  </span>
-                </motion.button>
-              </form>
+                  <div className="flex-grow bg-white border border-[#E8E3D7] rounded-2xl overflow-hidden focus-within:border-[#0F5C4D] focus-within:ring-2 focus-within:ring-[#0F5C4D]/20 transition-all shadow-2xs">
+                    <textarea
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend(e);
+                        }
+                      }}
+                      placeholder="Rédigez un message respectueux..."
+                      rows={1}
+                      className="w-full bg-transparent border-none resize-none p-3 text-xs sm:text-sm font-body focus:ring-0 text-[#211E1A] placeholder:text-[#7D766C]"
+                    />
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="submit"
+                    disabled={!inputText.trim()}
+                    className="w-11 h-11 bg-[#0F5C4D] text-white rounded-2xl flex items-center justify-center hover:bg-[#0c4a3e] disabled:opacity-40 transition-colors shadow-2xs shrink-0 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      send
+                    </span>
+                  </motion.button>
+                </form>
+              )}
 
               <div className="text-center mt-1.5">
                 <span className="font-body text-[10px] text-[#7D766C]">

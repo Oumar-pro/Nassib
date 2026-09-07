@@ -119,7 +119,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   }, [user.waliInfo]);
 
   // Current draft profile to compute live completion
-  const effectivePhotos = photos.filter((p) => Boolean(p) && p.trim() !== '');
+  const effectivePhotos = (photos || []).filter((p) => Boolean(p) && p.trim() !== '');
   const primaryPhoto = effectivePhotos[0] || user.photoUrl || '';
 
   const draftProfile: Partial<Profile> = {
@@ -244,7 +244,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const handleSaveAll = (customNotice?: string) => {
-    const activePhotos = photos.filter((p) => Boolean(p) && p.trim() !== '');
+    const activePhotos = (photos || []).filter((p) => Boolean(p) && p.trim() !== '');
     const mainPhoto = activePhotos[0] || '';
 
     // Save account settings

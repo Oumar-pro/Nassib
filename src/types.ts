@@ -2,6 +2,8 @@ export type TabType =
   | 'dashboard' 
   | 'browse' 
   | 'messages' 
+  | 'requests'
+  | 'profile-detail'
   | 'verification' 
   | 'settings' 
   | 'landing'
@@ -117,20 +119,17 @@ export function calculateProfileCompletion(p: Partial<Profile> | null | undefine
 }
 
 /**
- * Règle de visibilité :
- * - Avoir au moins une photo de profil
- * - Avoir un taux de complétion >= 50%
+ * Règle stricte : Tout profil qui n'a téléversé aucune photo ne doit pas être visible dans l'application.
  */
-export function isProfileVisible(p: Partial<Profile> | null | undefined): boolean {
+export function hasUploadedPhoto(p: Partial<Profile> | null | undefined): boolean {
   if (!p) return false;
-  const hasPhoto = Boolean(
-    (p.photoUrl && p.photoUrl.trim() !== '') ||
-    (p.photos && p.photos.some((ph) => Boolean(ph) && ph.trim() !== ''))
-  );
-  if (!hasPhoto) return false;
+  const hasPhotoUrl = Boolean(p.photoUrl && typeof p.photoUrl === 'string' && p.photoUrl.trim() !== '');
+  const hasPhotos = Array.isArray(p.photos) && p.photos.some((ph) => Boolean(ph) && typeof ph === 'string' && ph.trim() !== '');
+  return hasPhotoUrl || hasPhotos;
+}
 
-  const completion = p.completionPercentage ?? calculateProfileCompletion(p);
-  return completion >= 50;
+export function isProfileVisible(p: Partial<Profile> | null | undefined): boolean {
+  return hasUploadedPhoto(p);
 }
 
 export interface Message {
@@ -146,10 +145,14 @@ export interface Message {
   status?: 'sent' | 'delivered' | 'read';
 }
 
+export type ConversationStatus = 'pending' | 'accepted' | 'rejected';
+
 export interface Conversation {
   id: string;
   candidateId?: string;
   suitorId?: string;
+  requesterId?: string;
+  status: ConversationStatus;
   participantId: string;
   participantName: string;
   participantAvatar: string;
@@ -160,7 +163,36 @@ export interface Conversation {
   isSupervised: boolean;
   isVerifiedNNI: boolean;
   onlineStatus: boolean;
+  createdAt?: string;
 }
+
+export interface PhotoAccessRequest {
+  id: string;
+  requesterProfileId: string;
+  targetProfileId: string;
+  requesterUserId?: string;
+  targetUserId?: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  note?: string;
+  createdAt: string;
+  updatedAt?: string;
+  requesterProfile?: Profile;
+  targetProfile?: Profile;
+}
+
+export type ContactRelationshipState =
+  | 'NO_REQUEST'
+  | 'PENDING_SENT'
+  | 'PENDING_RECEIVED'
+  | 'ACCEPTED'
+  | 'REJECTED';
+
+export type PhotoAccessRelationshipState =
+  | 'PUBLIC'
+  | 'LOCKED'
+  | 'REQUESTED_SENT'
+  | 'REQUESTED_RECEIVED'
+  | 'GRANTED';
 
 export interface UserWaliInfo {
   name: string;

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { TabType, Profile, Conversation, Message, User, UserWaliInfo } from './types';
 import {
   supabase,
@@ -9,6 +9,14 @@ import {
   reportUserOrProfileInSupabase,
   blockUserInSupabase,
   fetchConversationsFromSupabase,
+  fetchApprovedPhotoAccessProfileIds,
+  fetchReceivedPhotoAccessRequests,
+  fetchSentPhotoAccessRequests,
+  sendPhotoAccessRequestInSupabase,
+  respondToPhotoAccessRequestInSupabase,
+  sendContactRequestInSupabase,
+  respondToContactRequestInSupabase,
+  PhotoAccessRequest,
 } from './lib/supabase';
 import {
   getCurrentUserSession,
@@ -20,8 +28,11 @@ import {
   getProfiles,
   getMyProfile,
   saveMyProfile,
+  updatePhotoPrivacy,
   getFavorites,
   toggleFavorite,
+  hasUploadedPhotos,
+  getProfileById,
 } from './lib/database';
 
 import { Sidebar } from './components/Navigation/Sidebar';
@@ -36,6 +47,9 @@ import { SettingsView } from './components/Settings/SettingsView';
 import { LandingView } from './components/Landing/LandingView';
 import { ImamChatView } from './components/ImamOumar/ImamChatView';
 import { ProfileDetailModal } from './components/Profile/ProfileDetailModal';
+import { ProfileDetailView } from './components/Profile/ProfileDetailView';
+import { RequestsView } from './components/Requests/RequestsView';
+import { ContactRequestModal } from './components/Modals/ContactRequestModal';
 import { AuthPage } from './components/Auth/AuthPage';
 import { OnboardingPage } from './components/Auth/OnboardingPage';
 import { OnboardingData } from './components/Auth/OnboardingModal';
@@ -57,7 +71,9 @@ const EMPTY_USER: User = {
 };
 
 function accountToUser(account: AuthAccount, profile?: Profile | null, currentBlur?: boolean): User {
-  const photoBlurringActive = currentBlur !== undefined ? currentBlur : getStoredPhotoBlur();
+  const photoBlurringActive = profile
+    ? Boolean(profile.photoPrivate)
+    : (currentBlur !== undefined ? currentBlur : getStoredPhotoBlur());
   return {
     ...EMPTY_USER,
     id: account.id,
@@ -88,6 +104,11 @@ export default function App() {
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [favoriteProfileIds, setFavoriteProfileIds] = useState<string[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [returnTab, setReturnTab] = useState<TabType>('browse');
+  const [contactModalProfile, setContactModalProfile] = useState<Profile | null>(null);
+  const [approvedPhotoIds, setApprovedPhotoIds] = useState<string[]>([]);
+  const [receivedPhotoRequests, setReceivedPhotoRequests] = useState<PhotoAccessRequest[]>([]);
+  const [sentPhotoRequests, setSentPhotoRequests] = useState<PhotoAccessRequest[]>([]);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
   const [registeredUserData, setRegisteredUserData] = useState<{ id?: string; email?: string; name: string; role: 'candidate' | 'wali'; phone: string }>({ name: '', role: 'candidate', phone: '' });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -99,23 +120,47 @@ export default function App() {
   }, []);
 
   const loadDatabaseState = useCallback(async (userId: string) => {
-    if (!userId || !isSupabaseConfigured) return;
+    if (!userId) return;
     const myProfile = await getMyProfile(userId);
     if (myProfile) setCurrentUserProfile(myProfile);
-    const [dbProfiles, dbFavorites, dbConversations] = await Promise.all([
-      getProfiles(userId), getFavorites(userId), fetchConversationsFromSupabase(myProfile?.id),
+
+    const [dbProfiles, dbFavorites, dbConversations, approvedPhotos, recPhotoReqs, sentPhotoReqs] = await Promise.all([
+      getProfiles(userId),
+      getFavorites(userId),
+      fetchConversationsFromSupabase(myProfile?.id),
+      myProfile?.id ? fetchApprovedPhotoAccessProfileIds(myProfile.id) : Promise.resolve([]),
+      myProfile?.id ? fetchReceivedPhotoAccessRequests(myProfile.id) : Promise.resolve([]),
+      myProfile?.id ? fetchSentPhotoAccessRequests(myProfile.id) : Promise.resolve([]),
     ]);
-    setProfiles(dbProfiles);
+
+    const validProfiles = (dbProfiles || []).filter(hasUploadedPhotos);
+    setProfiles(validProfiles);
     setFavoriteProfileIds(dbFavorites);
     setConversations(dbConversations);
+    setApprovedPhotoIds(approvedPhotos);
+    setReceivedPhotoRequests(recPhotoReqs);
+    setSentPhotoRequests(sentPhotoReqs);
+
     const account = getCurrentUserSession();
-    if (account) setUser((prev) => accountToUser(account, myProfile, prev.photoBlurringActive));
+    if (account) {
+      setUser((prev) => accountToUser(account, myProfile, myProfile ? myProfile.photoPrivate : prev.photoBlurringActive));
+    }
   }, []);
 
   const syncAuth = useCallback(async () => {
     const account = await restoreCurrentUserSession();
     if (!account) {
-      setUser(EMPTY_USER); setCurrentUserProfile(null); setProfiles([]); setConversations([]); setMessages([]); setFavoriteProfileIds([]); setActiveConvId(null); return;
+      setUser(EMPTY_USER);
+      setCurrentUserProfile(null);
+      setProfiles([]);
+      setConversations([]);
+      setMessages([]);
+      setFavoriteProfileIds([]);
+      setApprovedPhotoIds([]);
+      setReceivedPhotoRequests([]);
+      setSentPhotoRequests([]);
+      setActiveConvId(null);
+      return;
     }
     const myProfile = await getMyProfile(account.id);
     setCurrentUserProfile(myProfile);
@@ -137,6 +182,7 @@ export default function App() {
       .channel(`nassib:${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, reload)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, reload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'photo_access_requests' }, reload)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async (payload) => {
         const conversationId = (payload.new as any)?.conversation_id || (payload.old as any)?.conversation_id;
         if (conversationId && conversationId === activeConvId) {
@@ -154,18 +200,77 @@ export default function App() {
     fetchMessagesFromSupabase(activeConvId).then((remote) => setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.profileId }))));
   }, [activeConvId, user.profileId]);
 
+  const contactRelationshipMap = useMemo(() => {
+    const map: Record<string, 'NO_REQUEST' | 'PENDING_SENT' | 'PENDING_RECEIVED' | 'ACCEPTED' | 'REJECTED'> = {};
+    const myProfileId = user.profileId;
+    if (!myProfileId) return map;
+
+    for (const conv of conversations) {
+      const otherId = conv.candidateId === myProfileId ? conv.requesterId : conv.candidateId;
+      if (!otherId) continue;
+
+      if (conv.status === 'accepted') {
+        map[otherId] = 'ACCEPTED';
+      } else if (conv.status === 'rejected') {
+        map[otherId] = 'REJECTED';
+      } else if (conv.status === 'pending') {
+        if (conv.requesterId === myProfileId) {
+          map[otherId] = 'PENDING_SENT';
+        } else {
+          map[otherId] = 'PENDING_RECEIVED';
+        }
+      }
+    }
+    return map;
+  }, [conversations, user.profileId]);
+
+  const photoAccessMap = useMemo(() => {
+    const map: Record<string, 'NO_REQUEST' | 'PENDING' | 'ALLOWED' | 'REJECTED'> = {};
+    for (const profile of profiles) {
+      if (approvedPhotoIds.includes(profile.id)) {
+        map[profile.id] = 'ALLOWED';
+      } else {
+        const sent = sentPhotoRequests.find((r) => r.targetProfileId === profile.id);
+        if (sent) {
+          if (sent.status === 'pending') map[profile.id] = 'PENDING';
+          else if (sent.status === 'rejected') map[profile.id] = 'REJECTED';
+          else if (sent.status === 'approved') map[profile.id] = 'ALLOWED';
+        } else {
+          map[profile.id] = 'NO_REQUEST';
+        }
+      }
+    }
+    return map;
+  }, [profiles, approvedPhotoIds, sentPhotoRequests]);
+
+  const pendingContactRequests = useMemo(() => {
+    const myProfileId = user.profileId;
+    if (!myProfileId) return [];
+    return (conversations || []).filter((c) => c.status === 'pending' && c.requesterId !== myProfileId);
+  }, [conversations, user.profileId]);
+
+  const sentPendingContactRequests = useMemo(() => {
+    const myProfileId = user.profileId;
+    if (!myProfileId) return [];
+    return (conversations || []).filter((c) => c.status === 'pending' && c.requesterId === myProfileId);
+  }, [conversations, user.profileId]);
+
+  const pendingPhotoRequests = useMemo(() => {
+    return (receivedPhotoRequests || []).filter((r) => r.status === 'pending');
+  }, [receivedPhotoRequests]);
+
+  const totalPendingRequestsCount = (pendingContactRequests || []).length + (pendingPhotoRequests || []).length;
+
   const handleOpenAuth = (mode: 'login' | 'register') => { setAuthMode(mode); setCurrentTab('auth'); };
 
   const handleToggleFavorite = async (profileId: string) => {
     if (!user.id) return showToast('Veuillez vous connecter pour enregistrer vos favoris.');
     const isCurrentlyFavorited = favoriteProfileIds.includes(profileId);
-    // Optimistic UI state update
     setFavoriteProfileIds((prev) =>
       isCurrentlyFavorited ? prev.filter((id) => id !== profileId) : [...prev, profileId]
     );
     const success = await toggleFavorite(user.id, profileId);
     if (!success) {
-      // Revert if request failed
       setFavoriteProfileIds((prev) =>
         isCurrentlyFavorited ? [...prev, profileId] : prev.filter((id) => id !== profileId)
       );
@@ -179,7 +284,9 @@ export default function App() {
     );
   };
 
-  const favoriteProfiles = profiles.filter((p) => favoriteProfileIds.includes(p.id));
+  const favoriteProfiles = (profiles || []).filter(
+    (p) => hasUploadedPhotos(p) && (favoriteProfileIds || []).includes(p.id)
+  );
   const userFansCount = currentUserProfile?.likesCount ?? 0;
 
   const handleSendMessage = async (text: string, targetConvId?: string) => {
@@ -191,6 +298,50 @@ export default function App() {
     setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.profileId })));
   };
 
+  const handleOpenContactModal = (profile: Profile) => {
+    if (!user.id || !user.profileId) {
+      showToast('Veuillez vous connecter pour contacter ce profil.');
+      return;
+    }
+    if (user.profileId === profile.id) {
+      showToast('Vous ne pouvez pas envoyer de demande à vous-même.');
+      return;
+    }
+    setContactModalProfile(profile);
+  };
+
+  const handleConfirmSendContactRequest = async (targetProfile: Profile, messageText: string): Promise<boolean> => {
+    if (!user.profileId) {
+      showToast('Veuillez vous connecter pour envoyer une demande.');
+      return false;
+    }
+    const result = await sendContactRequestInSupabase({
+      senderProfileId: user.profileId,
+      targetProfileId: targetProfile.id,
+      senderName: user.name || 'Membre',
+      senderAvatar: user.photoUrl,
+      firstMessage: messageText,
+    });
+    if (!result.conversationId || result.error) {
+      showToast(result.error || 'Impossible d’envoyer la demande. Une demande existe peut-être déjà.');
+      return false;
+    }
+    showToast(`Demande de contact transmise avec succès à ${targetProfile.name}.`);
+    await loadDatabaseState(user.id);
+    setActiveConvId(result.conversationId);
+    return true;
+  };
+
+  const handleRespondContact = async (convId: string, status: 'accepted' | 'rejected') => {
+    const ok = await respondToContactRequestInSupabase(convId, status);
+    if (ok) {
+      showToast(status === 'accepted' ? 'Demande acceptée ! La discussion est ouverte.' : 'Demande refusée.');
+      await loadDatabaseState(user.id);
+    } else {
+      showToast('Erreur lors du traitement de la demande.');
+    }
+  };
+
   const handleStartMessageWithProfile = async (profile: Profile) => {
     let myProfileId = user.profileId;
     if (!myProfileId && user.id) {
@@ -199,12 +350,28 @@ export default function App() {
     }
     if (!myProfileId) return showToast('Veuillez vous connecter pour contacter ce profil.');
     if (myProfileId === profile.id) return showToast('Vous ne pouvez pas démarrer une discussion avec votre propre profil.');
-    const conversationId = await createOrGetConversationInSupabase(myProfileId, profile.id);
-    if (!conversationId) return showToast('Impossible d’ouvrir cette conversation.');
-    await loadDatabaseState(user.id);
-    setActiveConvId(conversationId);
-    setSelectedProfile(null);
-    setCurrentTab('messages');
+
+    const relState = contactRelationshipMap[profile.id];
+    if (relState === 'PENDING_SENT') {
+      return showToast('Votre demande de contact est en attente d’acceptation par ce profil.');
+    }
+    if (relState === 'REJECTED') {
+      return showToast('Cette demande de contact a été clôturée.');
+    }
+    if (relState === 'ACCEPTED') {
+      const conv = conversations.find(
+        (c) => (c.candidateId === profile.id || c.requesterId === profile.id) && c.status === 'accepted'
+      );
+      if (conv) {
+        setActiveConvId(conv.id);
+        setSelectedProfile(null);
+        setCurrentTab('messages');
+        return;
+      }
+    }
+
+    // Otherwise, open the contact request modal
+    handleOpenContactModal(profile);
   };
 
   const handleReportProfile = async (targetProfile: Profile, reason: string, description?: string) => {
@@ -219,7 +386,38 @@ export default function App() {
     if (ok !== false) { setProfiles((prev) => prev.filter((p) => p.id !== targetProfile.id)); showToast(`${targetProfile.name} a été bloqué(e).`); }
   };
 
-  const handleRequestPhotoAccess = (_profile: Profile) => showToast('La demande d’accès sera enregistrée dans votre compte.');
+  const handleRequestPhotoAccess = async (profile: Profile) => {
+    let myProfileId = user.profileId;
+    if (!myProfileId && user.id) {
+      const myProf = profiles.find((p) => p.userId === user.id) || await getMyProfile(user.id);
+      if (myProf) myProfileId = myProf.id;
+    }
+    if (!myProfileId) return showToast('Veuillez vous connecter pour demander l’accès aux photos.');
+    if (myProfileId === profile.id) return showToast('Il s’agit de votre propre profil.');
+
+    const result = await sendPhotoAccessRequestInSupabase({
+      requesterProfileId: myProfileId,
+      targetProfileId: profile.id,
+      requesterUserId: user.id,
+      targetUserId: profile.userId,
+    });
+    if (result.success) {
+      showToast(`Demande d’accès aux photos transmise à ${profile.name}.`);
+      await loadDatabaseState(user.id);
+    } else {
+      showToast(result.error || 'Une demande d’accès aux photos est déjà en cours ou a déjà été envoyée.');
+    }
+  };
+
+  const handleRespondPhotoRequest = async (requestId: string, status: 'approved' | 'rejected') => {
+    const ok = await respondToPhotoAccessRequestInSupabase(requestId, status);
+    if (ok) {
+      showToast(status === 'approved' ? 'Accès aux photos accordé.' : 'Demande d’accès refusée.');
+      await loadDatabaseState(user.id);
+    } else {
+      showToast('Erreur lors de la réponse à la demande.');
+    }
+  };
 
   const handleAuthSuccess = async (userAcc: AuthAccount, isRegister: boolean) => {
     const myProfile = await getMyProfile(userAcc.id);
@@ -287,6 +485,8 @@ export default function App() {
         localStorage.setItem('nassib_photo_blur', String(updated.photoBlurringActive));
       } catch {}
       setUser((prev) => ({ ...prev, photoBlurringActive: updated.photoBlurringActive! }));
+      setCurrentUserProfile((prev) => prev ? { ...prev, photoPrivate: updated.photoBlurringActive! } : null);
+      await updatePhotoPrivacy(user.id, updated.photoBlurringActive);
     }
 
     const existing = await getMyProfile(user.id);
@@ -330,6 +530,26 @@ export default function App() {
     showToast('Modifications enregistrées.');
   };
 
+  const handleTogglePhotoBlurring = async () => {
+    if (!user.id) return;
+    const next = !user.photoBlurringActive;
+    try {
+      localStorage.setItem('nassib_photo_blur', String(next));
+    } catch {}
+
+    setUser((u) => ({ ...u, photoBlurringActive: next }));
+    setCurrentUserProfile((prev) => prev ? { ...prev, photoPrivate: next } : null);
+
+    await updatePhotoPrivacy(user.id, next);
+    await loadDatabaseState(user.id);
+
+    showToast(
+      next
+        ? 'Mode Floutage activé : vos photos sont désormais floutées et protégées.'
+        : 'Mode Floutage désactivé : vos photos sont désormais visibles.'
+    );
+  };
+
   const handleUpdateWaliInfo = async (waliInfo: UserWaliInfo) => {
     if (!user.id) return;
     const existing = await getMyProfile(user.id);
@@ -346,78 +566,345 @@ export default function App() {
     if (saved) { setUser((prev) => ({ ...prev, isVerifiedNNI: true })); await loadDatabaseState(user.id); showToast('Vérification NNI enregistrée.'); }
   };
 
-  const isHeaderlessTab = ['browse', 'messages', 'settings'].includes(currentTab);
+  const isHeaderlessTab = ['browse', 'messages', 'settings', 'requests', 'profile-detail'].includes(currentTab);
 
   return (
     <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] flex flex-col font-body">
-      {toastMessage && <div className="fixed top-20 right-4 left-4 sm:left-auto sm:right-6 z-50 bg-[#0F5C4D] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn border border-[#8BAE9F]/40"><span className="material-symbols-outlined text-[#C9A45C]">check_circle</span><span className="font-display text-xs sm:text-sm font-semibold">{toastMessage}</span></div>}
-      {currentTab === 'auth' ? <AuthPage initialMode={authMode} onBack={() => setCurrentTab('landing')} onSuccess={handleAuthSuccess} /> : currentTab === 'onboarding' ? <OnboardingPage userName={registeredUserData.name || user.name} userRole={registeredUserData.role || user.role} userPhone={registeredUserData.phone || user.phone} onComplete={handleOnboardingComplete} onCancel={() => setCurrentTab('dashboard')} /> : currentTab === 'landing' ? <LandingView onEnterApp={() => setCurrentTab('dashboard')} onOpenAuth={handleOpenAuth} onNavigateTab={setCurrentTab} /> : <>
-        <Sidebar currentTab={currentTab} onSelectTab={setCurrentTab} user={user} onOpenAuth={handleOpenAuth} onLogout={handleLogout} unreadCount={0} />
-        {!isHeaderlessTab && (
-          <MobileHeader user={user} onSelectTab={setCurrentTab} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} />
-        )}
-        {mobileMenuOpen && <div className="md:hidden fixed inset-0 z-50 bg-[#211E1A]/60 backdrop-blur-sm flex justify-end"><div className="w-4/5 max-w-xs bg-[#FAF8F2] h-full p-6 flex flex-col justify-between shadow-2xl"><div><div className="flex justify-between items-center pb-6 border-b border-[#E8E3D7] mb-6"><NasibaLogo size="sm" /><button onClick={() => setMobileMenuOpen(false)} className="p-1 text-[#7D766C]"><span className="material-symbols-outlined">close</span></button></div><nav className="space-y-1.5">{[['dashboard','Tableau de bord','dashboard'],['browse','Parcourir','search'],['imam','Imam Oumar IA','auto_awesome'],['messages','Messages','chat_bubble'],['verification','Vérification Wali','verified_user'],['settings','Paramètres','settings']].map(([id,label,icon]) => <button key={id} onClick={() => { setCurrentTab(id as TabType); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-display text-sm font-semibold text-left ${currentTab === id ? 'bg-[#8BAE9F]/20 text-[#0F5C4D]' : 'text-[#575147] hover:bg-[#8BAE9F]/10'}`}><span className="material-symbols-outlined text-lg">{icon}</span>{label}</button>)}</nav></div><button onClick={handleLogout} className="w-full border border-[#E8E3D7] bg-white text-[#575147] font-display font-semibold py-2.5 rounded-xl text-xs">Se déconnecter</button></div></div>}
-        <main className={`flex-1 md:ml-64 px-3.5 sm:px-8 pb-28 md:pb-12 min-h-screen ${
-          isHeaderlessTab ? 'pt-[max(0.75rem,env(safe-area-inset-top))] md:pt-6' : 'pt-16 md:pt-10'
-        }`}>
-          {currentTab === 'dashboard' && (
-            <DashboardView
+      {toastMessage && (
+        <div className="fixed top-20 right-4 left-4 sm:left-auto sm:right-6 z-50 bg-[#0F5C4D] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn border border-[#8BAE9F]/40">
+          <span className="material-symbols-outlined text-[#C9A45C]">check_circle</span>
+          <span className="font-display text-xs sm:text-sm font-semibold">{toastMessage}</span>
+        </div>
+      )}
+
+      {currentTab === 'auth' ? (
+        <AuthPage initialMode={authMode} onBack={() => setCurrentTab('landing')} onSuccess={handleAuthSuccess} />
+      ) : currentTab === 'onboarding' ? (
+        <OnboardingPage
+          userName={registeredUserData.name || user.name}
+          userRole={registeredUserData.role || user.role}
+          userPhone={registeredUserData.phone || user.phone}
+          onComplete={handleOnboardingComplete}
+          onCancel={() => setCurrentTab('dashboard')}
+        />
+      ) : currentTab === 'landing' ? (
+        <LandingView onEnterApp={() => setCurrentTab('dashboard')} onOpenAuth={handleOpenAuth} onNavigateTab={setCurrentTab} />
+      ) : (
+        <>
+          <Sidebar
+            currentTab={currentTab}
+            onSelectTab={setCurrentTab}
+            user={user}
+            onOpenAuth={handleOpenAuth}
+            onLogout={handleLogout}
+            unreadCount={0}
+            pendingRequestsCount={totalPendingRequestsCount}
+          />
+
+          {!isHeaderlessTab && (
+            <MobileHeader
               user={user}
-              recommendedProfiles={profiles.filter((p) => p.photoUrl && p.userId !== user.id && p.gender !== user.gender)}
-              favoriteProfiles={favoriteProfiles}
-              favoriteProfileIds={favoriteProfileIds}
-              fansCount={userFansCount}
-              onSelectProfile={setSelectedProfile}
-              onNavigateToTab={setCurrentTab}
-              onTogglePhotoBlurring={() => {
-                const next = !user.photoBlurringActive;
-                try {
-                  localStorage.setItem('nassib_photo_blur', String(next));
-                } catch {}
-                setUser((u) => ({ ...u, photoBlurringActive: next }));
-                showToast(next ? 'Mode Floutage activé : photos protégées.' : 'Mode Floutage désactivé.');
-              }}
-              onToggleFavorite={handleToggleFavorite}
+              onSelectTab={setCurrentTab}
+              onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)}
             />
           )}
-          {currentTab === 'browse' && <BrowseView user={user} profiles={profiles} onSelectProfile={setSelectedProfile} onRequestAccess={handleRequestPhotoAccess} favoriteProfileIds={favoriteProfileIds} onToggleFavorite={handleToggleFavorite} />}
-          {currentTab === 'imam' && <ImamChatView user={user} />}
-          {currentTab === 'messages' && <MessagesView user={user} conversations={conversations} activeMessages={messages} activeConvId={activeConvId} onSelectConversation={setActiveConvId} onSendMessage={handleSendMessage} />}
-          {currentTab === 'verification' && <VerificationView user={user} onUpdateWaliInfo={handleUpdateWaliInfo} onUploadNNI={handleUploadNNI} />}
-          {currentTab === 'settings' && (
-            <SettingsView
-              user={user}
-              profile={currentUserProfile}
-              onUpdateUser={handleUpdateUser}
-              onUpdateProfile={async (updatedProfile) => {
-                if (!user.id) return;
-                const existing = await getMyProfile(user.id);
-                const baseProfile = existing || {
-                  userId: user.id,
-                  name: user.name || 'Membre',
-                  gender: user.gender || 'female',
-                  photoUrl: user.photoUrl || '',
-                  age: 25,
-                  city: 'Niamey',
-                  maritalStatus: 'Célibataire',
-                };
-                const saved = await saveMyProfile(user.id, { ...baseProfile, ...updatedProfile });
-                if (saved) {
-                  setCurrentUserProfile(saved);
-                  const account = getCurrentUserSession();
-                  if (account) setUser((prev) => accountToUser(account, saved, prev.photoBlurringActive));
-                  await loadDatabaseState(user.id);
-                  showToast('Profil mis à jour avec succès.');
-                }
-              }}
-              onNavigateTab={setCurrentTab}
-              onLogout={handleLogout}
-            />
+
+          {mobileMenuOpen && (
+            <div className="md:hidden fixed inset-0 z-50 bg-[#211E1A]/60 backdrop-blur-sm flex justify-end">
+              <div className="w-4/5 max-w-xs bg-[#FAF8F2] h-full p-6 flex flex-col justify-between shadow-2xl">
+                <div>
+                  <div className="flex justify-between items-center pb-6 border-b border-[#E8E3D7] mb-6">
+                    <NasibaLogo size="sm" />
+                    <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-[#7D766C]">
+                      <span className="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                  <nav className="space-y-1.5">
+                    {[
+                      ['dashboard', 'Tableau de bord', 'dashboard'],
+                      ['browse', 'Parcourir', 'search'],
+                      ['requests', 'Demandes', 'mark_email_unread'],
+                      ['messages', 'Messages', 'chat_bubble'],
+                      ['imam', 'Imam Oumar IA', 'auto_awesome'],
+                      ['verification', 'Vérification Wali', 'verified_user'],
+                      ['settings', 'Paramètres', 'settings'],
+                    ].map(([id, label, icon]) => (
+                      <button
+                        key={id}
+                        onClick={() => {
+                          setCurrentTab(id as TabType);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-display text-sm font-semibold text-left ${
+                          currentTab === id ? 'bg-[#8BAE9F]/20 text-[#0F5C4D]' : 'text-[#575147] hover:bg-[#8BAE9F]/10'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-lg">{icon}</span>
+                        <span className="flex-1">{label}</span>
+                        {id === 'requests' && totalPendingRequestsCount > 0 && (
+                          <span className="bg-[#0F5C4D] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            {totalPendingRequestsCount}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full border border-[#E8E3D7] bg-white text-[#575147] font-display font-semibold py-2.5 rounded-xl text-xs"
+                >
+                  Se déconnecter
+                </button>
+              </div>
+            </div>
           )}
-        </main>
-        <MobileBottomNav currentTab={currentTab} onSelectTab={setCurrentTab} unreadCount={0} />
-      </>}
-      <ProfileDetailModal profile={selectedProfile} currentUser={user} onClose={() => setSelectedProfile(null)} onStartMessage={handleStartMessageWithProfile} onRequestPhotoAccess={handleRequestPhotoAccess} isFavorited={selectedProfile ? favoriteProfileIds.includes(selectedProfile.id) : false} onToggleFavorite={handleToggleFavorite} onReport={handleReportProfile} onBlock={handleBlockProfile} />
+
+          {(() => {
+            const isMessagingProfileOpen = currentTab === 'messages' && Boolean(activeConvId);
+            const isProfileDetailOpen = currentTab === 'profile-detail' || Boolean(selectedProfile);
+            const shouldHideTabBar =
+              isMessagingProfileOpen ||
+              isProfileDetailOpen ||
+              currentTab === 'auth' ||
+              currentTab === 'onboarding';
+
+            return (
+              <>
+                <main
+                  className={`flex-1 md:ml-64 px-3.5 sm:px-8 ${
+                    isMessagingProfileOpen ? 'pb-4 md:pb-8' : 'pb-28 md:pb-12'
+                  } min-h-screen ${
+                    isHeaderlessTab ? 'pt-[max(0.75rem,env(safe-area-inset-top))] md:pt-6' : 'pt-16 md:pt-10'
+                  }`}
+                >
+                  {currentTab === 'dashboard' && (
+                    <DashboardView
+                      user={user}
+                      recommendedProfiles={(profiles || []).filter(
+                        (p) => hasUploadedPhotos(p) && p.userId !== user.id && p.gender !== user.gender
+                      )}
+                      favoriteProfiles={favoriteProfiles}
+                      favoriteProfileIds={favoriteProfileIds}
+                      fansCount={userFansCount}
+                      onSelectProfile={(profile) => {
+                        setReturnTab('dashboard');
+                        setSelectedProfile(profile);
+                        setCurrentTab('profile-detail');
+                      }}
+                      onNavigateToTab={setCurrentTab}
+                      onTogglePhotoBlurring={handleTogglePhotoBlurring}
+                      onToggleFavorite={handleToggleFavorite}
+                    />
+                  )}
+
+                  {currentTab === 'browse' && (
+                    <BrowseView
+                      user={user}
+                      profiles={profiles}
+                      onSelectProfile={(profile) => {
+                        setReturnTab('browse');
+                        setSelectedProfile(profile);
+                        setCurrentTab('profile-detail');
+                      }}
+                      onRequestAccess={handleRequestPhotoAccess}
+                      favoriteProfileIds={favoriteProfileIds}
+                      onToggleFavorite={handleToggleFavorite}
+                      approvedPhotoIds={approvedPhotoIds}
+                      contactRelationshipMap={contactRelationshipMap}
+                      onSendContactRequest={handleOpenContactModal}
+                    />
+                  )}
+
+                  {currentTab === 'profile-detail' && selectedProfile && (
+                    <ProfileDetailView
+                      profile={selectedProfile}
+                      currentUser={user}
+                      onBack={() => {
+                        setCurrentTab(returnTab);
+                        setSelectedProfile(null);
+                      }}
+                      onStartMessage={handleStartMessageWithProfile}
+                      onSendContactRequest={handleOpenContactModal}
+                      onRequestPhotoAccess={handleRequestPhotoAccess}
+                      contactState={contactRelationshipMap[selectedProfile.id] || 'NO_REQUEST'}
+                      photoAccessState={photoAccessMap[selectedProfile.id] || 'NO_REQUEST'}
+                      conversationId={
+                        conversations.find(
+                          (c) =>
+                            c.candidateId === selectedProfile.id || c.requesterId === selectedProfile.id
+                        )?.id
+                      }
+                      onAcceptContactRequest={async (convId) => {
+                        await handleRespondContact(convId, 'accepted');
+                      }}
+                      onRejectContactRequest={async (convId) => {
+                        await handleRespondContact(convId, 'rejected');
+                      }}
+                      onOpenConversation={(convId) => {
+                        setActiveConvId(convId);
+                        setSelectedProfile(null);
+                        setCurrentTab('messages');
+                      }}
+                      isFavorited={favoriteProfileIds.includes(selectedProfile.id)}
+                      onToggleFavorite={handleToggleFavorite}
+                      onReport={handleReportProfile}
+                      onBlock={handleBlockProfile}
+                      onAcceptContact={async (profileId) => {
+                        const conv = conversations.find(
+                          (c) =>
+                            (c.candidateId === profileId || c.requesterId === profileId) &&
+                            c.status === 'pending'
+                        );
+                        if (conv) await handleRespondContact(conv.id, 'accepted');
+                      }}
+                      onRejectContact={async (profileId) => {
+                        const conv = conversations.find(
+                          (c) =>
+                            (c.candidateId === profileId || c.requesterId === profileId) &&
+                            c.status === 'pending'
+                        );
+                        if (conv) await handleRespondContact(conv.id, 'rejected');
+                      }}
+                    />
+                  )}
+
+                  {currentTab === 'requests' && (
+                    <RequestsView
+                      user={user}
+                      conversations={conversations}
+                      contactRequests={pendingContactRequests}
+                      sentContactRequests={sentPendingContactRequests}
+                      receivedPhotoRequests={receivedPhotoRequests}
+                      sentPhotoRequests={sentPhotoRequests}
+                      profiles={profiles}
+                      onAcceptContact={(id) => handleRespondContact(id, 'accepted')}
+                      onRejectContact={(id) => handleRespondContact(id, 'rejected')}
+                      onAcceptPhotoRequest={(id) => handleRespondPhotoRequest(id, 'approved')}
+                      onRejectPhotoRequest={(id) => handleRespondPhotoRequest(id, 'rejected')}
+                      onViewProfile={(profileId) => {
+                        setReturnTab('requests');
+                        const found = profiles.find((p) => p.id === profileId);
+                        if (found) {
+                          setSelectedProfile(found);
+                          setCurrentTab('profile-detail');
+                        }
+                      }}
+                      onOpenConversation={(convId) => {
+                        setActiveConvId(convId);
+                        setCurrentTab('messages');
+                      }}
+                    />
+                  )}
+
+                  {currentTab === 'imam' && <ImamChatView user={user} />}
+
+                  {currentTab === 'messages' && (
+                    <MessagesView
+                      user={user}
+                      conversations={conversations}
+                      activeMessages={messages}
+                      activeConvId={activeConvId}
+                      onSelectConversation={setActiveConvId}
+                      onSendMessage={handleSendMessage}
+                      onAcceptContact={(id) => handleRespondContact(id, 'accepted')}
+                      onRejectContact={(id) => handleRespondContact(id, 'rejected')}
+                      onOpenProfile={(profileId) => {
+                        setReturnTab('messages');
+                        const found = profiles.find((p) => p.id === profileId);
+                        if (found) {
+                          setSelectedProfile(found);
+                          setCurrentTab('profile-detail');
+                        } else {
+                          getProfileById(profileId).then((p) => {
+                            if (p) {
+                              setSelectedProfile(p);
+                              setCurrentTab('profile-detail');
+                            }
+                          });
+                        }
+                      }}
+                    />
+                  )}
+
+                  {currentTab === 'verification' && (
+                    <VerificationView
+                      user={user}
+                      onUpdateWaliInfo={handleUpdateWaliInfo}
+                      onUploadNNI={handleUploadNNI}
+                    />
+                  )}
+
+                  {currentTab === 'settings' && (
+                    <SettingsView
+                      user={user}
+                      profile={currentUserProfile}
+                      onUpdateUser={handleUpdateUser}
+                      onUpdateProfile={async (updatedProfile) => {
+                        if (!user.id) return;
+                        const existing = await getMyProfile(user.id);
+                        const baseProfile = existing || {
+                          userId: user.id,
+                          name: user.name || 'Membre',
+                          gender: user.gender || 'female',
+                          photoUrl: user.photoUrl || '',
+                          age: 25,
+                          city: 'Niamey',
+                          maritalStatus: 'Célibataire',
+                        };
+                        const saved = await saveMyProfile(user.id, { ...baseProfile, ...updatedProfile });
+                        if (saved) {
+                          setCurrentUserProfile(saved);
+                          const account = getCurrentUserSession();
+                          if (account) setUser((prev) => accountToUser(account, saved, prev.photoBlurringActive));
+                          await loadDatabaseState(user.id);
+                          showToast('Profil mis à jour avec succès.');
+                        }
+                      }}
+                      onNavigateTab={setCurrentTab}
+                      onLogout={handleLogout}
+                    />
+                  )}
+                </main>
+
+                {!shouldHideTabBar && (
+                  <MobileBottomNav
+                    currentTab={currentTab}
+                    onSelectTab={setCurrentTab}
+                    unreadCount={0}
+                    pendingRequestsCount={totalPendingRequestsCount}
+                  />
+                )}
+              </>
+            );
+          })()}
+        </>
+      )}
+
+      {/* Quick modal fallback when not in full-page mode */}
+      {selectedProfile && currentTab !== 'profile-detail' && (
+        <ProfileDetailModal
+          profile={selectedProfile}
+          currentUser={user}
+          onClose={() => setSelectedProfile(null)}
+          onStartMessage={handleStartMessageWithProfile}
+          onRequestPhotoAccess={handleRequestPhotoAccess}
+          isFavorited={favoriteProfileIds.includes(selectedProfile.id)}
+          onToggleFavorite={handleToggleFavorite}
+          onReport={handleReportProfile}
+          onBlock={handleBlockProfile}
+        />
+      )}
+
+      {/* First Contact Request Modal */}
+      {contactModalProfile && (
+        <ContactRequestModal
+          targetProfile={contactModalProfile}
+          isOpen={Boolean(contactModalProfile)}
+          onClose={() => setContactModalProfile(null)}
+          onSend={handleConfirmSendContactRequest}
+        />
+      )}
     </div>
   );
 }
