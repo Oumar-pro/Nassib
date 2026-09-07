@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, TabType, Profile, calculateProfileCompletion, isProfileVisible } from '../../types';
+import { User, TabType, Profile, calculateProfileCompletion, isProfileVisible, isProfileFullyComplete } from '../../types';
 import { NassibLogoIcon } from '../NasibaLogo';
 
 interface SettingsViewProps {
@@ -70,6 +70,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   // Account state
   const [name, setName] = useState<string>(user.name || '');
+  const [age, setAge] = useState<number | ''>(
+    typeof profile?.age === 'number' && profile.age >= 18
+      ? profile.age
+      : (user.age && user.age >= 18 ? user.age : '')
+  );
   const [email, setEmail] = useState<string>(user.email || '');
   const [phone, setPhone] = useState<string>(user.phone || '');
   const [gender, setGender] = useState<'female' | 'male'>(user.gender || 'female');
@@ -105,6 +110,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // Synchronize when profile or user changes
   useEffect(() => {
     if (profile) {
+      if (typeof profile.age === 'number' && profile.age >= 18) setAge(profile.age);
       if (profile.bio) setBio(profile.bio);
       if (profile.partnerCriteria) setPartnerCriteria(profile.partnerCriteria);
       if (profile.height) setHeight(profile.height);
@@ -134,17 +140,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const effectivePhotos = (photos || []).filter((p) => Boolean(p) && p.trim() !== '');
   const primaryPhoto = effectivePhotos[0] || user.photoUrl || '';
 
+  const effectiveAge = typeof age === 'number' && age >= 18
+    ? age
+    : (typeof profile?.age === 'number' && profile.age >= 18 ? profile.age : (user.age && user.age >= 18 ? user.age : undefined));
+
   const draftProfile: Partial<Profile> = {
     ...profile,
     name,
     gender,
+    age: effectiveAge,
     photoUrl: primaryPhoto,
     photos: effectivePhotos,
     bio,
     partnerCriteria,
     presentation: partnerCriteria,
-    height: typeof height === 'number' ? height : undefined,
-    weight: typeof weight === 'number' ? weight : undefined,
+    height: typeof height === 'number' && height > 0 ? height : undefined,
+    weight: typeof weight === 'number' && weight > 0 ? weight : undefined,
     ethnicity,
     originCity,
     hijabStatus,
@@ -155,9 +166,64 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     city,
     maritalStatus,
     education,
+    email,
+    phone,
+    waliReference: waliName ? `${waliName}${waliPhone ? ` (${waliPhone})` : ''}` : (user.waliInfo?.name || ''),
+    isWaliApproved: user.isWaliApproved || Boolean(waliName && (gender !== 'female' || Boolean(waliPhone && waliPhone.trim().length >= 8))),
   };
 
-  const completionPercentage = calculateProfileCompletion(draftProfile);
+  // Completion statuses - Vérification rigoureuse : chaque information doit être renseignée
+  const isPhotoComplete = effectivePhotos.length > 0;
+  const isPersonalComplete = Boolean(
+    name && name.trim().length >= 2 &&
+    effectiveAge && effectiveAge >= 18 &&
+    gender && (gender === 'female' || gender === 'male') &&
+    typeof height === 'number' && height > 0 &&
+    typeof weight === 'number' && weight > 0 &&
+    ethnicity && ethnicity.trim().length > 0 &&
+    originCity && originCity.trim().length > 0 &&
+    maritalStatus && maritalStatus.trim().length > 0
+  );
+  const isLocationComplete = Boolean(
+    city && city.trim().length > 0 &&
+    profession && profession.trim().length > 0 &&
+    education && education.trim().length > 0
+  );
+  const isMarriageComplete = Boolean(
+    partnerCriteria && partnerCriteria.trim().length >= 15 &&
+    selectedValues && selectedValues.length > 0 &&
+    selectedDealBreakers && selectedDealBreakers.length > 0
+  );
+  const isPersonalityComplete = Boolean(bio && bio.trim().length >= 20);
+  const isReligionComplete = Boolean(
+    religiousPractice && religiousPractice.trim().length > 0 &&
+    hijabStatus && hijabStatus.trim().length > 0
+  );
+  const isWaliComplete = gender === 'female'
+    ? Boolean(user.isWaliApproved || (waliName && waliName.trim().length >= 2 && waliPhone && waliPhone.trim().length >= 8))
+    : Boolean(user.isWaliApproved || (waliName && waliName.trim().length > 0) || true);
+  const isSecurityComplete = Boolean(
+    email && email.trim().length > 0 &&
+    phone && phone.trim().length > 0
+  );
+
+  const areAllSectionsComplete =
+    isPhotoComplete &&
+    isPersonalComplete &&
+    isLocationComplete &&
+    isMarriageComplete &&
+    isPersonalityComplete &&
+    isReligionComplete &&
+    isWaliComplete &&
+    isSecurityComplete;
+
+  const rawCompletion = calculateProfileCompletion(draftProfile);
+  // RÈGLE STRICTE : Avant de dire que le profil est complet à 100%,
+  // vérifier rigoureusement que TOUTES les données et informations sont bien renseignées.
+  const completionPercentage = areAllSectionsComplete && isProfileFullyComplete(draftProfile)
+    ? 100
+    : Math.min(95, rawCompletion);
+
   const isVisible = isProfileVisible(draftProfile);
 
   const showSaved = (text: string) => {
@@ -296,21 +362,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         city,
         maritalStatus,
         education,
-        age: typeof profile?.age === 'number' && profile.age >= 18 ? profile.age : 25,
+        age: effectiveAge || 25,
       });
     }
 
     showSaved(customNotice || 'Modifications enregistrées');
   };
-
-  // Completion statuses
-  const isPhotoComplete = effectivePhotos.length > 0;
-  const isPersonalComplete = Boolean(name && (ethnicity || originCity || height || maritalStatus));
-  const isLocationComplete = Boolean(city && profession && education);
-  const isMarriageComplete = Boolean(partnerCriteria && partnerCriteria.trim().length >= 15 && selectedValues.length > 0);
-  const isPersonalityComplete = Boolean(bio && bio.trim().length >= 20);
-  const isReligionComplete = Boolean(religiousPractice && (gender !== 'female' || Boolean(hijabStatus)));
-  const isWaliComplete = Boolean(user.isWaliApproved || user.waliInfo?.name || waliName);
 
   // Extract first name for greeting
   const firstName = name ? name.split(' ')[0] : 'Ousmane';
@@ -320,58 +377,58 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     {
       id: 'photo' as const,
       title: 'Photo de profil',
-      subtitle: isPhotoComplete ? `${effectivePhotos.length} photo(s) ajoutée(s)` : 'À compléter',
+      subtitle: isPhotoComplete ? `${effectivePhotos.length} photo(s) ajoutée(s)` : 'Au moins 1 photo requise',
       icon: 'photo_camera',
       isComplete: isPhotoComplete,
     },
     {
       id: 'personal' as const,
       title: 'Informations personnelles',
-      subtitle: 'Prénom, nom, âge, situation...',
+      subtitle: isPersonalComplete ? 'Nom, âge, taille, poids, ethnie et origine renseignés' : 'Nom, âge, taille, poids, ethnie, origine...',
       icon: 'person',
       isComplete: isPersonalComplete,
     },
     {
       id: 'location' as const,
       title: 'Localisation & Profession',
-      subtitle: 'Où tu vis et ce que tu fais',
+      subtitle: isLocationComplete ? 'Ville, profession et niveau d’études renseignés' : 'Ville, métier, diplôme...',
       icon: 'location_on',
       isComplete: isLocationComplete,
     },
     {
       id: 'marriage' as const,
       title: 'Vision du mariage',
-      subtitle: 'Ce que tu recherches da...',
+      subtitle: isMarriageComplete ? 'Critères, valeurs et lignes rouges renseignés' : 'Ce que tu recherches, valeurs et lignes rouges...',
       icon: 'favorite',
       isComplete: isMarriageComplete,
     },
     {
       id: 'personality' as const,
       title: 'Personnalité',
-      subtitle: 'Tes centres d\'intérêt et traits d...',
+      subtitle: isPersonalityComplete ? 'Biographie de présentation renseignée' : 'Biographie & traits de caractère...',
       icon: 'groups',
       isComplete: isPersonalityComplete,
     },
     {
       id: 'religion' as const,
       title: 'Pratique religieuse',
-      subtitle: 'Ta pratique et tes reconnaissanc...',
+      subtitle: isReligionComplete ? 'Pratique et tenue vestimentaire renseignées' : 'Pratique religieuse, tenue / hijab...',
       icon: 'menu_book',
       isComplete: isReligionComplete,
     },
     {
       id: 'wali' as const,
       title: 'Tuteur légal (Wali)',
-      subtitle: isWaliComplete ? 'Tuteur renseigné & encadrement' : 'Ajouter les coordonnées du Wali',
+      subtitle: isWaliComplete ? (user.isWaliApproved ? 'Tuteur validé par l\'équipe' : 'Coordonnées du Wali renseignées') : (gender === 'female' ? 'Coordonnées du Wali obligatoires' : 'Tuteur ou référent familial'),
       icon: 'shield',
       isComplete: isWaliComplete,
     },
     {
       id: 'security' as const,
       title: 'Sécurité & Paramètres du Compte',
-      subtitle: 'Floutage des photos, coordonnées...',
+      subtitle: isSecurityComplete ? 'Email et téléphone renseignés' : 'Email, téléphone, coordonnées...',
       icon: 'manage_accounts',
-      isComplete: true,
+      isComplete: isSecurityComplete,
     },
   ];
 
@@ -518,15 +575,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-1">
-                <label className="font-display text-xs font-bold text-[#211E1A]">Nom complet</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Ousmane Moussa"
-                  className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3.5 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="font-display text-xs font-bold text-[#211E1A]">Nom complet</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Ex: Ousmane Moussa"
+                    className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3.5 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-display text-xs font-bold text-[#211E1A]">Âge (ans)</label>
+                  <input
+                    type="number"
+                    min={18}
+                    max={99}
+                    value={age}
+                    onChange={(e) => setAge(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="Ex: 26"
+                    className="w-full h-11 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3.5 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -1164,11 +1236,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               else if (!isPersonalComplete) setActiveSection('personal');
               else if (!isLocationComplete) setActiveSection('location');
               else if (!isMarriageComplete) setActiveSection('marriage');
+              else if (!isPersonalityComplete) setActiveSection('personality');
+              else if (!isReligionComplete) setActiveSection('religion');
+              else if (!isWaliComplete) setActiveSection('wali');
+              else if (!isSecurityComplete) setActiveSection('security');
               else setActiveSection('photo');
             }}
             className="w-full text-center text-xs text-white/80 hover:text-white mt-3 font-medium transition-colors cursor-pointer"
           >
-            Cliquez pour compléter
+            {completionPercentage === 100 ? 'Profil 100% complet et vérifié' : 'Cliquez pour compléter les informations manquantes'}
           </button>
         </div>
       </div>
@@ -1178,14 +1254,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#EAF5F2] text-[#0F5C4D] flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-xl">checklist</span>
+              <span className="material-symbols-outlined text-xl">
+                {completionPercentage === 100 ? 'verified' : 'checklist'}
+              </span>
             </div>
             <div>
               <h2 className="font-display font-bold text-sm sm:text-base text-[#211E1A]">
-                Complète ton profil
+                {completionPercentage === 100 ? 'Profil 100% complété' : 'Complète ton profil'}
               </h2>
               <p className="font-body text-xs text-[#575147] line-clamp-1">
-                Atteins 60 % pour débloquer ta sélection de profils choisis pour toi.
+                {completionPercentage === 100
+                  ? 'Toutes vos données et informations sont dûment renseignées.'
+                  : 'Renseigne l\'intégralité de tes informations pour atteindre 100 %.'}
               </p>
             </div>
           </div>
