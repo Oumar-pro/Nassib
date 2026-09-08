@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Profile, User } from '../../types';
+import SafeImage from '../Common/SafeImage';
 
 interface ProfileDetailModalProps {
   profile: Profile | null;
@@ -165,9 +166,10 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
           <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
             <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-[#0F5C4D] shrink-0 bg-[#FAF8F2] flex items-center justify-center">
               {profile.photoUrl ? (
-                <img
+                <SafeImage
                   src={profile.photoUrl}
                   alt={profile.name}
+                  fallbackName={profile.name}
                   className={`w-full h-full object-cover transition-all duration-300 ${
                     profile.photoPrivate && photoAccessState !== 'ALLOWED' ? 'blur-xl scale-110' : ''
                   }`}
@@ -345,9 +347,10 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
               <div className="grid grid-cols-3 gap-2">
                 {profile.photos.filter((p) => Boolean(p) && p.trim() !== '').map((photoUrl, idx) => (
                   <div key={idx} className="h-32 rounded-2xl overflow-hidden border border-[#E8E3D7] bg-[#FAF8F2]">
-                    <img
+                    <SafeImage
                       src={photoUrl}
                       alt={`Photo ${idx + 1}`}
+                      fallbackName={profile.name}
                       className={`w-full h-full object-cover ${
                         profile.photoPrivate ? 'blur-md' : ''
                       }`}

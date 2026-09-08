@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, TabType, Profile, calculateProfileCompletion, isProfileVisible, isProfileFullyComplete } from '../../types';
 import { NassibLogoIcon } from '../NasibaLogo';
 import { SubscriptionDetailView } from '../Subscription/SubscriptionDetailView';
+import { compressAndOptimizeImage } from '../../lib/imageOptimizer';
 
 interface SettingsViewProps {
   user: User;
@@ -233,13 +234,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setTimeout(() => setSavedNotice(null), 3000);
   };
 
-  const handlePhotoFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFileChange = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
+    try {
+      const dataUrl = await compressAndOptimizeImage(file, {
+        maxWidth: 1080,
+        maxHeight: 1080,
+        quality: 0.82,
+      });
+
       if (dataUrl) {
         const nextPhotos = [...photos];
         nextPhotos[index] = dataUrl;
@@ -259,8 +264,33 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         }
         showSaved('Photo mise à jour avec succès');
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.warn('Erreur compression image:', err);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        if (dataUrl) {
+          const nextPhotos = [...photos];
+          nextPhotos[index] = dataUrl;
+          setPhotos(nextPhotos);
+
+          const activePhotos = nextPhotos.filter((p) => Boolean(p) && p.trim() !== '');
+          const newPrimary = activePhotos[0] || '';
+          onUpdateUser({
+            photos: activePhotos,
+            photoUrl: newPrimary,
+          });
+          if (onUpdateProfile) {
+            onUpdateProfile({
+              photos: activePhotos,
+              photoUrl: newPrimary,
+            });
+          }
+          showSaved('Photo mise à jour avec succès');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleRemovePhoto = (index: number) => {

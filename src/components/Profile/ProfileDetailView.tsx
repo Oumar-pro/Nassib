@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Profile, User, ContactRelationshipState, PhotoAccessRelationshipState } from '../../types';
+import SafeImage from '../Common/SafeImage';
 
 interface ProfileDetailViewProps {
   profile: Profile;
@@ -203,9 +204,10 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
           {/* Main Photo with blur enforcement */}
           <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-3xl overflow-hidden border-2 border-[#0F5C4D]/20 shrink-0 bg-[#FAF8F2] flex items-center justify-center shadow-xs">
             {profile.photoUrl ? (
-              <img
+              <SafeImage
                 src={profile.photoUrl}
                 alt={profile.name}
+                fallbackName={profile.name}
                 className={`w-full h-full object-cover transition-all duration-500 ${
                   isPhotoBlurred ? 'blur-2xl scale-125 select-none pointer-events-none' : ''
                 }`}

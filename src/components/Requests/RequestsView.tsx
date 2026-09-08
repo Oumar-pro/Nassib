@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Conversation, Profile, User } from '../../types';
+import SafeImage from '../Common/SafeImage';
 
 export interface PhotoRequestItem {
   id: string;
@@ -238,9 +239,10 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
                         className="w-14 h-14 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-90"
                       >
                         {conv.participantAvatar ? (
-                          <img
+                          <SafeImage
                             src={conv.participantAvatar}
                             alt={conv.participantName}
+                            fallbackName={conv.participantName}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -336,9 +338,10 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
                         className="w-14 h-14 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-90"
                       >
                         {req.requester?.photo_url ? (
-                          <img
+                          <SafeImage
                             src={req.requester.photo_url}
                             alt={req.requester.name}
+                            fallbackName={req.requester.name}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -453,9 +456,10 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
                         className="w-14 h-14 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-90"
                       >
                         {conv.participantAvatar ? (
-                          <img
+                          <SafeImage
                             src={conv.participantAvatar}
                             alt={conv.participantName}
+                            fallbackName={conv.participantName}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -530,9 +534,10 @@ export const RequestsView: React.FC<RequestsViewProps> = ({
                           className="w-14 h-14 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-90"
                         >
                           {req.target?.photo_url ? (
-                            <img
+                            <SafeImage
                               src={req.target.photo_url}
                               alt={targetName}
+                              fallbackName={targetName}
                               className="w-full h-full object-cover"
                             />
                           ) : (

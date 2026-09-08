@@ -5,6 +5,7 @@ import { OnboardingData } from './OnboardingModal';
 import { PremiumSelect } from '../Common/PremiumSelect';
 import { PremiumDatePicker } from '../Common/PremiumDatePicker';
 import { calculateProfileCompletion } from '../../types';
+import { compressAndOptimizeImage } from '../../lib/imageOptimizer';
 
 interface OnboardingPageProps {
   userName: string;
@@ -269,23 +270,33 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
   };
 
   // Photo handlers
-  const handlePhotoUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('La taille de la photo ne doit pas dépasser 5 Mo.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
+      try {
+        const optimized = await compressAndOptimizeImage(file, {
+          maxWidth: 1080,
+          maxHeight: 1080,
+          quality: 0.82,
+        });
         setUploadedPhotos((prev) => {
           const copy = [...prev];
-          copy[index] = result;
+          copy[index] = optimized;
           return copy;
         });
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn('Erreur compression image:', err);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const result = event.target?.result as string;
+          setUploadedPhotos((prev) => {
+            const copy = [...prev];
+            copy[index] = result;
+            return copy;
+          });
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 

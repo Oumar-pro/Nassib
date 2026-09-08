@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Message, Conversation, User } from '../../types';
 import { PaywallUpgradeModal } from '../Modals/PaywallUpgradeModal';
+import SafeImage from '../Common/SafeImage';
 
 interface MessagesViewProps {
   user: User;
@@ -231,9 +232,10 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     >
                       <div className="relative flex-shrink-0">
                         {conv.participantAvatar ? (
-                          <img
+                          <SafeImage
                             src={conv.participantAvatar}
                             alt={conv.participantName}
+                            fallbackName={conv.participantName}
                             className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-[#E8E3D7]"
                           />
                         ) : (
@@ -354,9 +356,10 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   title="Voir la fiche profil"
                 >
                   {currentConv.participantAvatar ? (
-                    <img
+                    <SafeImage
                       src={currentConv.participantAvatar}
                       alt={currentConv.participantName}
+                      fallbackName={currentConv.participantName}
                       className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover border border-[#E8E3D7] shrink-0 group-hover:ring-2 group-hover:ring-[#0F5C4D]/40 transition-all"
                     />
                   ) : (
@@ -552,9 +555,10 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   >
                     {!msg.isMine && (
                       msg.senderAvatar ? (
-                        <img
+                        <SafeImage
                           src={msg.senderAvatar}
                           alt={msg.senderName}
+                          fallbackName={msg.senderName}
                           className="w-8 h-8 rounded-xl object-cover self-end mb-1 border border-[#E8E3D7] shrink-0"
                         />
                       ) : (

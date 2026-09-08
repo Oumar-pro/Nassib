@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Profile, User } from '../../types';
 import { hasUploadedPhotos } from '../../lib/database';
+import SafeImage from '../Common/SafeImage';
 
 interface BrowseViewProps {
   user: User;
@@ -672,9 +673,10 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
                 {/* Card Image Header */}
                 <div className="relative h-64 overflow-hidden bg-[#FAF8F2] flex items-center justify-center">
                   {profile.photoUrl ? (
-                    <img
+                    <SafeImage
                       src={profile.photoUrl}
                       alt={profile.name}
+                      fallbackName={profile.name}
                       className={`w-full h-full object-cover transition-all duration-700 ${
                         isPhotoBlurred ? 'blur-xl scale-110' : 'group-hover:scale-105'
                       }`}
