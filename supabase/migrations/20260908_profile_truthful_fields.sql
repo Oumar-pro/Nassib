@@ -1,5 +1,6 @@
 -- NASSIB: align persisted profile data with the fields actually collected by onboarding.
--- This migration is intentionally additive: no existing column/table is duplicated.
+-- This migration is additive and removes the only business-profile default that could
+-- silently invent a user answer.
 
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS country text,
@@ -12,6 +13,9 @@ ALTER TABLE public.profiles
 ALTER TABLE public.profile_private
   ADD COLUMN IF NOT EXISTS birth_date date;
 
+ALTER TABLE public.profiles
+  ALTER COLUMN religion DROP DEFAULT;
+
 COMMENT ON COLUMN public.profiles.country IS 'Country of residence explicitly collected by onboarding.';
 COMMENT ON COLUMN public.profiles.neighborhood IS 'Neighborhood/commune explicitly collected by onboarding.';
 COMMENT ON COLUMN public.profiles.profession_category IS 'Professional sector explicitly collected by onboarding.';
@@ -23,5 +27,5 @@ COMMENT ON COLUMN public.profile_private.birth_date IS 'Exact date of birth coll
 CREATE INDEX IF NOT EXISTS idx_profiles_country ON public.profiles(country);
 CREATE INDEX IF NOT EXISTS idx_profiles_neighborhood ON public.profiles(neighborhood);
 
--- Existing rows cannot be safely backfilled for these fields because the old application
--- did not persist them separately. NULL therefore means genuinely unknown, rather than guessed.
+-- Existing rows are intentionally not backfilled: the old application did not persist
+-- these fields separately, so guessing them would violate data integrity.
