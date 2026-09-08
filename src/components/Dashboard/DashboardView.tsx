@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Profile, User } from '../../types';
+import { getWhoFavoritedMe } from '../../lib/database';
+import { PaywallUpgradeModal } from '../Modals/PaywallUpgradeModal';
 
 interface DashboardViewProps {
   user: User;
@@ -15,6 +17,8 @@ interface DashboardViewProps {
   photoAccessMap?: Record<string, 'NO_REQUEST' | 'PENDING' | 'ALLOWED' | 'REJECTED'>;
   hasUploadedPhoto?: boolean;
   onRequestPhotoUpload?: () => void;
+  onUpgradeToPremium?: () => void;
+  onActivateBoost?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -31,8 +35,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   photoAccessMap = {},
   hasUploadedPhoto = true,
   onRequestPhotoUpload,
+  onUpgradeToPremium,
+  onActivateBoost,
 }) => {
   const isWali = user.role === 'wali';
+  const [fansProfiles, setFansProfiles] = useState<Profile[]>([]);
+  const [paywallModalOpen, setPaywallModalOpen] = useState<boolean>(false);
+  const [paywallConfig, setPaywallConfig] = useState<{
+    title: string;
+    description: string;
+    icon: string;
+  }>({
+    title: 'Fonctionnalité Premium',
+    description: 'Passez à Premium pour débloquer cette option.',
+    icon: 'workspace_premium',
+  });
+
+  useEffect(() => {
+    if (user.isPremium) {
+      getWhoFavoritedMe().then((fans) => setFansProfiles(fans));
+    }
+  }, [user.isPremium]);
+
+  const triggerPaywall = (title: string, description: string, icon: string) => {
+    setPaywallConfig({ title, description, icon });
+    setPaywallModalOpen(true);
+  };
 
   // Real stats from database
   const stats = {
@@ -208,21 +236,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Card 4: Favoris Reçus / Mes Fans */}
-          <div className="rounded-[20px] p-4 border border-[#E8E3D7] bg-white flex flex-col justify-between hover:border-[#C9A45C]/50 transition-all shadow-2xs">
+          <div 
+            onClick={() => {
+              if (!user.isPremium) {
+                triggerPaywall(
+                  "Vois qui t'a mis en favori",
+                  "Découvre toutes les personnes qui te trouvent intéressant(e). Le plus puissant signal d'intérêt pour trouver ta future moitié.",
+                  "favorite"
+                );
+              }
+            }}
+            className="rounded-[20px] p-4 border border-[#E8E3D7] bg-white flex flex-col justify-between hover:border-[#C9A45C]/50 transition-all cursor-pointer shadow-2xs group relative"
+          >
             <div className="flex items-center justify-between mb-2">
               <div className="w-9 h-9 rounded-full bg-[#C9A45C]/20 text-[#735619] flex items-center justify-center">
                 <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>
                   favorite
                 </span>
               </div>
-              <span className="text-[#735619] font-body text-[10px] font-bold bg-[#C9A45C]/15 px-2 py-0.5 rounded-full">
-                Mes Fans
+              <span className={`font-body text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                user.isPremium ? 'bg-[#0F5C4D]/15 text-[#0F5C4D]' : 'bg-[#FEF3D6] text-[#B58500]'
+              }`}>
+                {!user.isPremium && <span className="material-symbols-outlined text-[11px]">lock</span>}
+                {user.isPremium ? 'Débloqué' : 'Mes Fans (Bloqué)'}
               </span>
             </div>
             <div>
               <p className="font-display text-2xl font-extrabold text-[#211E1A]">{actualFansCount}</p>
               <p className="font-body text-[11px] text-[#575147] font-semibold mt-0.5">Favoris Reçus</p>
-              <p className="font-body text-[10px] text-[#7D766C]">Ont aimé votre profil</p>
+              <p className="font-body text-[10px] text-[#7D766C]">
+                {user.isPremium ? 'Cliquez pour voir vos fans' : 'Débloquez avec Premium'}
+              </p>
             </div>
           </div>
 
@@ -264,6 +308,224 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <p className="font-body text-[10px] text-[#7D766C]">Affinité élevée</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* SECTION EXCLUSIVE : CE QUE PREMIUM DÉBLOQUE POUR TOI */}
+      <div className="rounded-[28px] p-6 sm:p-8 bg-gradient-to-br from-white via-[#FAF8F2] to-white border border-[#E8E3D7] shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="bg-[#FEF3D6] text-[#B58500] text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-[#FDE68A]">
+                Accélérateur de Rencontres
+              </span>
+              <span className="text-xs font-bold text-[#0F5C4D] font-display">
+                3X plus de réponses
+              </span>
+            </div>
+            <h3 className="font-serif-display text-xl sm:text-2xl font-bold text-[#211E1A]">
+              Ce que Premium débloque pour toi
+            </h3>
+            <p className="font-body text-xs sm:text-sm text-[#575147]">
+              Tout ce qui change pour trouver ta future moitié plus vite sans attendre demain
+            </p>
+          </div>
+
+          {!user.isPremium && (
+            <button
+              type="button"
+              onClick={() => onUpgradeToPremium ? onUpgradeToPremium() : onNavigateToTab('settings')}
+              className="px-4 py-2 bg-[#0F5C4D] hover:bg-[#0c4a3e] text-white font-display text-xs sm:text-sm font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <span className="material-symbols-outlined text-sm">workspace_premium</span>
+              <span>Débloquer avec Premium</span>
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {/* Card: Vois qui t'a mis en favori */}
+          <div className="rounded-2xl p-5 border border-[#E8E3D7] bg-white flex flex-col justify-between shadow-2xs relative overflow-hidden group">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#C9A45C]/15 text-[#C9A45C] flex items-center justify-center">
+                    <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      favorite
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="font-display text-base font-bold text-[#211E1A]">
+                      Vois qui t'a mis en favori
+                    </h4>
+                    <span className="font-body text-[11px] text-[#7D766C]">
+                      Le plus puissant signal d'intérêt
+                    </span>
+                  </div>
+                </div>
+
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 ${
+                  user.isPremium ? 'bg-[#0F5C4D]/10 text-[#0F5C4D]' : 'bg-[#FAF8F2] text-[#7D766C] border border-[#E8E3D7]'
+                }`}>
+                  <span className="material-symbols-outlined text-[12px]">
+                    {user.isPremium ? 'check_circle' : 'lock'}
+                  </span>
+                  <span>{user.isPremium ? 'Débloqué' : 'Bloqué'}</span>
+                </span>
+              </div>
+
+              <p className="font-body text-xs text-[#575147] mb-4 leading-relaxed">
+                Découvre toutes les personnes qui te trouvent intéressant(e). Ne laisse plus passer une opportunité réciproque.
+              </p>
+
+              {user.isPremium ? (
+                <div>
+                  {fansProfiles.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {fansProfiles.slice(0, 4).map((f) => (
+                        <div
+                          key={f.id}
+                          onClick={() => onSelectProfile(f)}
+                          className="flex items-center gap-2 p-2 rounded-xl bg-[#FAF8F2] border border-[#E8E3D7] hover:border-[#8BAE9F] cursor-pointer"
+                        >
+                          <img
+                            src={f.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                            alt={f.name}
+                            className="w-9 h-9 rounded-lg object-cover"
+                          />
+                          <div className="overflow-hidden">
+                            <p className="text-xs font-bold font-display text-[#211E1A] truncate">{f.name}</p>
+                            <p className="text-[10px] text-[#7D766C] font-body">{f.age} ans • {f.city}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl bg-[#FAF8F2] border border-dashed border-[#E8E3D7] text-center text-xs text-[#7D766C]">
+                      Dès qu'un membre vous ajoute en favori, son profil apparaîtra ici en clair.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-[#FAF8F2] border border-dashed border-[#E8E3D7] flex items-center justify-between gap-3">
+                  <div className="flex -space-x-2">
+                    <div className="w-8 h-8 rounded-full bg-slate-300 border-2 border-white blur-xs" />
+                    <div className="w-8 h-8 rounded-full bg-slate-400 border-2 border-white blur-xs" />
+                    <div className="w-8 h-8 rounded-full bg-slate-500 border-2 border-white blur-xs" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => triggerPaywall("Vois qui t'a mis en favori", "Découvre toutes les personnes qui te trouvent intéressant(e). Le plus puissant signal d'intérêt.", "favorite")}
+                    className="text-[#0F5C4D] hover:underline font-display text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Voir mes fans</span>
+                    <span className="material-symbols-outlined text-sm">lock</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Card: Découvre qui te repère */}
+          <div className="rounded-2xl p-5 border border-[#E8E3D7] bg-white flex flex-col justify-between shadow-2xs relative overflow-hidden group">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center">
+                    <span className="material-symbols-outlined text-xl">visibility</span>
+                  </div>
+                  <div>
+                    <h4 className="font-display text-base font-bold text-[#211E1A]">
+                      Découvre qui te repère
+                    </h4>
+                    <span className="font-body text-[11px] text-[#7D766C]">
+                      Visiteurs de profil
+                    </span>
+                  </div>
+                </div>
+
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 ${
+                  user.isPremium ? 'bg-[#0F5C4D]/10 text-[#0F5C4D]' : 'bg-[#FAF8F2] text-[#7D766C] border border-[#E8E3D7]'
+                }`}>
+                  <span className="material-symbols-outlined text-[12px]">
+                    {user.isPremium ? 'check_circle' : 'lock'}
+                  </span>
+                  <span>{user.isPremium ? 'Débloqué' : 'Bloqué'}</span>
+                </span>
+              </div>
+
+              <p className="font-body text-xs text-[#575147] mb-4 leading-relaxed">
+                Identifie en un clic qui consulte ton profil. Fini les doutes et les suppositions, passe à l'action.
+              </p>
+
+              {user.isPremium ? (
+                <div className="p-3 rounded-xl bg-[#FAF8F2] border border-[#E8E3D7] flex items-center justify-between">
+                  <span className="text-xs font-body text-[#575147]">
+                    <strong>{stats.profileConsultations} consultations</strong> détaillées cette semaine
+                  </span>
+                  <span className="text-[#0F5C4D] font-display text-xs font-bold">Actif en direct</span>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-[#FAF8F2] border border-dashed border-[#E8E3D7] flex items-center justify-between gap-3">
+                  <span className="text-xs text-[#7D766C] font-body">
+                    {stats.profileConsultations > 0 ? `${stats.profileConsultations} personnes ont consulté votre profil` : 'Plusieurs membres vous ont repéré(e)'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => triggerPaywall("Découvre qui te repère", "Identifie en un clic qui visite ton profil. Fini les doutes.", "visibility")}
+                    className="text-[#0F5C4D] hover:underline font-display text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Débloquer</span>
+                    <span className="material-symbols-outlined text-sm">lock</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Boosts inclus banner */}
+        <div className="rounded-2xl p-4 sm:p-5 bg-gradient-to-r from-[#211E1A] to-[#342F28] text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#C9A45C] text-[#211E1A] flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-xl">bolt</span>
+            </div>
+            <div>
+              <p className="font-display text-sm font-bold text-white flex items-center gap-2">
+                <span>Boosts de visibilité en tête</span>
+                <span className="bg-[#C9A45C]/20 text-[#C9A45C] text-[10px] font-bold px-2 py-0.5 rounded-full border border-[#C9A45C]/30">
+                  {user.isPremium ? `${user.boostsCount || 3} Boosts restants` : '0 Boost disponible'}
+                </span>
+              </p>
+              <p className="font-body text-xs text-[#FAF8F2]/80 mt-0.5">
+                Propulse ton profil en 1ère position pendant 24h. Plus de visibilité, plus de chances.
+              </p>
+            </div>
+          </div>
+
+          {user.isPremium ? (
+            <button
+              type="button"
+              onClick={async () => {
+                if (onActivateBoost) {
+                  onActivateBoost();
+                } else {
+                  triggerPaywall("Boost activé", "Votre profil est maintenant propulsé en tête des résultats pendant 24h.", "bolt");
+                }
+              }}
+              className="px-4 py-2 bg-[#C9A45C] hover:bg-[#b8934b] text-[#211E1A] font-display text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+            >
+              Activer un Boost 24h
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => triggerPaywall("Boosts inclus avec Premium", "+1 à +10 Boosts offerts selon la formule. Fais monter ton profil tout en haut des résultats !", "bolt")}
+              className="px-4 py-2 bg-[#C9A45C] hover:bg-[#b8934b] text-[#211E1A] font-display text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+            >
+              Obtenir des Boosts
+            </button>
+          )}
         </div>
       </div>
 
@@ -598,6 +860,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
         </div>
       </div>
+
+      <PaywallUpgradeModal
+        isOpen={paywallModalOpen}
+        onClose={() => setPaywallModalOpen(false)}
+        onUpgrade={() => {
+          setPaywallModalOpen(false);
+          if (onUpgradeToPremium) onUpgradeToPremium();
+          else onNavigateToTab('settings');
+        }}
+        featureTitle={paywallConfig.title}
+        featureDescription={paywallConfig.description}
+        featureIcon={paywallConfig.icon}
+      />
     </div>
   );
 };

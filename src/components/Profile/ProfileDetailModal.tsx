@@ -196,6 +196,12 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
 
               {/* Status Badges */}
               <div className="flex flex-wrap gap-2 pt-1">
+                {profile.isPremium && (
+                  <span className="bg-gradient-to-r from-[#D4AF37] to-[#AA7C11] text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs border border-white/40">
+                    <span className="material-symbols-outlined text-sm font-bold text-white">workspace_premium</span>
+                    Membre Sérieux • Premium
+                  </span>
+                )}
                 {profile.isVerifiedNNI && (
                   <span className="bg-[#8BAE9F]/20 text-[#0F5C4D] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-[#8BAE9F]/30">
                     <span className="material-symbols-outlined text-sm font-bold">verified</span>

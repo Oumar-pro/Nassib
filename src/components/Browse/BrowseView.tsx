@@ -201,14 +201,22 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
       return true;
     });
 
-    // Tri des profils
-    if (sortBy === 'age-asc') {
-      list = [...list].sort((a, b) => a.age - b.age);
-    } else if (sortBy === 'age-desc') {
-      list = [...list].sort((a, b) => b.age - a.age);
-    } else if (sortBy === 'city') {
-      list = [...list].sort((a, b) => (a.city || '').localeCompare(b.city || '', 'fr'));
-    }
+    // Tri des profils avec priorité Premium & Boosts ("Sois vu(e) en premier")
+    list = [...list].sort((a, b) => {
+      const aIsBoosted = Boolean(a.boostedUntil && new Date(a.boostedUntil).getTime() > Date.now());
+      const bIsBoosted = Boolean(b.boostedUntil && new Date(b.boostedUntil).getTime() > Date.now());
+      const aScore = (aIsBoosted ? 20 : 0) + (a.isPremium ? 10 : 0) + (a.isVerifiedNNI ? 2 : 0);
+      const bScore = (bIsBoosted ? 20 : 0) + (b.isPremium ? 10 : 0) + (b.isVerifiedNNI ? 2 : 0);
+
+      if (sortBy === 'default') {
+        if (aScore !== bScore) return bScore - aScore;
+        return (b.matchPercentage || 0) - (a.matchPercentage || 0);
+      }
+      if (sortBy === 'age-asc') return a.age - b.age;
+      if (sortBy === 'age-desc') return b.age - a.age;
+      if (sortBy === 'city') return (a.city || '').localeCompare(b.city || '', 'fr');
+      return bScore - aScore;
+    });
 
     return list;
   }, [profiles, user.gender, user.id, user.email, user.name, selectedCity, selectedAgeRange, selectedStatus, onlyVerified, sortBy]);
@@ -304,77 +312,6 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
             <span className="material-symbols-outlined text-base group-hover:translate-x-0.5 transition-transform">
               chevron_right
             </span>
-          </div>
-        </div>
-
-        {/* Quick Filter & Sort Options Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          {/* Ville de résidence selector */}
-          <div className="relative">
-            <div className="flex items-center bg-white border border-[#E8E3D7] rounded-xl px-3 py-2 shadow-2xs hover:border-[#0F5C4D]/50 focus-within:border-[#0F5C4D] focus-within:ring-1 focus-within:ring-[#0F5C4D] transition-all">
-              <span className="material-symbols-outlined text-[#0F5C4D] text-base mr-2 shrink-0">
-                location_on
-              </span>
-              <select
-                id="browse-city-select"
-                aria-label="Filtrer par ville de résidence"
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-                className="w-full bg-transparent text-xs font-medium text-[#211E1A] focus:outline-none cursor-pointer pr-2"
-              >
-                <option value="">Ville de résidence (Toutes)</option>
-                {NIGER_CITIES.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Tranche d'âge selector */}
-          <div className="relative">
-            <div className="flex items-center bg-white border border-[#E8E3D7] rounded-xl px-3 py-2 shadow-2xs hover:border-[#0F5C4D]/50 focus-within:border-[#0F5C4D] focus-within:ring-1 focus-within:ring-[#0F5C4D] transition-all">
-              <span className="material-symbols-outlined text-[#0F5C4D] text-base mr-2 shrink-0">
-                cake
-              </span>
-              <select
-                id="browse-age-select"
-                aria-label="Filtrer par tranche d'âge"
-                value={selectedAgeRange}
-                onChange={(e) => setSelectedAgeRange(e.target.value)}
-                className="w-full bg-transparent text-xs font-medium text-[#211E1A] focus:outline-none cursor-pointer pr-2"
-              >
-                <option value="">Tranche d'âge (Toutes)</option>
-                {AGE_RANGES.map((range) => (
-                  <option key={range.id} value={range.id}>
-                    {range.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Trier par selector */}
-          <div className="relative">
-            <div className="flex items-center bg-white border border-[#E8E3D7] rounded-xl px-3 py-2 shadow-2xs hover:border-[#0F5C4D]/50 focus-within:border-[#0F5C4D] focus-within:ring-1 focus-within:ring-[#0F5C4D] transition-all">
-              <span className="material-symbols-outlined text-[#0F5C4D] text-base mr-2 shrink-0">
-                swap_vert
-              </span>
-              <select
-                id="browse-sort-select"
-                aria-label="Trier les profils"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="w-full bg-transparent text-xs font-medium text-[#211E1A] focus:outline-none cursor-pointer pr-2"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    Trier : {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
         </div>
 
@@ -788,6 +725,14 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
 
                   {/* Badges Overlay */}
                   <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+                    {profile.isPremium && (
+                      <span className="bg-gradient-to-r from-[#D4AF37] to-[#AA7C11] text-white px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs border border-white/40 w-fit">
+                        <span className="material-symbols-outlined text-xs text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
+                          workspace_premium
+                        </span>
+                        <span className="font-body text-[10px] font-bold tracking-wider uppercase text-white">SÉRIEUX • PREMIUM</span>
+                      </span>
+                    )}
                     {profile.isVerifiedNNI && (
                       <span className="bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs border border-[#E8E3D7] w-fit">
                         <span className="material-symbols-outlined text-xs text-[#0F5C4D]" style={{ fontVariationSettings: "'FILL' 1" }}>

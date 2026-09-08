@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, TabType, Profile, calculateProfileCompletion, isProfileVisible, isProfileFullyComplete } from '../../types';
 import { NassibLogoIcon } from '../NasibaLogo';
+import { SubscriptionDetailView } from '../Subscription/SubscriptionDetailView';
 
 interface SettingsViewProps {
   user: User;
@@ -43,7 +44,8 @@ type SettingsSection =
   | 'personality'
   | 'religion'
   | 'wali'
-  | 'security';
+  | 'security'
+  | 'subscription';
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   user,
@@ -430,7 +432,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       icon: 'manage_accounts',
       isComplete: isSecurityComplete,
     },
+    {
+      id: 'subscription' as const,
+      title: 'Abonnement ou souscription',
+      subtitle: user.isPremium ? `Formule ${user.planName || 'Premium'} active` : 'Offres, tarifs et avantages exclusifs',
+      icon: 'workspace_premium',
+      isComplete: Boolean(user.isPremium),
+    },
   ];
+
+  // If viewing subscription sub-screen:
+  if (activeSection === 'subscription') {
+    return (
+      <SubscriptionDetailView
+        user={user}
+        onBack={() => setActiveSection(null)}
+        onSubscribe={(planName) => {
+          if (onUpdateUser) {
+            onUpdateUser({ isPremium: true, planName });
+          }
+          showSaved(`Abonnement ${planName} activé avec succès !`);
+        }}
+      />
+    );
+  }
 
   // If viewing a sub-screen:
   if (activeSection) {
@@ -1343,6 +1368,42 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </button>
           </div>
         )}
+      </div>
+
+      {/* Carte Abonnement ou souscription (Offres & Détails) */}
+      <div
+        onClick={() => setActiveSection('subscription')}
+        className="bg-gradient-to-r from-[#0F5C4D] to-[#0A3D33] text-white rounded-3xl p-5 border border-[#8BAE9F]/30 shadow-xs flex items-center justify-between gap-4 cursor-pointer hover:shadow-md transition-all active:scale-[0.99] group"
+      >
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/15 backdrop-blur-xs border border-white/20 text-[#E6C687] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <span className="material-symbols-outlined text-2xl">workspace_premium</span>
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-display font-bold text-sm sm:text-base text-white truncate">
+                Abonnement ou souscription
+              </h3>
+              <span className="bg-[#E6C687] text-[#1E1B16] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                {user.isPremium ? 'Actif' : 'Offres'}
+              </span>
+            </div>
+            <p className="font-body text-xs text-white/80 truncate mt-0.5">
+              {user.isPremium
+                ? `Formule ${user.planName || 'Premium'} active — Voir tes privilèges`
+                : "Vois qui t'a mis en favori, contacts illimités, boosts..."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-display font-bold text-[#E6C687] hidden sm:inline">
+            Voir l'offre
+          </span>
+          <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white/20 transition-colors">
+            <span className="material-symbols-outlined text-lg">chevron_right</span>
+          </div>
+        </div>
       </div>
 
       {/* PWA / App Installation Option (iPhone & Android) */}

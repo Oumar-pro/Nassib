@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Message, Conversation, User } from '../../types';
+import { PaywallUpgradeModal } from '../Modals/PaywallUpgradeModal';
 
 interface MessagesViewProps {
   user: User;
@@ -14,6 +15,7 @@ interface MessagesViewProps {
   onOpenProfile?: (profileId: string) => void;
   hasUploadedPhoto?: boolean;
   onRequestPhotoUpload?: () => void;
+  onUpgradeToPremium?: () => void;
 }
 
 export const MessagesView: React.FC<MessagesViewProps> = ({
@@ -28,12 +30,19 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   onOpenProfile,
   hasUploadedPhoto = true,
   onRequestPhotoUpload,
+  onUpgradeToPremium,
 }) => {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(activeConvId);
   const [inputText, setInputText] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterTab, setFilterTab] = useState<'all' | 'unread' | 'supervised'>('all');
   const [actionLoading, setActionLoading] = useState(false);
+  const [paywallModalOpen, setPaywallModalOpen] = useState(false);
+  const [paywallConfig, setPaywallConfig] = useState({
+    title: 'Messages vocaux',
+    description: 'Fais entendre ta voix et crée une connexion plus authentique. Débloqué avec la formule Premium.',
+    icon: 'mic',
+  });
 
   // Sync selectedConvId when activeConvId prop changes
   React.useEffect(() => {
@@ -612,6 +621,33 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     <span className="material-symbols-outlined">attach_file</span>
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!user.isPremium) {
+                        setPaywallConfig({
+                          title: 'Messages vocaux',
+                          description: 'Fais entendre ta voix et crée une connexion plus authentique avec ta future moitié. Débloqué avec la formule Premium.',
+                          icon: 'mic',
+                        });
+                        setPaywallModalOpen(true);
+                      } else {
+                        onSendMessage('🎤 Message vocal (0:12)', selectedConvId!);
+                      }
+                    }}
+                    className={`p-2.5 rounded-2xl transition-colors shrink-0 cursor-pointer relative ${
+                      user.isPremium
+                        ? 'text-[#0F5C4D] hover:bg-white'
+                        : 'text-[#7D766C] hover:text-[#C9A45C]'
+                    }`}
+                    title={user.isPremium ? 'Envoyer un message vocal' : 'Messages vocaux (Réservé Premium)'}
+                  >
+                    <span className="material-symbols-outlined">mic</span>
+                    {!user.isPremium && (
+                      <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-[#C9A45C] border-2 border-white" />
+                    )}
+                  </button>
+
                   <div className="flex-grow bg-white border border-[#E8E3D7] rounded-2xl overflow-hidden focus-within:border-[#0F5C4D] focus-within:ring-2 focus-within:ring-[#0F5C4D]/20 transition-all shadow-2xs">
                     <textarea
                       value={inputText}
@@ -651,6 +687,18 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <PaywallUpgradeModal
+        isOpen={paywallModalOpen}
+        onClose={() => setPaywallModalOpen(false)}
+        onUpgrade={() => {
+          setPaywallModalOpen(false);
+          if (onUpgradeToPremium) onUpgradeToPremium();
+        }}
+        featureTitle={paywallConfig.title}
+        featureDescription={paywallConfig.description}
+        featureIcon={paywallConfig.icon}
+      />
     </div>
   );
 };

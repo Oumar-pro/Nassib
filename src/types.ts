@@ -9,7 +9,8 @@ export type TabType =
   | 'landing'
   | 'imam'
   | 'auth'
-  | 'onboarding';
+  | 'onboarding'
+  | 'subscription';
 
 export type MaritalStatus = 'Jamais marié(e)' | 'Divorcé(e)' | 'Veuf/Veuve' | string;
 
@@ -70,6 +71,11 @@ export interface Profile {
   dealBreakers?: string[];
   phone?: string;
   completionPercentage?: number;
+  boostsCount?: number;
+  boostedUntil?: string;
+  premiumExpiresAt?: string;
+  dailyContactsCount?: number;
+  dailyContactsDate?: string;
 }
 
 /**
@@ -319,6 +325,11 @@ export interface User {
   gender?: 'female' | 'male';
   photos?: string[];
   isAdmin?: boolean;
+  boostsCount?: number;
+  boostedUntil?: string;
+  premiumExpiresAt?: string;
+  dailyContactsCount?: number;
+  dailyContactsDate?: string;
 }
 
 export * from './types/database';

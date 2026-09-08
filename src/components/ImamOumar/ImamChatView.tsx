@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { User } from '../../types';
 
 interface ImamChatViewProps {
   user: User;
+  onBack: () => void;
 }
 
 interface ChatMessage {
@@ -13,21 +14,15 @@ interface ChatMessage {
   timestamp: string;
 }
 
-export const ImamChatView: React.FC<ImamChatViewProps> = ({ user }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome-msg',
-      sender: 'assistant',
-      text: `As-salamu alaykum wa rahmatullah ${user.name ? user.name.split(' ')[0] : 'cher membre'}.
-Je suis Imam Oumar, votre guide spirituel et conseiller matrimonial sur NASSIB. 
+export const ImamChatView: React.FC<ImamChatViewProps> = ({ user, onBack }) => {
+  const getInitialWelcomeMessage = (): ChatMessage => ({
+    id: 'welcome-msg',
+    sender: 'assistant',
+    text: `As-salamu alaykum wa rahmatullah ${user.name ? user.name.split(' ')[0] : 'cher membre'}.\n\nJe suis l'Imam Oumar, votre guide spirituel et conseiller matrimonial sur NASSIB.\n\nQue votre démarche soit personnelle ou au titre de tuteur (Wali), je suis à votre disposition pour vous éclairer sur le mariage islamique (Fiqh al-Nikah), la modération de la dot (Mahr), les règles des échanges (Tâ'arof) et l'harmonie du foyer.\n\nComment puis-je vous aider aujourd'hui ?`,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  });
 
-Que votre recherche soit personnelle ou au titre de tuteur (Wali), je suis à votre disposition pour éclairer vos questions sur le mariage islamique (Fiqh al-Nikah), la modération de la dot (Mahr), la courtoisie des échanges (Tâ'arof) et la bénédiction du foyer.
-
-Comment puis-je vous guider aujourd'hui ?`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
-
+  const [messages, setMessages] = useState<ChatMessage[]>([getInitialWelcomeMessage()]);
   const [input, setInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -62,7 +57,7 @@ Comment puis-je vous guider aujourd'hui ?`,
     if (!textToSend) setInput('');
     setIsLoading(true);
 
-    // Réponse automatique codée sans appel à l'IA
+    // Réponse automatique de l'Imam Oumar
     setTimeout(() => {
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -75,114 +70,150 @@ Comment puis-je vous guider aujourd'hui ?`,
     }, 600);
   };
 
+  const handleResetChat = () => {
+    setMessages([getInitialWelcomeMessage()]);
+  };
+
+  const isInitialState = messages.length <= 1;
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn pb-12">
-      {/* Top Banner Identity */}
-      <div className="rounded-2xl sm:rounded-[28px] p-4 sm:p-8 shadow-xs border border-[#E8E3D7] bg-white relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
-        <div className="flex items-center gap-3 sm:gap-5">
-          <div className="relative shrink-0">
-            <div className="w-13 h-13 sm:w-18 sm:h-18 rounded-full bg-[#0F5C4D] text-white flex items-center justify-center border-2 sm:border-4 border-white shadow-sm overflow-hidden">
-              <span className="material-symbols-outlined text-2xl sm:text-3xl text-[#C9A45C]">auto_awesome</span>
+    <div className="flex flex-col h-[calc(100dvh-1.5rem)] md:h-[calc(100dvh-2.5rem)] max-w-4xl mx-auto w-full">
+      {/* AI Header Bar */}
+      <div className="flex items-center justify-between pb-3 border-b border-[#E8E3D7] shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Bouton Retour pour quitter l'IA */}
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E8E3D7] bg-white text-[#0F5C4D] hover:bg-[#8BAE9F]/15 font-display text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95 mr-0.5"
+            title="Retour"
+            aria-label="Retour"
+          >
+            <span className="material-symbols-outlined text-base">arrow_back</span>
+            <span>Retour</span>
+          </button>
+
+          <div className="relative">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#0F5C4D] text-white flex items-center justify-center shadow-xs border border-[#8BAE9F]/40">
+              <span className="material-symbols-outlined text-lg sm:text-xl text-[#C9A45C]">auto_awesome</span>
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-[#C9A45C] text-[#211E1A] text-[9px] font-bold p-0.5 sm:p-1 rounded-full border-2 border-white shadow-xs">
-              <span className="material-symbols-outlined text-[12px] sm:text-sm block" style={{ fontVariationSettings: "'FILL' 1" }}>
-                verified
-              </span>
-            </div>
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#FAF8F2] rounded-full"></span>
           </div>
 
           <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="px-2 py-0.5 rounded-full bg-[#0F5C4D] text-white font-body text-[9px] sm:text-[10px] font-bold tracking-wide uppercase">
-                Conseiller Spirituel
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-[#C9A45C]/20 text-[#211E1A] font-body text-[9px] sm:text-[10px] font-bold uppercase border border-[#C9A45C]/40">
-                Imam Oumar
+            <div className="flex items-center gap-2">
+              <h1 className="font-display font-bold text-sm sm:text-base text-[#0F5C4D]">
+                Imam Oumar IA
+              </h1>
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#0F5C4D]/10 text-[#0F5C4D] text-[10px] font-bold">
+                <span className="material-symbols-outlined text-xs text-[#0F5C4D]">verified</span>
+                Guide Spirituel
               </span>
             </div>
-            <h2 className="font-serif-display text-lg sm:text-2xl font-bold text-[#0F5C4D]">
-              Guide Matrimonial Imam Oumar
-            </h2>
-            <p className="font-body text-xs text-[#575147] mt-0.5 max-w-xl leading-relaxed hidden sm:block">
-              Posez toutes vos questions concernant les règles du mariage en Islam, le rôle du tuteur (Wali), la bénédiction de la dot (Mahr) et l'harmonie du foyer.
+            <p className="text-[11px] text-[#7D766C] font-body flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>En ligne • Fiqh al-Nikah &amp; Famille</span>
             </p>
           </div>
         </div>
 
-        <div className="shrink-0 flex items-center gap-2 bg-[#FAF8F2] px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-[#E8E3D7] shadow-2xs self-start md:self-center">
-          <span className="material-symbols-outlined text-[#0F5C4D] text-lg sm:text-xl">mosque</span>
-          <div className="text-left">
-            <span className="font-body text-[9px] sm:text-[10px] text-[#7D766C] uppercase font-bold block">Spécialité</span>
-            <span className="font-display text-xs font-bold text-[#211E1A]">Fiqh al-Nikah &amp; Coutumes Niger</span>
+        <button
+          type="button"
+          onClick={handleResetChat}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E8E3D7] bg-white text-[#575147] hover:text-[#0F5C4D] hover:border-[#0F5C4D]/50 text-xs font-medium shadow-2xs transition-all cursor-pointer"
+          title="Nouvelle conversation"
+        >
+          <span className="material-symbols-outlined text-sm">refresh</span>
+          <span className="hidden sm:inline">Nouvelle discussion</span>
+        </button>
+      </div>
+
+      {/* Main Conversation Stream */}
+      <div className="flex-1 overflow-y-auto py-4 px-1 sm:px-3 space-y-6">
+        {/* If first screen, show welcome hero suggestions */}
+        {isInitialState && (
+          <div className="pt-4 sm:pt-6 pb-4 space-y-5">
+            <div className="text-center max-w-lg mx-auto space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center mx-auto mb-3 border border-[#8BAE9F]/30">
+                <span className="material-symbols-outlined text-3xl text-[#0F5C4D]">mosque</span>
+              </div>
+              <h2 className="font-serif-display text-xl sm:text-2xl font-bold text-[#0F5C4D]">
+                Que puis-je éclairer pour vous ?
+              </h2>
+              <p className="text-xs sm:text-sm text-[#575147] leading-relaxed font-body">
+                Posez vos questions sur la démarche du mariage en Islam, les devoirs mutuels, la modération de la dot ou l'intervention du tuteur légal.
+              </p>
+            </div>
+
+            <div className="space-y-2 max-w-2xl mx-auto pt-2">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#7D766C] flex items-center gap-1.5 px-1">
+                <span className="material-symbols-outlined text-sm text-[#C9A45C]">lightbulb</span>
+                <span>Suggestions de questions fréquentes</span>
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {presetQuestions.map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => handleSendMessage(q)}
+                    disabled={isLoading}
+                    className="p-3 rounded-2xl bg-white border border-[#E8E3D7] hover:border-[#0F5C4D] hover:shadow-sm text-left text-xs font-medium text-[#211E1A] flex items-start gap-2.5 transition-all cursor-pointer group"
+                  >
+                    <span className="material-symbols-outlined text-base text-[#0F5C4D] shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                      chat_bubble
+                    </span>
+                    <span className="leading-snug">{q}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Preset Suggestions Quick Chips */}
-      <div className="space-y-1.5">
-        <p className="font-body text-[11px] sm:text-xs font-bold text-[#575147] uppercase tracking-wider flex items-center gap-1.5 px-1">
-          <span className="material-symbols-outlined text-sm text-[#0F5C4D]">lightbulb</span>
-          <span>Questions fréquentes :</span>
-        </p>
-        <div className="flex overflow-x-auto sm:flex-wrap gap-2 pb-1 no-scrollbar -mx-1 px-1">
-          {presetQuestions.map((q) => (
-            <button
-              key={q}
-              onClick={() => handleSendMessage(q)}
-              disabled={isLoading}
-              className="px-3 py-1.5 rounded-xl bg-white border border-[#E8E3D7] text-[#0F5C4D] font-body text-xs font-semibold hover:border-[#0F5C4D] hover:bg-[#8BAE9F]/10 transition-all cursor-pointer disabled:opacity-50 text-left flex items-center gap-1.5 whitespace-nowrap sm:whitespace-normal shrink-0 active:scale-95"
-            >
-              <span className="material-symbols-outlined text-xs text-[#C9A45C]">help_outline</span>
-              <span>{q}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Chat Thread Container */}
-      <div className="rounded-2xl sm:rounded-[28px] border border-[#E8E3D7] shadow-xs sm:shadow-md overflow-hidden flex flex-col h-[55vh] sm:h-[520px] bg-white">
-        {/* Chat Messages Body */}
-        <div className="flex-grow p-3 sm:p-6 overflow-y-auto space-y-3 sm:space-y-4 bg-[#FAF8F2]/40">
+        {/* Message Thread */}
+        <div className="space-y-4">
           {messages.map((msg) => {
             const isUser = msg.sender === 'user';
             return (
               <motion.div
                 key={msg.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
                 className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
               >
                 {!isUser && (
-                  <div className="w-9 h-9 rounded-full bg-[#0F5C4D] text-white flex items-center justify-center shrink-0 shadow-sm mt-1">
-                    <span className="material-symbols-outlined text-lg text-[#C9A45C]">auto_awesome</span>
+                  <div className="w-8 h-8 rounded-full bg-[#0F5C4D] text-white flex items-center justify-center shrink-0 shadow-2xs mt-1">
+                    <span className="material-symbols-outlined text-base text-[#C9A45C]">auto_awesome</span>
                   </div>
                 )}
 
-                <div
-                  className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 shadow-2xs text-xs sm:text-sm leading-relaxed ${
-                    isUser
-                      ? 'bg-[#0F5C4D] text-white rounded-br-none font-body'
-                      : 'bg-white border border-[#E8E3D7] text-[#211E1A] rounded-bl-none font-body whitespace-pre-line'
-                  }`}
-                >
-                  {!isUser && (
-                    <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-[#E8E3D7]">
-                      <span className="font-display font-bold text-[#0F5C4D] text-xs">Imam Oumar</span>
-                      <span className="text-[10px] text-[#7D766C] font-body">Guide Spirituel NASSIB</span>
-                    </div>
-                  )}
+                <div className={`max-w-[88%] sm:max-w-[80%] ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
+                  <div
+                    className={`p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed ${
+                      isUser
+                        ? 'bg-[#0F5C4D] text-white rounded-2xl rounded-tr-xs shadow-xs font-body'
+                        : 'bg-white border border-[#E8E3D7] text-[#211E1A] rounded-2xl rounded-tl-xs shadow-xs font-body whitespace-pre-line'
+                    }`}
+                  >
+                    {!isUser && (
+                      <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-[#E8E3D7]">
+                        <span className="font-display font-bold text-xs text-[#0F5C4D]">Imam Oumar</span>
+                        <span className="text-[10px] text-[#7D766C]">Conseiller Matrimonial</span>
+                      </div>
+                    )}
 
-                  <p>{msg.text}</p>
-
-                  <div className={`mt-2 text-[10px] ${isUser ? 'text-emerald-100 text-right' : 'text-[#7D766C] text-left'}`}>
-                    {msg.timestamp}
+                    <p>{msg.text}</p>
                   </div>
+
+                  <span className={`text-[10px] text-[#7D766C] mt-1 px-1 ${isUser ? 'text-right' : 'text-left'}`}>
+                    {msg.timestamp}
+                  </span>
                 </div>
 
                 {isUser && (
-                  <div className="w-9 h-9 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-display font-bold text-xs flex items-center justify-center shrink-0 shadow-sm mt-1 border border-[#8BAE9F]/40">
-                    {user.name ? user.name.charAt(0) : 'M'}
+                  <div className="w-8 h-8 rounded-full bg-[#8BAE9F]/20 text-[#0F5C4D] font-display font-bold text-xs flex items-center justify-center shrink-0 border border-[#8BAE9F]/40 mt-1">
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'M'}
                   </div>
                 )}
               </motion.div>
@@ -196,23 +227,29 @@ Comment puis-je vous guider aujourd'hui ?`,
               animate={{ opacity: 1 }}
               className="flex items-center gap-3 justify-start"
             >
-              <div className="w-9 h-9 rounded-full bg-[#0F5C4D] text-white flex items-center justify-center shrink-0 shadow-sm">
-                <span className="material-symbols-outlined text-lg animate-spin text-[#C9A45C]">sync</span>
+              <div className="w-8 h-8 rounded-full bg-[#0F5C4D] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <span className="material-symbols-outlined text-base animate-spin text-[#C9A45C]">sync</span>
               </div>
-              <div className="bg-white border border-[#E8E3D7] rounded-2xl px-4 py-3 text-xs font-body text-[#575147] flex items-center gap-2 shadow-2xs">
+              <div className="bg-white border border-[#E8E3D7] rounded-2xl rounded-tl-xs px-4 py-3 text-xs font-body text-[#575147] flex items-center gap-2 shadow-xs">
                 <span className="w-2 h-2 rounded-full bg-[#0F5C4D] animate-bounce"></span>
                 <span className="w-2 h-2 rounded-full bg-[#0F5C4D] animate-bounce delay-150"></span>
                 <span className="w-2 h-2 rounded-full bg-[#0F5C4D] animate-bounce delay-300"></span>
-                <span className="ml-1 text-[#0F5C4D] font-semibold">Imam Oumar rédige sa réponse...</span>
+                <span className="ml-1 text-[#0F5C4D] font-semibold text-xs">Imam Oumar formule sa réponse...</span>
               </div>
             </motion.div>
           )}
 
           <div ref={chatEndRef} />
         </div>
+      </div>
 
-        {/* Input Bar */}
-        <div className="p-3 sm:p-4 bg-white border-t border-[#E8E3D7] flex items-center gap-2">
+      {/* Sticky Bottom Prompt Bar */}
+      <div className="pt-1.5 pb-[max(0.25rem,env(safe-area-inset-bottom))] shrink-0 bg-[#FAF8F2]">
+        <div className="relative flex items-center bg-white border border-[#E8E3D7] rounded-2xl sm:rounded-full p-1.5 sm:p-2 shadow-md focus-within:border-[#0F5C4D] focus-within:ring-2 focus-within:ring-[#0F5C4D]/15 transition-all">
+          <div className="pl-3 pr-2 text-[#0F5C4D] shrink-0">
+            <span className="material-symbols-outlined text-xl text-[#0F5C4D]">auto_awesome</span>
+          </div>
+
           <input
             type="text"
             value={input}
@@ -220,20 +257,24 @@ Comment puis-je vous guider aujourd'hui ?`,
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSendMessage();
             }}
-            placeholder="Posez votre question à Imam Oumar (ex: dot, rôle du Wali, fiançailles)..."
-            className="flex-grow h-12 bg-[#FAF8F2] border border-[#E8E3D7] rounded-2xl px-4 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D] focus:ring-2 focus:ring-[#0F5C4D]/15"
+            placeholder="Posez votre question à l'Imam Oumar (ex: dot, rôle du Wali, fiançailles)..."
+            className="flex-1 bg-transparent text-xs sm:text-sm text-[#211E1A] placeholder-[#7D766C] focus:outline-none px-1 py-2"
           />
 
           <button
             type="button"
             onClick={() => handleSendMessage()}
             disabled={!input.trim() || isLoading}
-            className="h-12 px-5 rounded-2xl bg-[#0F5C4D] text-white font-display font-bold text-xs sm:text-sm hover:bg-[#0c4a3e] disabled:opacity-40 transition-all cursor-pointer flex items-center gap-2 shrink-0 shadow-sm"
+            className="w-10 h-10 rounded-xl sm:rounded-full bg-[#0F5C4D] text-white flex items-center justify-center hover:bg-[#0c4a3e] disabled:opacity-30 transition-all shrink-0 cursor-pointer shadow-xs"
+            title="Envoyer"
           >
-            <span>Envoyer</span>
-            <span className="material-symbols-outlined text-base text-[#C9A45C]">send</span>
+            <span className="material-symbols-outlined text-lg">arrow_upward</span>
           </button>
         </div>
+
+        <p className="text-[10px] text-center text-[#7D766C] mt-1">
+          L'Imam Oumar IA est un guide consultatif fondé sur le Fiqh al-Nikah et les coutumes musulmanes nigériennes.
+        </p>
       </div>
     </div>
   );
