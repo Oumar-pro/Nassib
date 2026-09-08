@@ -3,7 +3,68 @@ import { supabase } from './supabase';
 import { calculateCompatibility } from './compatibility';
 
 export function hasUploadedPhotos(profile: Partial<Profile> | null | undefined): boolean { if (!profile) return false; return Boolean(profile.photoUrl?.trim()) || Boolean(Array.isArray(profile.photos) && profile.photos.some((p)=>typeof p==='string'&&p.trim())); }
-const mapProfile=(row:any):Profile=>{const photoUrl=typeof row.photo_url==='string'?row.photo_url.trim():'';const photos=Array.isArray(row.photos)?row.photos.filter((p:any)=>typeof p==='string'&&p.trim()):photoUrl?[photoUrl]:[];return{id:row.id,userId:row.user_id,name:row.name||'',age:row.age,profession:row.profession||'',city:row.city||'',maritalStatus:row.marital_status||'',religion:row.religion||'',education:row.education||'',matchPercentage:Number.isFinite(row.match_percentage)?row.match_percentage:0,isVerifiedNNI:Boolean(row.is_verified_nni),isWaliApproved:Boolean(row.is_wali_approved),isPremium:Boolean(row.is_premium),photoUrl:photoUrl||photos[0]||'',photoPrivate:Boolean(row.photo_private),bio:row.bio||'',waliReference:'',gender:row.gender==='male'||row.gender==='female'?row.gender:undefined,viewsCount:row.views_count??0,likesCount:row.likes_count??0,hobbies:row.hobbies||'',interests:row.interests||'',drinksAlcohol:row.drinks_alcohol??undefined,smokes:row.smokes??undefined,presentation:row.presentation||'',personality:row.personality||'',familyImportance:row.family_importance||'',isAdmin:Boolean(row.is_admin),createdAt:row.created_at,updatedAt:row.updated_at,photos,height:row.height??undefined,weight:row.weight??undefined,ethnicity:row.ethnicity||undefined,originCity:row.origin_city||undefined,hijabStatus:row.hijab_status||undefined,religiousPracticeDetails:row.religious_practice_details||undefined,values:Array.isArray(row.values)?row.values:undefined,partnerCriteria:row.partner_criteria||undefined,dealBreakers:Array.isArray(row.deal_breakers)?row.deal_breakers:undefined,boostsCount:Number(row.boosts_count??0),boostedUntil:row.boosted_until||undefined,premiumExpiresAt:row.premium_expires_at||undefined,dailyContactsCount:Number(row.daily_contacts_count??0),dailyContactsDate:row.daily_contacts_date||undefined};};
+const mapProfile = (row: any): Profile => {
+  const photoUrl = typeof row.photo_url === 'string' ? row.photo_url.trim() : '';
+  const photos = Array.isArray(row.photos)
+    ? row.photos.filter((p: any) => typeof p === 'string' && p.trim())
+    : photoUrl ? [photoUrl] : [];
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name || '',
+    age: row.age,
+    profession: row.profession || '',
+    city: row.city || '',
+    maritalStatus: row.marital_status || '',
+    religion: row.religion || '',
+    education: row.education || '',
+    matchPercentage: Number.isFinite(row.match_percentage) ? row.match_percentage : 0,
+    isVerifiedNNI: Boolean(row.is_verified_nni),
+    isWaliApproved: Boolean(row.is_wali_approved),
+    isPremium: Boolean(row.is_premium),
+    photoUrl: photoUrl || photos[0] || '',
+    photoPrivate: Boolean(row.photo_private),
+    bio: row.bio || '',
+    waliReference: '',
+    gender: row.gender === 'male' || row.gender === 'female' ? row.gender : undefined,
+    viewsCount: row.views_count ?? 0,
+    likesCount: row.likes_count ?? 0,
+    hobbies: row.hobbies || '',
+    interests: row.interests || '',
+    drinksAlcohol: row.drinks_alcohol ?? undefined,
+    smokes: row.smokes ?? undefined,
+    presentation: row.presentation || '',
+    personality: row.personality || '',
+    familyImportance: row.family_importance || '',
+    isAdmin: Boolean(row.is_admin),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    photos,
+    height: row.height ?? undefined,
+    weight: row.weight ?? undefined,
+    ethnicity: row.ethnicity || undefined,
+    originCity: row.origin_city || undefined,
+    motherTongue: row.mother_tongue || undefined,
+    hijabStatus: row.hijab_status || undefined,
+    beardStatus: row.beard_status || undefined,
+    religiousPracticeDetails: row.religious_practice_details || undefined,
+    quranReading: row.quran_reading || undefined,
+    quranMemorization: row.quran_memorization || undefined,
+    hasChildren: row.has_children || undefined,
+    wantsChildren: row.wants_children || undefined,
+    relocation: row.relocation || undefined,
+    polygamyOpinion: row.polygamy_opinion || undefined,
+    hijraProject: row.hijra_project || undefined,
+    values: Array.isArray(row.values) ? row.values : undefined,
+    partnerCriteria: row.partner_criteria || undefined,
+    dealBreakers: Array.isArray(row.deal_breakers) ? row.deal_breakers : undefined,
+    boostsCount: Number(row.boosts_count ?? 0),
+    boostedUntil: row.boosted_until || undefined,
+    premiumExpiresAt: row.premium_expires_at || undefined,
+    dailyContactsCount: Number(row.daily_contacts_count ?? 0),
+    dailyContactsDate: row.daily_contacts_date || undefined,
+  };
+};
 
 export async function getProfiles(userId?: string, currentUserProfile?: Profile | null): Promise<Profile[]> {
   if (!supabase) return [];
@@ -64,15 +125,119 @@ export async function getProfiles(userId?: string, currentUserProfile?: Profile 
 
 export async function getProfileById(profileId:string,currentUserProfile?:Profile|null):Promise<Profile|null>{if(!profileId||!supabase)return null;try{const{data,error}=await supabase.from('profiles').select('*').eq('id',profileId).maybeSingle();if(error){console.warn('getProfileById error:',error.message);return null;}if(!data)return null;const profile=mapProfile(data);return currentUserProfile?{...profile,matchPercentage:calculateCompatibility(currentUserProfile,profile)}:profile;}catch(err){console.warn('getProfileById exception:',err);return null;}}
 
-export async function getMyProfile(userId:string):Promise<Profile|null>{if(!userId||!supabase)return null;try{const{data,error}=await supabase.from('profiles').select('*').eq('user_id',userId).maybeSingle();if(error){console.warn('getMyProfile error:',error.message);return null;}if(!data)return null;const mapped=mapProfile(data);const{data:priv,error:privError}=await supabase.from('profile_private').select('wali_reference').eq('user_id',userId).maybeSingle();if(privError)console.warn('getMyProfile private data error:',privError.message);if(priv?.wali_reference)mapped.waliReference=priv.wali_reference;return mapped;}catch(err){console.warn('getMyProfile exception:',err);return null;}}
+export async function getMyProfile(userId:string):Promise<Profile|null>{
+  if(!userId||!supabase)return null;
+  try{
+    const queryPromise = supabase.from('profiles').select('*').eq('user_id',userId).maybeSingle();
+    const timeoutPromise = new Promise<any>((resolve) => setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 4000));
+    const {data,error} = await Promise.race([queryPromise, timeoutPromise]);
+    if(error){console.warn('getMyProfile error:',error.message);return null;}
+    if(!data)return null;
+    const mapped=mapProfile(data);
+    try {
+      const privPromise = supabase.from('profile_private').select('wali_reference').eq('user_id',userId).maybeSingle();
+      const privTimeout = new Promise<any>((resolve) => setTimeout(() => resolve({ data: null }), 1500));
+      const {data:priv} = await Promise.race([privPromise, privTimeout]);
+      if(priv?.wali_reference)mapped.waliReference=priv.wali_reference;
+    } catch {}
+    return mapped;
+  }catch(err){console.warn('getMyProfile exception:',err);return null;}
+}
 
 export async function updatePhotoPrivacy(userId:string,photoPrivate:boolean):Promise<boolean>{if(!userId||!supabase)return false;try{const{data,error}=await supabase.from('profiles').update({photo_private:Boolean(photoPrivate)}).eq('user_id',userId).select('photo_private').maybeSingle();if(error){console.warn('updatePhotoPrivacy error:',error.message);return false;}return data?.photo_private===Boolean(photoPrivate);}catch(err){console.warn('updatePhotoPrivacy exception:',err);return false;}}
 export async function recordProfileView(profileId:string):Promise<boolean>{if(!supabase||!profileId)return false;const{data,error}=await supabase.rpc('record_profile_view',{target_profile_id:profileId});if(error){console.warn('recordProfileView error:',error.message);return false;}return data===true;}
 
 export interface ProfileStats { profileViews:number; profileConsultations:number; photoRequests:number; photoRequestsApproved:number; photoRequestsSent:number; contactRequestsReceived:number; contactRequestsSent:number; contactRequestsAccepted:number; contactRequestsRejected:number; contactRequestsPending:number; matchesCount:number; favoritesCount:number; weeklyGrowthPercentage:number; }
-export async function getMyProfileStats():Promise<ProfileStats|null>{if(!supabase)return null;const{data,error}=await supabase.rpc('get_my_profile_stats');if(error){console.warn('getMyProfileStats error:',error.message);return null;}if(!data||typeof data!=='object')return null;return{profileViews:Number(data.profileViews??0),profileConsultations:Number(data.profileConsultations??0),photoRequests:Number(data.photoRequests??0),photoRequestsApproved:Number(data.photoRequestsApproved??0),photoRequestsSent:Number(data.photoRequestsSent??0),contactRequestsReceived:Number(data.contactRequestsReceived??0),contactRequestsSent:Number(data.contactRequestsSent??0),contactRequestsAccepted:Number(data.contactRequestsAccepted??0),contactRequestsRejected:Number(data.contactRequestsRejected??0),contactRequestsPending:Number(data.contactRequestsPending??0),matchesCount:Number(data.matchesCount??0),favoritesCount:Number(data.favoritesCount??0),weeklyGrowthPercentage:Number(data.weeklyGrowthPercentage??0)};}
+export async function getMyProfileStats():Promise<ProfileStats|null>{
+  if(!supabase)return null;
+  try {
+    const rpcPromise = supabase.rpc('get_my_profile_stats');
+    const timeoutPromise = new Promise<any>((resolve) => setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 2500));
+    const {data,error} = await Promise.race([rpcPromise, timeoutPromise]);
+    if(error){console.warn('getMyProfileStats error:',error.message);return null;}
+    if(!data||typeof data!=='object')return null;
+    return{profileViews:Number(data.profileViews??0),profileConsultations:Number(data.profileConsultations??0),photoRequests:Number(data.photoRequests??0),photoRequestsApproved:Number(data.photoRequestsApproved??0),photoRequestsSent:Number(data.photoRequestsSent??0),contactRequestsReceived:Number(data.contactRequestsReceived??0),contactRequestsSent:Number(data.contactRequestsSent??0),contactRequestsAccepted:Number(data.contactRequestsAccepted??0),contactRequestsRejected:Number(data.contactRequestsRejected??0),contactRequestsPending:Number(data.contactRequestsPending??0),matchesCount:Number(data.matchesCount??0),favoritesCount:Number(data.favoritesCount??0),weeklyGrowthPercentage:Number(data.weeklyGrowthPercentage??0)};
+  } catch (err) {
+    return null;
+  }
+}
 
-export async function saveMyProfile(userId:string,profile:Partial<Profile>,onboardingData?:any):Promise<Profile|null>{if(!userId||!supabase)return null;const rawAge=Number(profile.age);const age=Number.isFinite(rawAge)&&rawAge>=18&&rawAge<=100?rawAge:25;const payload:Record<string,any>={user_id:userId,name:profile.name?.trim()||'Membre Nassib',age,profession:profile.profession?.trim()||null,city:profile.city?.trim()||'Niamey',marital_status:profile.maritalStatus?.trim()||'Célibataire',religion:profile.religion?.trim()||'Sunnite',education:profile.education?.trim()||null,photo_url:profile.photoUrl?.trim()||null,photo_private:Boolean(profile.photoPrivate),bio:profile.bio?.trim()||null,gender:profile.gender==='male'?'male':'female',hobbies:profile.hobbies?.trim()||null,interests:profile.interests?.trim()||null,drinks_alcohol:profile.drinksAlcohol??null,smokes:profile.smokes??null,presentation:profile.presentation?.trim()||null,personality:profile.personality?.trim()||null,family_importance:profile.familyImportance?.trim()||null,height:Number.isFinite(Number(profile.height))?Number(profile.height):null,weight:Number.isFinite(Number(profile.weight))?Number(profile.weight):null,ethnicity:profile.ethnicity?.trim()||null,origin_city:profile.originCity?.trim()||null,hijab_status:profile.hijabStatus?.trim()||null,religious_practice_details:profile.religiousPracticeDetails?.trim()||null,values:Array.isArray(profile.values)?profile.values:null,partner_criteria:profile.partnerCriteria?.trim()||null,deal_breakers:Array.isArray(profile.dealBreakers)?profile.dealBreakers:null};if(profile.isVerifiedNNI!==undefined)payload.is_verified_nni=Boolean(profile.isVerifiedNNI);if(profile.isWaliApproved!==undefined)payload.is_wali_approved=Boolean(profile.isWaliApproved);if(profile.isPremium!==undefined)payload.is_premium=Boolean(profile.isPremium);if(profile.boostsCount!==undefined)payload.boosts_count=Number(profile.boostsCount);if(profile.boostedUntil!==undefined)payload.boosted_until=profile.boostedUntil;if(profile.premiumExpiresAt!==undefined)payload.premium_expires_at=profile.premiumExpiresAt;const{data,error}=await supabase.from('profiles').upsert(payload,{onConflict:'user_id'}).select('*').single();if(error||!data){console.warn('saveMyProfile error:',error?.message);return null;}const waliReference=onboardingData?.waliName?.trim()&&onboardingData?.waliPhone?.trim()?`${onboardingData.waliRelation?.trim()||''} : ${onboardingData.waliName.trim()} (${onboardingData.waliPhone.trim()})`:profile.waliReference?.trim()||null;if(waliReference){const{error:privError}=await supabase.from('profile_private').upsert({profile_id:data.id,user_id:userId,wali_reference:waliReference},{onConflict:'profile_id'});if(privError)console.warn('saveMyProfile private data error:',privError.message);}if(Array.isArray(profile.photos)){const{error:deleteError}=await supabase.from('profile_photos').delete().eq('profile_id',data.id).eq('user_id',userId);if(deleteError)console.warn('saveMyProfile photo cleanup error:',deleteError.message);const rows=profile.photos.filter((p):p is string=>Boolean(p&&p.trim())).map((storage_path,index)=>({profile_id:data.id,user_id:userId,storage_path,sort_order:index,is_primary:index===0}));if(rows.length){const{error:photoError}=await supabase.from('profile_photos').insert(rows);if(photoError)console.warn('saveMyProfile photo insert error:',photoError.message);}}const saved=mapProfile(data);if(waliReference)saved.waliReference=waliReference;if(Array.isArray(profile.photos))saved.photos=profile.photos;return saved;}
+export async function saveMyProfile(userId: string, profile: Partial<Profile>, onboardingData?: any): Promise<Profile | null> {
+  if (!userId || !supabase) return null;
+  const rawAge = Number(profile.age);
+  const age = Number.isFinite(rawAge) && rawAge >= 18 && rawAge <= 100 ? rawAge : 25;
+  const payload: Record<string, any> = {
+    user_id: userId,
+    name: profile.name?.trim() || 'Membre Nassib',
+    age,
+    profession: profile.profession?.trim() || null,
+    city: profile.city?.trim() || 'Niamey',
+    marital_status: profile.maritalStatus?.trim() || 'Célibataire',
+    religion: profile.religion?.trim() || 'Sunnite',
+    education: profile.education?.trim() || null,
+    photo_url: profile.photoUrl?.trim() || null,
+    photo_private: Boolean(profile.photoPrivate),
+    bio: profile.bio?.trim() || null,
+    gender: profile.gender === 'male' ? 'male' : 'female',
+    hobbies: profile.hobbies?.trim() || null,
+    interests: profile.interests?.trim() || null,
+    drinks_alcohol: profile.drinksAlcohol ?? null,
+    smokes: profile.smokes ?? null,
+    presentation: profile.presentation?.trim() || null,
+    personality: profile.personality?.trim() || null,
+    family_importance: profile.familyImportance?.trim() || null,
+    height: Number.isFinite(Number(profile.height)) ? Number(profile.height) : null,
+    weight: Number.isFinite(Number(profile.weight)) ? Number(profile.weight) : null,
+    ethnicity: profile.ethnicity?.trim() || null,
+    origin_city: profile.originCity?.trim() || null,
+    mother_tongue: profile.motherTongue?.trim() || null,
+    hijab_status: profile.hijabStatus?.trim() || null,
+    beard_status: profile.beardStatus?.trim() || null,
+    religious_practice_details: profile.religiousPracticeDetails?.trim() || null,
+    quran_reading: profile.quranReading?.trim() || null,
+    quran_memorization: profile.quranMemorization?.trim() || null,
+    has_children: profile.hasChildren?.trim() || null,
+    wants_children: profile.wantsChildren?.trim() || null,
+    relocation: profile.relocation?.trim() || null,
+    polygamy_opinion: profile.polygamyOpinion?.trim() || null,
+    hijra_project: profile.hijraProject?.trim() || null,
+    values: Array.isArray(profile.values) ? profile.values : null,
+    partner_criteria: profile.partnerCriteria?.trim() || null,
+    deal_breakers: Array.isArray(profile.dealBreakers) ? profile.dealBreakers : null,
+  };
+  if (profile.isVerifiedNNI !== undefined) payload.is_verified_nni = Boolean(profile.isVerifiedNNI);
+  if (profile.isWaliApproved !== undefined) payload.is_wali_approved = Boolean(profile.isWaliApproved);
+  if (profile.isPremium !== undefined) payload.is_premium = Boolean(profile.isPremium);
+  if (profile.boostsCount !== undefined) payload.boosts_count = Number(profile.boostsCount);
+  if (profile.boostedUntil !== undefined) payload.boosted_until = profile.boostedUntil;
+  if (profile.premiumExpiresAt !== undefined) payload.premium_expires_at = profile.premiumExpiresAt;
+
+  const { data, error } = await supabase.from('profiles').upsert(payload, { onConflict: 'user_id' }).select('*').single();
+  if (error || !data) {
+    console.warn('saveMyProfile error:', error?.message);
+    return null;
+  }
+  const waliReference = onboardingData?.waliName?.trim() && onboardingData?.waliPhone?.trim()
+    ? `${onboardingData.waliRelation?.trim() || ''} : ${onboardingData.waliName.trim()} (${onboardingData.waliPhone.trim()})`
+    : profile.waliReference?.trim() || null;
+  if (waliReference) {
+    const { error: privError } = await supabase.from('profile_private').upsert({ profile_id: data.id, user_id: userId, wali_reference: waliReference }, { onConflict: 'profile_id' });
+    if (privError) console.warn('saveMyProfile private data error:', privError.message);
+  }
+  if (Array.isArray(profile.photos)) {
+    const { error: deleteError } = await supabase.from('profile_photos').delete().eq('profile_id', data.id).eq('user_id', userId);
+    if (deleteError) console.warn('saveMyProfile photo cleanup error:', deleteError.message);
+    const rows = profile.photos.filter((p): p is string => Boolean(p && p.trim())).map((storage_path, index) => ({ profile_id: data.id, user_id: userId, storage_path, sort_order: index, is_primary: index === 0 }));
+    if (rows.length) {
+      const { error: photoError } = await supabase.from('profile_photos').insert(rows);
+      if (photoError) console.warn('saveMyProfile photo insert error:', photoError.message);
+    }
+  }
+  const saved = mapProfile(data);
+  if (waliReference) saved.waliReference = waliReference;
+  if (Array.isArray(profile.photos)) saved.photos = profile.photos;
+  return saved;
+}
 
 export async function getFavorites(userId:string):Promise<string[]>{if(!userId||!supabase)return[];const{data,error}=await supabase.from('user_favorites').select('profile_id').eq('user_id',userId);if(error){console.warn('getFavorites error:',error.message);return[];}return(data||[]).map((row:any)=>String(row.profile_id));}
 export async function toggleFavorite(userId:string,profileId:string):Promise<boolean>{if(!userId||!profileId||!supabase)return false;const{data,error}=await supabase.rpc('toggle_favorite',{target_profile_id:profileId});if(error){console.warn('toggleFavorite error:',error.message);return false;}const{data:sessionData}=await supabase.auth.getSession();const effectiveUserId=sessionData.session?.user?.id;if(!effectiveUserId||effectiveUserId!==userId)return false;const{data:row,error:verifyError}=await supabase.from('user_favorites').select('id').eq('user_id',effectiveUserId).eq('profile_id',profileId).maybeSingle();if(verifyError){console.warn('toggleFavorite verification error:',verifyError.message);return false;}return(data===true)===Boolean(row);}

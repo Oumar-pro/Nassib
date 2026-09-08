@@ -148,42 +148,77 @@ export default function App() {
 
   const showToast = useCallback((message: string) => { setToastMessage(message); window.setTimeout(() => setToastMessage(null), 3500); }, []);
 
+  const isLoadingDbRef = useRef(false);
+  const isSyncingRef = useRef(false);
+
   const loadDatabaseState = useCallback(async (userId: string) => {
-    if (!userId) return;
-    const myProfile = await getMyProfile(userId);
-    if (myProfile) setCurrentUserProfile(myProfile);
-    const [dbProfiles, dbFavorites, dbConversations, approvedPhotos, recPhotoReqs, sentPhotoReqs, dbStats] = await Promise.all([
-      getProfiles(userId, myProfile), getFavorites(userId), fetchConversationsFromSupabase(myProfile?.id),
-      myProfile?.id ? fetchApprovedPhotoAccessProfileIds(myProfile.id) : Promise.resolve([]),
-      myProfile?.id ? fetchReceivedPhotoAccessRequests(myProfile.id) : Promise.resolve([]),
-      myProfile?.id ? fetchSentPhotoAccessRequests(myProfile.id) : Promise.resolve([]), getMyProfileStats(),
-    ]);
-    setProfiles((dbProfiles || []).filter(hasUploadedPhotos)); setFavoriteProfileIds(dbFavorites); setConversations(dbConversations);
-    setApprovedPhotoIds(approvedPhotos); setReceivedPhotoRequests(recPhotoReqs); setSentPhotoRequests(sentPhotoReqs);
-    const account = getCurrentUserSession();
-    if (account) setUser((prev) => { const next = accountToUser(account, myProfile, myProfile?.photoPrivate ?? prev.photoBlurringActive); if (dbStats) next.stats = { ...next.stats, ...dbStats }; return next; });
+    if (!userId || isLoadingDbRef.current) return;
+    isLoadingDbRef.current = true;
+    try {
+      const myProfile = await getMyProfile(userId);
+      if (myProfile) setCurrentUserProfile(myProfile);
+      const [dbProfiles, dbFavorites, dbConversations, approvedPhotos, recPhotoReqs, sentPhotoReqs, dbStats] = await Promise.all([
+        getProfiles(userId, myProfile).catch(() => []),
+        getFavorites(userId).catch(() => []),
+        fetchConversationsFromSupabase(myProfile?.id).catch(() => []),
+        myProfile?.id ? fetchApprovedPhotoAccessProfileIds(myProfile.id).catch(() => []) : Promise.resolve([]),
+        myProfile?.id ? fetchReceivedPhotoAccessRequests(myProfile.id).catch(() => []) : Promise.resolve([]),
+        myProfile?.id ? fetchSentPhotoAccessRequests(myProfile.id).catch(() => []) : Promise.resolve([]),
+        getMyProfileStats().catch(() => null),
+      ]);
+      setProfiles((dbProfiles || []).filter(hasUploadedPhotos));
+      setFavoriteProfileIds(dbFavorites);
+      setConversations(dbConversations);
+      setApprovedPhotoIds(approvedPhotos);
+      setReceivedPhotoRequests(recPhotoReqs);
+      setSentPhotoRequests(sentPhotoReqs);
+      const account = getCurrentUserSession();
+      if (account) {
+        setUser((prev) => {
+          const next = accountToUser(account, myProfile, myProfile?.photoPrivate ?? prev.photoBlurringActive);
+          if (dbStats) next.stats = { ...next.stats, ...dbStats };
+          return next;
+        });
+      }
+    } finally {
+      isLoadingDbRef.current = false;
+    }
   }, []);
 
   const syncAuth = useCallback(async () => {
-    const account = await restoreCurrentUserSession();
-    if (!account) {
-      setUser(EMPTY_USER); setCurrentUserProfile(null); setProfiles([]); setConversations([]); setMessages([]); setFavoriteProfileIds([]);
-      setApprovedPhotoIds([]); setReceivedPhotoRequests([]); setSentPhotoRequests([]); setActiveConvId(null);
-      setCurrentTab((prev) => (prev !== 'landing' && prev !== 'auth' ? 'landing' : prev));
-      return;
-    }
-    await loadDatabaseState(account.id);
-    setCurrentTab((prev) => {
-      if (prev === 'landing' || prev === 'auth') {
-        try {
-          const savedTab = localStorage.getItem('nassib_active_tab_v1') as TabType;
-          const validTabs: TabType[] = ['dashboard', 'browse', 'requests', 'messages', 'imam', 'verification', 'settings'];
-          if (savedTab && validTabs.includes(savedTab)) return savedTab;
-        } catch {}
-        return 'dashboard';
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
+    try {
+      const account = await restoreCurrentUserSession();
+      if (!account) {
+        setUser(EMPTY_USER);
+        setCurrentUserProfile(null);
+        setProfiles([]);
+        setConversations([]);
+        setMessages([]);
+        setFavoriteProfileIds([]);
+        setApprovedPhotoIds([]);
+        setReceivedPhotoRequests([]);
+        setSentPhotoRequests([]);
+        setActiveConvId(null);
+        setCurrentTab((prev) => (prev !== 'landing' && prev !== 'auth' ? 'landing' : prev));
+        return;
       }
-      return prev;
-    });
+      await loadDatabaseState(account.id);
+      setCurrentTab((prev) => {
+        if (prev === 'landing' || prev === 'auth') {
+          try {
+            const savedTab = localStorage.getItem('nassib_active_tab_v1') as TabType;
+            const validTabs: TabType[] = ['dashboard', 'browse', 'requests', 'messages', 'imam', 'verification', 'settings'];
+            if (savedTab && validTabs.includes(savedTab)) return savedTab;
+          } catch {}
+          return 'dashboard';
+        }
+        return prev;
+      });
+    } finally {
+      isSyncingRef.current = false;
+    }
   }, [loadDatabaseState]);
 
   useEffect(() => {
@@ -198,7 +233,10 @@ export default function App() {
   useEffect(() => {
     syncAuth();
     if (!supabase) return;
-    const { data } = supabase.auth.onAuthStateChange(() => { window.setTimeout(() => syncAuth(), 0); });
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'TOKEN_REFRESHED') return;
+      window.setTimeout(() => syncAuth(), 100);
+    });
     return () => data.subscription.unsubscribe();
   }, [syncAuth]);
 
@@ -416,9 +454,41 @@ export default function App() {
   };
 
   const handleAuthSuccess = async (userAcc: AuthAccount, isRegister: boolean) => {
-    await loadDatabaseState(userAcc.id);
-    if(isRegister){setRegisteredUserData({id:userAcc.id,email:userAcc.email,name:userAcc.name,role:userAcc.role,phone:userAcc.phone||''});setCurrentTab('onboarding');showToast('Compte créé. Complétez maintenant votre profil.');}
-    else{setCurrentTab('dashboard');try{localStorage.setItem('nassib_active_tab_v1','dashboard');}catch{}showToast(`Ravi de vous revoir sur Nassib, ${userAcc.name} !`);}
+    // 1. Mettre à jour l'utilisateur immédiatement en mémoire
+    setUser((prev) => ({
+      ...prev,
+      id: userAcc.id,
+      name: userAcc.name || prev.name,
+      email: userAcc.email || prev.email,
+      phone: userAcc.phone || prev.phone,
+      role: userAcc.role || prev.role,
+      gender: userAcc.gender || prev.gender,
+      isPremium: Boolean(userAcc.isPremium),
+      isVerifiedNNI: Boolean(userAcc.isVerifiedNNI),
+      isWaliApproved: Boolean(userAcc.isWaliApproved),
+      photoUrl: userAcc.photoUrl || prev.photoUrl,
+    }));
+
+    if (isRegister) {
+      setRegisteredUserData({
+        id: userAcc.id,
+        email: userAcc.email,
+        name: userAcc.name,
+        role: userAcc.role,
+        phone: userAcc.phone || '',
+      });
+      setCurrentTab('onboarding');
+      showToast('Compte créé. Complétez maintenant votre profil.');
+    } else {
+      setCurrentTab('dashboard');
+      try {
+        localStorage.setItem('nassib_active_tab_v1', 'dashboard');
+      } catch {}
+      showToast(`Ravi de vous revoir sur Nassib, ${userAcc.name || ''} !`);
+    }
+
+    // 2. Charger les données en arrière-plan sans bloquer l'interface
+    loadDatabaseState(userAcc.id);
   };
 
   const handleLogout = async () => { await logoutUserSession(); try{localStorage.removeItem('nassib_active_tab_v1');}catch{} setUser(EMPTY_USER);setProfiles([]);setConversations([]);setMessages([]);setFavoriteProfileIds([]);setActiveConvId(null);setMobileMenuOpen(false);setCurrentTab('landing'); };

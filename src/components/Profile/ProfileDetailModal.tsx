@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Profile, User } from '../../types';
 import SafeImage from '../Common/SafeImage';
+import { MessageIdeasModal } from '../Modals/MessageIdeasModal';
 
 interface ProfileDetailModalProps {
   profile: Profile | null;
@@ -31,6 +32,8 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
   hasUploadedPhoto = true,
   onRequestPhotoUpload,
 }) => {
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [ideasModalOpen, setIdeasModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState('Comportement inapproprié');
   const [reportDescription, setReportDescription] = useState('');
@@ -41,6 +44,46 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
   const [blockSubmitted, setBlockSubmitted] = useState(false);
 
   if (!profile) return null;
+
+  // Photo blurring rule:
+  const isPhotoBlurred = profile.photoPrivate && photoAccessState !== 'ALLOWED';
+
+  // Photo array
+  const allPhotos: string[] = [
+    ...(profile.photoUrl && profile.photoUrl.trim() ? [profile.photoUrl.trim()] : []),
+    ...(Array.isArray(profile.photos)
+      ? profile.photos.filter((p) => p && p.trim() && p.trim() !== profile.photoUrl?.trim())
+      : []),
+  ];
+  if (allPhotos.length === 0 && profile.photoUrl) allPhotos.push(profile.photoUrl);
+  const currentPhoto = allPhotos[activePhotoIndex] || profile.photoUrl || '';
+
+  // Personality tags (strictly from user input)
+  const personalityTags = (() => {
+    const tags: string[] = [];
+    if (profile.personality) {
+      profile.personality.split(/[,;•\n]+/).forEach((t) => {
+        const clean = t.trim();
+        if (clean && !tags.includes(clean)) tags.push(clean);
+      });
+    }
+    if (profile.interests) {
+      profile.interests.split(/[,;•\n]+/).forEach((t) => {
+        const clean = t.trim();
+        if (clean && !tags.includes(clean)) tags.push(clean);
+      });
+    }
+    return tags;
+  })();
+
+  const valuesTags =
+    Array.isArray(profile.values) && profile.values.length > 0
+      ? profile.values
+      : [];
+
+  const isFemale = profile.gender === 'female';
+  const rechercheLabel = isFemale ? "Ce qu'elle recherche" : "Ce qu'il recherche";
+  const acceptePasLabel = isFemale ? "Ce qu'elle n'accepte pas" : "Ce qu'il n'accepte pas";
 
   const handleSendReport = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,18 +116,27 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
         <div className="sm:hidden w-12 h-1.5 bg-[#E8E3D7] rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
 
         {/* Modal Header Bar */}
-        <div className="p-4 sm:p-6 border-b border-[#E8E3D7] flex justify-between items-center bg-[#FAF8F2]">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#0F5C4D]">person</span>
-            <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
-              Fiche de Profil Matrimonial
-            </h3>
-          </div>
+        <div className="p-4 sm:p-5 border-b border-[#E8E3D7] flex justify-between items-center bg-white shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center gap-2 text-base font-semibold text-[#211E1A] hover:text-[#0F5C4D] transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-xl">arrow_back</span>
+            <span>Retour</span>
+          </button>
+
           <div className="flex items-center gap-2">
             {onToggleFavorite && (
               <button
                 type="button"
-                onClick={() => onToggleFavorite(profile.id)}
+                onClick={() => {
+                  if (!hasUploadedPhoto) {
+                    onRequestPhotoUpload?.();
+                    return;
+                  }
+                  onToggleFavorite(profile.id);
+                }}
                 className={`p-2 rounded-full transition-all cursor-pointer flex items-center justify-center ${
                   isFavorited
                     ? 'bg-[#C9A45C]/20 text-[#735619] hover:bg-[#C9A45C]/30'
@@ -96,26 +148,24 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                   className={`material-symbols-outlined text-xl ${isFavorited ? 'text-[#C9A45C]' : ''}`}
                   style={{ fontVariationSettings: isFavorited ? "'FILL' 1" : "'FILL' 0" }}
                 >
-                  favorite
+                  star
                 </span>
               </button>
             )}
 
-            {/* Report button */}
             <button
               type="button"
               onClick={() => setReportModalOpen(true)}
-              className="p-1.5 text-[#7D766C] hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+              className="p-2 text-[#7D766C] hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
               title="Signaler ce profil"
             >
               <span className="material-symbols-outlined text-lg">flag</span>
             </button>
 
-            {/* Block button */}
             <button
               type="button"
               onClick={() => setBlockModalOpen(true)}
-              className="p-1.5 text-[#7D766C] hover:text-red-700 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+              className="p-2 text-[#7D766C] hover:text-red-700 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
               title="Bloquer ce profil"
             >
               <span className="material-symbols-outlined text-lg">block</span>
@@ -123,7 +173,7 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 text-[#7D766C] hover:text-[#211E1A] hover:bg-[#FAF8F2] rounded-full transition-colors cursor-pointer"
+              className="p-2 text-[#7D766C] hover:text-[#211E1A] hover:bg-[#FAF8F2] rounded-full transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
@@ -131,7 +181,8 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
         </div>
 
         {/* Modal Content Scrollable */}
-        <div className="p-6 overflow-y-auto space-y-6 custom-scrollbar">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 custom-scrollbar">
+          {/* Photo Reminder */}
           {!hasUploadedPhoto && (
             <div className="p-4 bg-white border border-[#C9A45C]/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
               <div className="flex items-start sm:items-center gap-3">
@@ -140,10 +191,10 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                 </span>
                 <div>
                   <p className="font-display font-bold text-xs sm:text-sm text-[#211E1A]">
-                    Votre profil n'est pas visible dans l'application
+                    Mode consultation active
                   </p>
                   <p className="font-body text-xs text-[#575147]">
-                    Sans photo de profil, votre compte reste invisible aux autres membres et vous êtes en mode consultation seule. Ajoutez au moins une photo pour devenir visible et pouvoir interagir.
+                    Ajoutez au moins une photo à votre profil pour interagir avec {profile.name}.
                   </p>
                 </div>
               </div>
@@ -162,276 +213,415 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
             </div>
           )}
 
-          {/* Main Top Profile Summary */}
-          <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
-            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-[#0F5C4D] shrink-0 bg-[#FAF8F2] flex items-center justify-center">
-              {profile.photoUrl ? (
+          {/* Hero Photo Card */}
+          <div className="bg-white rounded-3xl overflow-hidden border border-[#E8E3D7] shadow-xs">
+            <div className="relative w-full aspect-square sm:aspect-4/3 max-h-[440px] bg-[#FAF8F2] flex items-center justify-center overflow-hidden">
+              {currentPhoto ? (
                 <SafeImage
-                  src={profile.photoUrl}
+                  src={currentPhoto}
                   alt={profile.name}
                   fallbackName={profile.name}
-                  className={`w-full h-full object-cover transition-all duration-300 ${
-                    profile.photoPrivate && photoAccessState !== 'ALLOWED' ? 'blur-xl scale-110' : ''
+                  className={`w-full h-full object-cover transition-all duration-500 ${
+                    isPhotoBlurred ? 'blur-2xl scale-125 select-none pointer-events-none' : ''
                   }`}
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF8F2] text-[#0F5C4D]">
-                  <span className="material-symbols-outlined text-4xl text-[#8BAE9F]">person</span>
+                  <span className="material-symbols-outlined text-5xl text-[#8BAE9F]">person</span>
                 </div>
               )}
-              <div className="absolute bottom-1 right-1 bg-white px-2 py-0.5 rounded-full text-[10px] font-bold text-[#0F5C4D] shadow-xs border border-[#E8E3D7]">
-                {profile.matchPercentage}%
-              </div>
-            </div>
 
-            <div className="space-y-2 flex-grow">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-2xl font-bold text-[#211E1A]">
-                  {profile.name}, {profile.age} ans
-                </h2>
-              </div>
+              {/* Top Left Badge: Premium */}
+              {profile.isPremium && (
+                <div className="absolute top-4 left-4 z-10 bg-[#E6C687] text-[#211E1A] font-display text-xs font-extrabold uppercase px-3 py-1.5 rounded-xl shadow-md flex items-center gap-1.5 tracking-wider border border-white/50">
+                  <span className="material-symbols-outlined text-base">workspace_premium</span>
+                  <span>PREMIUM</span>
+                </div>
+              )}
 
-              <p className="font-body text-xs sm:text-sm text-[#575147] flex items-center gap-1 font-medium">
-                <span className="material-symbols-outlined text-sm text-[#0F5C4D]">location_on</span>
-                {profile.profession} • Ville : {profile.city}
-              </p>
-
-              {/* Status Badges */}
-              <div className="flex flex-wrap gap-2 pt-1">
-                {profile.isPremium && (
-                  <span className="bg-gradient-to-r from-[#D4AF37] to-[#AA7C11] text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs border border-white/40">
-                    <span className="material-symbols-outlined text-sm font-bold text-white">workspace_premium</span>
-                    Membre Sérieux • Premium
+              {/* Blurred Photo Overlay Notice */}
+              {isPhotoBlurred && (
+                <div className="absolute inset-0 bg-[#211E1A]/40 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center text-white z-10">
+                  <span className="material-symbols-outlined text-4xl mb-2 text-[#E8E3D7]">lock</span>
+                  <span className="font-display text-sm font-bold uppercase tracking-wider">
+                    Photo confidentielle
                   </span>
-                )}
-                {profile.isVerifiedNNI && (
-                  <span className="bg-[#8BAE9F]/20 text-[#0F5C4D] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-[#8BAE9F]/30">
-                    <span className="material-symbols-outlined text-sm font-bold">verified</span>
-                    Identité NNI Vérifiée
+                  <span className="text-xs text-[#FAF8F2]/90 mt-1 max-w-xs font-body">
+                    Visibilité réservée après accord mutuel
                   </span>
-                )}
-                {profile.isWaliApproved && (
-                  <span className="bg-[#C9A45C]/15 text-[#735619] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-[#C9A45C]/30">
-                    <span className="material-symbols-outlined text-sm text-[#C9A45C]">shield_person</span>
-                    Approuvé par Wali
-                  </span>
-                )}
-                {profile.isAdmin && (
-                  <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-purple-200">
-                    <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-                    Modérateur
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Key Attributes Bento Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-            <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7]">
-              <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
-                Statut Matrimonial
-              </span>
-              <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                {profile.maritalStatus}
-              </span>
+                  {onRequestPhotoAccess && (
+                    <button
+                      type="button"
+                      onClick={() => onRequestPhotoAccess(profile)}
+                      className="mt-4 px-4 py-2 rounded-xl bg-white text-[#0F5C4D] font-display text-xs font-bold shadow-md hover:bg-[#FAF8F2] transition-colors cursor-pointer"
+                    >
+                      {photoAccessState === 'PENDING' ? 'Demande envoyée' : "Demander l'accès"}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7]">
-              <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
-                Religion / Pratique
+            {/* Gallery counter bar */}
+            <div className="px-5 py-3.5 bg-white border-t border-[#E8E3D7] flex items-center justify-between">
+              <span className="font-serif-display font-bold text-base text-[#211E1A]">
+                Photos ({allPhotos.length})
               </span>
-              <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                {profile.religion}
-              </span>
-            </div>
-
-            <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2 sm:col-span-1">
-              <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
-                Niveau d'Études
-              </span>
-              <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                {profile.education}
-              </span>
-            </div>
-
-            {profile.personality && (
-              <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2 sm:col-span-1">
-                <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
-                  Tempérament
-                </span>
-                <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                  {profile.personality}
-                </span>
-              </div>
-            )}
-
-            {(profile.height || profile.weight) && (
-              <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2 sm:col-span-1">
-                <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
-                  Taille &amp; Poids
-                </span>
-                <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                  {profile.height ? `${profile.height} cm` : ''}
-                  {profile.height && profile.weight ? ' • ' : ''}
-                  {profile.weight ? `${profile.weight} kg` : ''}
-                </span>
-              </div>
-            )}
-
-            {(profile.ethnicity || profile.originCity) && (
-              <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2 sm:col-span-1">
-                <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
-                  Origine &amp; Ethnie
-                </span>
-                <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                  {profile.ethnicity || profile.originCity}
-                </span>
-              </div>
-            )}
-
-            {(profile.hijabStatus || profile.religiousPracticeDetails) && (
-              <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2 sm:col-span-1">
-                <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
-                  Pratique / Tenue
-                </span>
-                <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                  {profile.hijabStatus || profile.religiousPracticeDetails}
-                </span>
-              </div>
-            )}
-
-            {profile.familyImportance && (
-              <div className="p-3 bg-[#FAF8F2] rounded-2xl border border-[#E8E3D7] col-span-2">
-                <span className="font-body text-[10px] text-[#7D766C] uppercase font-bold tracking-wider block">
-                  Priorité Familiale
-                </span>
-                <span className="font-display text-xs sm:text-sm font-bold text-[#211E1A]">
-                  {profile.familyImportance}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Lifestyle Info (Alcohol, Smoking) */}
-          <div className="flex flex-wrap gap-3">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl text-xs text-[#575147]">
-              <span className="material-symbols-outlined text-sm text-[#0F5C4D]">
-                {profile.smokes ? 'smoking_rooms' : 'smoke_free'}
-              </span>
-              <span>{profile.smokes ? 'Fumeur' : 'Non-fumeur'}</span>
-            </div>
-
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl text-xs text-[#575147]">
-              <span className="material-symbols-outlined text-sm text-[#0F5C4D]">
-                {profile.drinksAlcohol ? 'local_bar' : 'no_drinks'}
-              </span>
-              <span>{profile.drinksAlcohol ? 'Consommation occasionnelle' : 'Ne boit pas d\'alcool'}</span>
-            </div>
-
-            {profile.interests && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl text-xs text-[#575147]">
-                <span className="material-symbols-outlined text-sm text-[#C9A45C]">interests</span>
-                <span>{profile.interests}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Photo Gallery if photos exist */}
-          {profile.photos && profile.photos.filter((p) => Boolean(p) && p.trim() !== '').length > 0 && (
-            <div className="space-y-2 pt-2">
-              <h4 className="font-display text-sm font-bold text-[#211E1A] flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-base text-[#0F5C4D]">photo_library</span>
-                <span>Photos du Profil ({profile.photos.filter((p) => Boolean(p) && p.trim() !== '').length})</span>
-              </h4>
-              <div className="grid grid-cols-3 gap-2">
-                {profile.photos.filter((p) => Boolean(p) && p.trim() !== '').map((photoUrl, idx) => (
-                  <div key={idx} className="h-32 rounded-2xl overflow-hidden border border-[#E8E3D7] bg-[#FAF8F2]">
-                    <SafeImage
-                      src={photoUrl}
-                      alt={`Photo ${idx + 1}`}
-                      fallbackName={profile.name}
-                      className={`w-full h-full object-cover ${
-                        profile.photoPrivate ? 'blur-md' : ''
+              {allPhotos.length > 1 && (
+                <div className="flex items-center gap-1.5">
+                  {allPhotos.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActivePhotoIndex(idx)}
+                      className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${
+                        activePhotoIndex === idx
+                          ? 'bg-[#0F5C4D] w-5'
+                          : 'bg-[#D1CABE] hover:bg-[#A89F91]'
                       }`}
+                      title={`Photo ${idx + 1}`}
                     />
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Identity & Badges */}
+          <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#E8E3D7] shadow-xs space-y-3">
+            <h1 className="font-serif-display text-3xl font-bold text-[#211E1A]">
+              {profile.name}{' '}
+              <span className="font-normal text-[#7D766C] text-2xl ml-1">
+                {profile.age} ans
+              </span>
+            </h1>
+
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#EAF5F2] text-[#0F5C4D] text-xs font-semibold">
+                <span className="material-symbols-outlined text-sm text-[#0F5C4D]">favorite</span>
+                <span>{profile.matchPercentage || 0}% compatible</span>
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-sm text-[#575147] font-medium pt-1">
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-base text-[#7D766C]">location_on</span>
+                <span>{profile.city || 'Niamey'}, Niger 🇳🇪</span>
+              </span>
+              <span className="text-[#C9C2B5]">•</span>
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-base text-[#7D766C]">work</span>
+                <span>{profile.profession || 'Activité professionnelle'}</span>
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-2">
+              {profile.maritalStatus && (
+                <span className="px-3.5 py-1.5 rounded-full bg-[#EAF5F2] text-[#0F5C4D] text-xs font-medium">
+                  {profile.maritalStatus}
+                </span>
+              )}
+              {profile.profession && (
+                <span className="px-3.5 py-1.5 rounded-full bg-[#EAF5F2] text-[#0F5C4D] text-xs font-medium">
+                  {profile.profession}
+                </span>
+              )}
+              {profile.education && (
+                <span className="px-3.5 py-1.5 rounded-full bg-[#EAF5F2] text-[#0F5C4D] text-xs font-medium">
+                  {profile.education}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Card: Origine & langue */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#EAF5F2] text-[#0F5C4D] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">group</span>
+              </div>
+              <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
+                Origine & langue
+              </h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-1">
+              <div>
+                <span className="text-xs text-[#7D766C] font-medium block">Ethnie</span>
+                <span className="text-sm font-semibold text-[#211E1A] mt-0.5 block">
+                  {profile.ethnicity || 'Non renseigné'}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-[#7D766C] font-medium block">Ville d'origine</span>
+                <span className="text-sm font-semibold text-[#211E1A] mt-0.5 block">
+                  {profile.originCity || 'Non renseigné'}
+                </span>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <span className="text-xs text-[#7D766C] font-medium block">Langue maternelle</span>
+                <span className="text-sm font-semibold text-[#211E1A] mt-0.5 block">
+                  {profile.motherTongue || 'Non renseigné'}
+                </span>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Bio & Intentions */}
-          <div className="space-y-3 pt-2">
-            <h4 className="font-display text-sm font-bold text-[#211E1A] flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-base text-[#0F5C4D]">description</span>
-              <span>Présentation Personnelle (Bio)</span>
-            </h4>
-            <p className="font-body text-xs sm:text-sm text-[#575147] leading-relaxed bg-[#FAF8F2] p-4 rounded-2xl border border-[#E8E3D7]">
-              "{profile.bio || profile.presentation || 'Aucune description rédigée.'}"
+          {/* Card: Coran */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#EAF5F2] text-[#0F5C4D] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">menu_book</span>
+              </div>
+              <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
+                Coran
+              </h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-1">
+              <div>
+                <span className="text-xs text-[#7D766C] font-medium block">Lecture</span>
+                <span className="text-sm font-semibold text-[#211E1A] mt-0.5 block">
+                  {profile.quranReading || 'Non renseigné'}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-[#7D766C] font-medium block">Mémorisation</span>
+                <span className="text-sm font-semibold text-[#211E1A] mt-0.5 block">
+                  {profile.quranMemorization || 'Non renseigné'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: À propos */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs space-y-3">
+            <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
+              À propos
+            </h3>
+            <p className="font-body text-sm text-[#575147] leading-relaxed">
+              {profile.bio || profile.presentation || (
+                <span className="text-[#7D766C] italic text-sm">Non renseigné</span>
+              )}
             </p>
           </div>
 
-          {/* Ce que la personne cherche (Critères du conjoint) */}
-          {profile.partnerCriteria && (
-            <div className="space-y-2 pt-1">
-              <h4 className="font-display text-sm font-bold text-[#0F5C4D] flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-base text-[#0F5C4D]">search_check</span>
-                <span>Ce que la personne cherche chez son conjoint</span>
-              </h4>
-              <div className="p-4 bg-[#0F5C4D]/5 rounded-2xl border border-[#0F5C4D]/20 text-xs sm:text-sm text-[#211E1A] leading-relaxed">
-                {profile.partnerCriteria}
-              </div>
-            </div>
-          )}
-
-          {/* Valeurs Cardinales du Foyer */}
-          {profile.values && profile.values.length > 0 && (
-            <div className="space-y-2 pt-1">
-              <h4 className="font-display text-sm font-bold text-[#211E1A] flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-base text-[#C9A45C]">stars</span>
-                <span>Valeurs Cardinales du Foyer</span>
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {profile.values.map((v, i) => (
+          {/* Card: Valeurs */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs space-y-3">
+            <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
+              Valeurs
+            </h3>
+            {valuesTags.length > 0 ? (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {valuesTags.map((val, idx) => (
                   <span
-                    key={i}
-                    className="px-3 py-1.5 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl text-xs font-semibold text-[#0F5C4D]"
+                    key={idx}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#EAF5F2] text-[#0F5C4D] text-xs font-semibold"
                   >
-                    {v}
+                    <span className="text-xs">✨</span>
+                    <span>{val}</span>
                   </span>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-[#7D766C] italic">Non renseigné</p>
+            )}
+          </div>
 
-          {/* Ce qu'elle n'accepte pas (Lignes Rouges) */}
-          {profile.dealBreakers && profile.dealBreakers.length > 0 && (
-            <div className="space-y-2 pt-1">
-              <h4 className="font-display text-sm font-bold text-red-800 flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-base text-red-600">block</span>
-                <span>Ce qu'elle n'accepte pas (Lignes Rouges)</span>
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {profile.dealBreakers.map((db, i) => (
+          {/* Card: Ma vision du mariage */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#EAF5F2] text-[#0F5C4D] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">favorite</span>
+              </div>
+              <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
+                Ma vision du mariage
+              </h3>
+            </div>
+            <p className="font-body text-sm text-[#575147] leading-relaxed">
+              {profile.familyImportance || (
+                <span className="text-[#7D766C] italic text-sm">Non renseigné</span>
+              )}
+            </p>
+          </div>
+
+          {/* Card: Ce qu'il/elle recherche */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#EAF5F2] text-[#0F5C4D] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">group</span>
+              </div>
+              <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
+                {rechercheLabel}
+              </h3>
+            </div>
+            <p className="font-body text-sm text-[#575147] leading-relaxed">
+              {profile.partnerCriteria || (
+                <span className="text-[#7D766C] italic text-sm">Non renseigné</span>
+              )}
+            </p>
+          </div>
+
+          {/* Card: Pratique religieuse */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#EAF5F2] text-[#0F5C4D] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">menu_book</span>
+              </div>
+              <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
+                Pratique religieuse
+              </h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-1">
+              <div>
+                <span className="text-xs text-[#7D766C] font-medium block">Niveau</span>
+                <span className="text-sm font-semibold text-[#211E1A] mt-0.5 block">
+                  {profile.religion || 'Non renseigné'}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-[#7D766C] font-medium block">Prière</span>
+                <span className="text-sm font-semibold text-[#211E1A] mt-0.5 block">
+                  {profile.religiousPracticeDetails || 'Non renseigné'}
+                </span>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <span className="text-xs text-[#7D766C] font-medium block">
+                  {isFemale ? 'Tenue / Voile' : 'Barbe'}
+                </span>
+                <span className="text-sm font-semibold text-[#211E1A] mt-0.5 block">
+                  {isFemale ? profile.hijabStatus || 'Non renseigné' : profile.beardStatus || 'Non renseigné'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Personnalité */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#EAF5F2] text-[#0F5C4D] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">psychology</span>
+              </div>
+              <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
+                Personnalité
+              </h3>
+            </div>
+            {personalityTags.length > 0 ? (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {personalityTags.map((trait, idx) => (
                   <span
-                    key={i}
-                    className="px-3 py-1.5 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-700"
+                    key={idx}
+                    className="px-3.5 py-1.5 rounded-full bg-[#EAF5F2] text-[#0F5C4D] text-xs font-semibold"
                   >
-                    {db}
+                    {trait}
                   </span>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-[#7D766C] italic">Non renseigné</p>
+            )}
+          </div>
 
-          {/* Wali Reference Info */}
+          {/* Card: Projet de vie */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#EAF5F2] text-[#0F5C4D] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">home</span>
+              </div>
+              <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
+                Projet de vie
+              </h3>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="p-3.5 rounded-2xl border border-[#E8E3D7] bg-[#FAF8F2]/60 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[#7D766C]">
+                  <span className="material-symbols-outlined text-base">child_care</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">
+                    A des enfants
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-[#211E1A]">
+                  {profile.hasChildren || 'Non spécifié'}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl border border-[#E8E3D7] bg-[#FAF8F2]/60 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[#7D766C]">
+                  <span className="material-symbols-outlined text-base">group</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">
+                    Souhaite des enfants
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-[#211E1A]">
+                  {profile.wantsChildren || 'Non spécifié'}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl border border-[#E8E3D7] bg-[#FAF8F2]/60 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[#7D766C]">
+                  <span className="material-symbols-outlined text-base">local_shipping</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">
+                    Ouvert au déménagement
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-[#211E1A]">
+                  {profile.relocation || 'Non spécifié'}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl border border-[#E8E3D7] bg-[#FAF8F2]/60 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[#7D766C]">
+                  <span className="material-symbols-outlined text-base">diversity_3</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">
+                    Polygamie
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-[#211E1A]">
+                  {profile.polygamyOpinion ||
+                    (profile.maritalStatus?.includes('Polygame')
+                      ? 'Déjà engagé(e)'
+                      : 'Non spécifié')}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl border border-[#E8E3D7] bg-[#FAF8F2]/60 space-y-1.5 col-span-2 sm:col-span-1">
+                <div className="flex items-center gap-1.5 text-[#7D766C]">
+                  <span className="material-symbols-outlined text-base">flight</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">
+                    Hijra / Expatriation
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-[#211E1A]">
+                  {profile.hijraProject || 'Non spécifié'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Ce qu'il/elle n'accepte pas */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E3D7] shadow-xs space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#EAF5F2] text-[#0F5C4D] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">block</span>
+              </div>
+              <h3 className="font-serif-display text-lg font-bold text-[#211E1A]">
+                {acceptePasLabel}
+              </h3>
+            </div>
+            <p className="font-body text-sm text-[#575147] leading-relaxed">
+              {Array.isArray(profile.dealBreakers) && profile.dealBreakers.length > 0 ? (
+                profile.dealBreakers.join(', ')
+              ) : (
+                <span className="text-[#7D766C] italic text-sm">Non renseigné</span>
+              )}
+            </p>
+          </div>
+
+          {/* Wali Card */}
           {profile.waliReference && (
             <div className="p-4 bg-[#C9A45C]/15 border border-[#C9A45C]/30 rounded-2xl flex items-center justify-between text-xs">
               <div className="flex items-center gap-2 text-[#735619]">
-                <span className="material-symbols-outlined text-lg text-[#C9A45C]">supervisor_account</span>
+                <span className="material-symbols-outlined text-lg text-[#C9A45C]">shield_person</span>
                 <div>
-                  <p className="font-bold">Référence du Tuteur Légale (Wali)</p>
+                  <p className="font-bold">Référence du Tuteur Légal (Wali)</p>
                   <p className="text-[#575147]">{profile.waliReference}</p>
                 </div>
               </div>
@@ -442,78 +632,51 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
           )}
         </div>
 
-        {/* Modal Actions */}
-        <div className="p-4 sm:p-6 border-t border-[#E8E3D7] bg-[#FAF8F2] flex flex-col sm:flex-row gap-3">
-          {onToggleFavorite && (
+        {/* Modal Actions Footer */}
+        <div className="p-4 sm:p-5 border-t border-[#E8E3D7] bg-white space-y-2.5 shrink-0">
+          <div className="flex flex-col sm:flex-row gap-2.5">
             <button
-              type="button"
               onClick={() => {
                 if (!hasUploadedPhoto) {
                   onRequestPhotoUpload?.();
                   return;
                 }
-                onToggleFavorite(profile.id);
+                onStartMessage(profile);
               }}
-              className={`px-4 py-3 rounded-xl font-display text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 border cursor-pointer ${
-                isFavorited
-                  ? 'bg-[#C9A45C]/20 border-[#C9A45C]/50 text-[#735619] hover:bg-[#C9A45C]/30'
-                  : 'bg-white border-[#E8E3D7] text-[#575147] hover:bg-[#FAF8F2]'
-              }`}
+              className="flex-1 py-3.5 bg-[#0F5C4D] text-white rounded-2xl font-display text-sm font-bold hover:bg-[#0c4a3e] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
             >
-              <span
-                className={`material-symbols-outlined text-base ${isFavorited ? 'text-[#C9A45C]' : ''}`}
-                style={{ fontVariationSettings: isFavorited ? "'FILL' 1" : "'FILL' 0" }}
-              >
-                favorite
-              </span>
-              <span>{isFavorited ? 'Dans vos favoris' : 'Ajouter aux favoris'}</span>
+              <span className="material-symbols-outlined text-lg">outgoing_mail</span>
+              <span>Envoyer une demande de contact</span>
             </button>
-          )}
 
-          {profile.photoPrivate ? (
-            photoAccessState === 'ALLOWED' ? (
-              <div className="flex-1 py-3 px-3 bg-[#8BAE9F]/20 border border-[#8BAE9F]/40 text-[#0F5C4D] rounded-xl font-display text-xs font-bold flex items-center justify-center gap-1.5">
-                <span className="material-symbols-outlined text-sm">lock_open</span>
-                Photos débloquées (Acceptée)
-              </div>
-            ) : photoAccessState === 'PENDING' ? (
-              <div className="flex-1 py-3 px-3 bg-[#C9A45C]/15 border border-[#C9A45C]/30 text-[#735619] rounded-xl font-display text-xs font-bold flex items-center justify-center gap-1.5">
-                <span className="material-symbols-outlined text-sm animate-pulse">hourglass_top</span>
-                Demande d'accès en attente
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  if (!hasUploadedPhoto) {
-                    onRequestPhotoUpload?.();
-                    return;
-                  }
-                  onRequestPhotoAccess(profile);
-                }}
-                className="flex-1 py-3 bg-white border border-[#E8E3D7] text-[#211E1A] rounded-xl font-display text-xs font-bold hover:bg-[#FAF8F2] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
-              >
-                <span className="material-symbols-outlined text-sm">visibility</span>
-                Demander Accès à la Photo
-              </button>
-            )
-          ) : null}
+            <button
+              type="button"
+              onClick={() => setIdeasModalOpen(true)}
+              className="py-3.5 px-4 rounded-2xl bg-white border border-[#E8E3D7] hover:bg-[#FAF8F2] text-[#211E1A] font-display text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <span>💡 Idées de message</span>
+            </button>
+          </div>
 
-          <button
-            onClick={() => {
-              if (!hasUploadedPhoto) {
-                onRequestPhotoUpload?.();
-                return;
-              }
-              onStartMessage(profile);
-            }}
-            className="flex-1 py-3 bg-[#0F5C4D] text-white rounded-xl font-display text-xs sm:text-sm font-bold hover:bg-[#0c4a3e] transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
-              chat
-            </span>
-            Démarrer une Conversation Supervisée
-          </button>
+          <p className="text-center text-[11px] text-[#7D766C]">
+            Demandes aujourd'hui {currentUser?.dailyContactsCount || 0}/3
+          </p>
         </div>
+
+        {/* Message Ideas Modal */}
+        <MessageIdeasModal
+          isOpen={ideasModalOpen}
+          onClose={() => setIdeasModalOpen(false)}
+          profile={profile}
+          onSelectIdea={() => {
+            setIdeasModalOpen(false);
+            if (hasUploadedPhoto) {
+              onStartMessage(profile);
+            } else {
+              onRequestPhotoUpload?.();
+            }
+          }}
+        />
 
         {/* Nested Report Modal */}
         {reportModalOpen && (
@@ -536,11 +699,11 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
               {reportSubmitted ? (
                 <div className="p-4 bg-emerald-50 text-[#0F5C4D] rounded-xl text-xs font-semibold flex items-center gap-2">
                   <span className="material-symbols-outlined">check_circle</span>
-                  Votre signalement a été transmis à la modération. Merci de préserver l'éthique de la communauté.
+                  Votre signalement a été transmis à la modération.
                 </div>
               ) : (
                 <form onSubmit={handleSendReport} className="space-y-3">
-                  <div className="space-y-1">
+                  <div>
                     <label className="text-xs font-semibold text-[#575147]">Motif du signalement</label>
                     <select
                       value={reportReason}
@@ -548,37 +711,34 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                       className="w-full h-10 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3 text-xs text-[#211E1A]"
                     >
                       <option value="Comportement inapproprié">Comportement inapproprié</option>
-                      <option value="Fausse identité / Fraude">Fausse identité / Fraude</option>
-                      <option value="Non-respect du cadre islamique">Non-respect du cadre islamique</option>
-                      <option value="Harcèlement ou spam">Harcèlement ou spam</option>
+                      <option value="Faux profil ou usurpation">Faux profil ou usurpation</option>
+                      <option value="Photo non conforme">Photo non conforme</option>
                       <option value="Autre motif">Autre motif</option>
                     </select>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-[#575147]">Précisions (optionnel)</label>
+                  <div>
+                    <label className="text-xs font-semibold text-[#575147]">Précisions</label>
                     <textarea
+                      rows={3}
                       value={reportDescription}
                       onChange={(e) => setReportDescription(e.target.value)}
-                      rows={3}
-                      placeholder="Expliquez brièvement les faits constatés..."
                       className="w-full bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl p-3 text-xs text-[#211E1A]"
+                      placeholder="Détails supplémentaires..."
                     />
                   </div>
-
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex justify-end gap-2 pt-2">
                     <button
                       type="button"
                       onClick={() => setReportModalOpen(false)}
-                      className="flex-1 py-2 bg-gray-100 text-[#575147] rounded-xl text-xs font-bold hover:bg-gray-200"
+                      className="px-4 py-2 text-xs font-semibold text-[#575147] hover:bg-[#FAF8F2] rounded-xl"
                     >
                       Annuler
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 shadow-xs"
+                      className="px-4 py-2 text-xs font-bold bg-red-600 text-white rounded-xl hover:bg-red-700"
                     >
-                      Confirmer le signalement
+                      Envoyer
                     </button>
                   </div>
                 </form>
@@ -592,8 +752,8 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
           <div className="absolute inset-0 bg-[#211E1A]/70 backdrop-blur-xs flex items-center justify-center p-4 z-20">
             <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl border border-[#E8E3D7] space-y-4">
               <div className="flex justify-between items-center">
-                <h4 className="font-serif-display text-base font-bold text-[#211E1A] flex items-center gap-2">
-                  <span className="material-symbols-outlined text-red-700">block</span>
+                <h4 className="font-serif-display text-base font-bold text-red-700 flex items-center gap-2">
+                  <span className="material-symbols-outlined">block</span>
                   Bloquer ce profil
                 </h4>
                 <button
@@ -608,39 +768,39 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
               {blockSubmitted ? (
                 <div className="p-4 bg-emerald-50 text-[#0F5C4D] rounded-xl text-xs font-semibold flex items-center gap-2">
                   <span className="material-symbols-outlined">check_circle</span>
-                  Ce membre a été bloqué. Vous ne recevrez plus de messages de sa part.
+                  Le profil a été bloqué avec succès.
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-xs text-[#575147] leading-relaxed">
-                    En bloquant <strong>{profile.name}</strong>, cette personne ne pourra plus consulter votre profil complet ni vous envoyer de messages.
+                  <p className="text-xs text-[#575147]">
+                    En bloquant ce profil, vous ne verrez plus ses apparitions et il ne pourra plus interagir avec vous.
                   </p>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-[#575147]">Raison du blocage</label>
-                    <input
-                      type="text"
+                  <div>
+                    <label className="text-xs font-semibold text-[#575147]">Motif</label>
+                    <select
                       value={blockReason}
                       onChange={(e) => setBlockReason(e.target.value)}
-                      placeholder="Ex: Incompatibilité de projet matrimonial"
                       className="w-full h-10 bg-[#FAF8F2] border border-[#E8E3D7] rounded-xl px-3 text-xs text-[#211E1A]"
-                    />
+                    >
+                      <option value="Incompatibilité">Incompatibilité</option>
+                      <option value="Manque de respect">Manque de respect</option>
+                      <option value="Autre motif">Autre motif</option>
+                    </select>
                   </div>
-
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex justify-end gap-2 pt-2">
                     <button
                       type="button"
                       onClick={() => setBlockModalOpen(false)}
-                      className="flex-1 py-2 bg-gray-100 text-[#575147] rounded-xl text-xs font-bold hover:bg-gray-200"
+                      className="px-4 py-2 text-xs font-semibold text-[#575147] hover:bg-[#FAF8F2] rounded-xl"
                     >
                       Annuler
                     </button>
                     <button
                       type="button"
                       onClick={handleConfirmBlock}
-                      className="flex-1 py-2 bg-red-700 text-white rounded-xl text-xs font-bold hover:bg-red-800 shadow-xs"
+                      className="px-4 py-2 text-xs font-bold bg-red-700 text-white rounded-xl hover:bg-red-800"
                     >
-                      Bloquer définitivement
+                      Confirmer le blocage
                     </button>
                   </div>
                 </div>

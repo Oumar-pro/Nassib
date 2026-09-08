@@ -44,17 +44,32 @@ export function setCachedAccount(account: AuthAccount | null): void {
 
 let currentAccount: AuthAccount | null = getCachedAccount();
 
+// Helper to prevent promises from hanging indefinitely
+function withTimeout<T>(promise: PromiseLike<T> | Promise<T>, timeoutMs: number, fallbackValue: T): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallbackValue), timeoutMs)),
+  ]);
+}
+
 async function accountFromAuthUser(authUser: any): Promise<AuthAccount> {
   const metadata = authUser?.user_metadata || {};
   let profile: any = null;
 
   if (supabase) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('name,gender,is_premium,is_verified_nni,is_wali_approved,photo_url')
-      .eq('user_id', authUser.id)
-      .maybeSingle();
-    profile = data;
+    try {
+      // 1.8s timeout max so database delays never block user login
+      const queryPromise = supabase
+        .from('profiles')
+        .select('name,gender,is_premium,is_verified_nni,is_wali_approved,photo_url')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+
+      const res = await withTimeout(queryPromise, 1800, { data: null, error: null } as any);
+      profile = res.data;
+    } catch {
+      // Fallback cleanly to metadata
+    }
   }
 
   return {
@@ -139,17 +154,64 @@ export async function loginAccount(data: { email: string; password?: string }): 
     return { user: null, error: 'Connexion à la base de données non configurée.' };
   }
 
-  try {
-    const { data: signInData, error } = await supabase.auth.signInWithPassword({
-      email,
-      password: data.password,
-    });
+  // Helper to attempt login with a resilient 15-second timeout
+  const attemptSignIn = async (): Promise<{ data: any; error: any }> => {
+    try {
+      const signInPromise = supabase!.auth.signInWithPassword({
+        email,
+        password: data.password!,
+      });
+      return await withTimeout(
+        signInPromise,
+        15000,
+        { data: { user: null, session: null }, error: { message: 'Délai d’attente dépassé (timeout).', isTimeout: true } as any }
+      );
+    } catch (err: any) {
+      return { data: { user: null, session: null }, error: err };
+    }
+  };
 
-    if (error) {
-      return { user: null, error: error.message || 'Adresse email ou mot de passe incorrect.' };
+  try {
+    let { data: signInData, error } = await attemptSignIn();
+
+    // If network hiccup, cold start, or temporary timeout, automatically retry once immediately
+    const isRetryableError =
+      error &&
+      (error.isTimeout ||
+        error.name === 'AuthRetryableFetchError' ||
+        error.name === 'FetchError' ||
+        error.message?.toLowerCase().includes('fetch') ||
+        error.message?.toLowerCase().includes('network') ||
+        error.message?.toLowerCase().includes('timeout') ||
+        error.message?.toLowerCase().includes('failed'));
+
+    if (isRetryableError) {
+      // Short 300ms pause then instant auto-retry to prevent manual re-click
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const retryResult = await attemptSignIn();
+      if (!retryResult.error && retryResult.data?.user) {
+        signInData = retryResult.data;
+        error = null;
+      } else if (retryResult.error) {
+        error = retryResult.error;
+      }
     }
 
-    if (signInData.user) {
+    if (error) {
+      const msg = error.message || '';
+      if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
+        return { user: null, error: 'Adresse email ou mot de passe incorrect.' };
+      }
+      if (msg.includes('Email not confirmed')) {
+        return { user: null, error: 'Veuillez confirmer votre adresse email avant de vous connecter.' };
+      }
+      if (msg.includes('timeout') || msg.includes('fetch') || msg.includes('network') || msg.includes('failed')) {
+        return { user: null, error: 'Connexion réseau instable. Veuillez vérifier votre connexion et réessayer.' };
+      }
+      return { user: null, error: msg || 'Adresse email ou mot de passe incorrect.' };
+    }
+
+    if (signInData?.user) {
       currentAccount = await accountFromAuthUser(signInData.user);
       setCachedAccount(currentAccount);
       return { user: currentAccount, error: null };
@@ -175,19 +237,31 @@ export async function restoreCurrentUserSession(): Promise<AuthAccount | null> {
 
   if (isSupabaseConfigured && supabase) {
     try {
-      const { data, error } = await supabase.auth.getSession();
-      if (!error && data.session?.user) {
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutMarker = { __isTimeout: true };
+      const sessionResult = await Promise.race([
+        sessionPromise,
+        new Promise<any>((resolve) => setTimeout(() => resolve(timeoutMarker), 6000)),
+      ]);
+
+      if (sessionResult && sessionResult.__isTimeout) {
+        // En cas de lenteur réseau, conserver le compte en cache au lieu de déconnecter l'utilisateur
+        return currentAccount || getCachedAccount();
+      }
+
+      const { data, error } = sessionResult || {};
+      if (!error && data?.session?.user) {
         currentAccount = await accountFromAuthUser(data.session.user);
         setCachedAccount(currentAccount);
         return currentAccount;
-      } else if (!error && !data.session) {
-        // Supabase has confirmed there is no active session
+      } else if (!error && !data?.session) {
+        // Déconnexion confirmée par Supabase
         currentAccount = null;
         setCachedAccount(null);
         return null;
       }
     } catch {
-      // In case of network glitch or timeout on mobile, return existing cached session
+      // En cas de pépin réseau, préserver la session active
       if (currentAccount) return currentAccount;
     }
   }
