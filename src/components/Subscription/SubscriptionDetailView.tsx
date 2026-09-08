@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { User } from '../../types';
 
 interface SubscriptionDetailViewProps {
@@ -227,6 +227,15 @@ export const SubscriptionDetailView: React.FC<SubscriptionDetailViewProps> = ({
   const [subscriptionSuccess, setSubscriptionSuccess] = useState<boolean>(false);
   const [phoneError, setPhoneError] = useState<string>('');
   const [redirectCheckoutUrl, setRedirectCheckoutUrl] = useState<string | null>(null);
+  const [pendingPurchaseId, setPendingPurchaseId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('nassib_pending_purchase_id') || null;
+    } catch {
+      return null;
+    }
+  });
+  const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
+  const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
   const selectedPlan = PLANS.find((p) => p.id === selectedPlanId) || PLANS[1];
 
@@ -275,6 +284,72 @@ export const SubscriptionDetailView: React.FC<SubscriptionDetailViewProps> = ({
     return CHARIOW_PRODUCT_MAP[planId] || 'prd_d32ufi24';
   };
 
+  // Vérification de statut d'achat Chariow
+  const checkPurchaseStatus = useCallback(async (idToCheck?: string) => {
+    const purchaseId = idToCheck || pendingPurchaseId;
+    if (!purchaseId || isCheckingStatus) return;
+
+    setIsCheckingStatus(true);
+    setVerificationMessage('Vérification du statut du paiement en cours...');
+
+    try {
+      const res = await fetch('/api/verify-chariow-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purchaseId,
+          userId: user.id,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.verified && data.isPremium) {
+          try {
+            localStorage.removeItem('nassib_pending_purchase_id');
+          } catch {}
+          setPendingPurchaseId(null);
+          setSubscriptionSuccess(true);
+          setVerificationMessage('Paiement validé avec succès ! Votre accès Premium est désormais activé.');
+          if (onSubscribe) {
+            onSubscribe(data.planName || selectedPlan.name, data.durationDays || selectedPlan.durationDays, finalPrice);
+          }
+          return;
+        } else if (data.isPending) {
+          setVerificationMessage("Paiement en attente de validation sur votre opérateur Mobile Money. Cliquez sur 'Vérifier mon paiement' dès que vous avez confirmé.");
+        } else if (data.isFailed) {
+          setVerificationMessage("Paiement non complété ou annulé. Vous pouvez relancer la souscription à tout moment.");
+          try {
+            localStorage.removeItem('nassib_pending_purchase_id');
+          } catch {}
+          setPendingPurchaseId(null);
+        } else {
+          setVerificationMessage("Statut du paiement en attente. N'hésitez pas à rafraîchir d'ici quelques instants.");
+        }
+      }
+    } catch (err) {
+      console.warn('Erreur vérification statut achat:', err);
+      setVerificationMessage("Impossible de joindre le serveur de vérification. Veuillez réessayer.");
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  }, [pendingPurchaseId, isCheckingStatus, user.id, onSubscribe, selectedPlan, finalPrice]);
+
+  // Écoute automatique du retour de l'utilisateur sur l'onglet de l'application
+  useEffect(() => {
+    const handleFocus = () => {
+      let savedId: string | null = null;
+      try {
+        savedId = localStorage.getItem('nassib_pending_purchase_id');
+      } catch {}
+      if (savedId && !user.isPremium) {
+        checkPurchaseStatus(savedId);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user.isPremium, checkPurchaseStatus]);
+
   const handleConfirmSubscription = async () => {
     const cleanPhone = phoneNumber.trim().replace(/[\s\-_().]/g, '');
     if (!cleanPhone) {
@@ -283,12 +358,14 @@ export const SubscriptionDetailView: React.FC<SubscriptionDetailViewProps> = ({
     }
     setPhoneError('');
     setIsProcessing(true);
+    setVerificationMessage(null);
 
     const countryParam = selectedCountry || 'NE';
     const productId = getProductIdForPlan(selectedPlanId, selectedPlan.price);
 
     try {
       let targetCheckoutUrl: string | null = null;
+      let returnedPurchaseId: string | null = null;
 
       // 1. Tenter la génération directe d'une session Orqex via l'API Chariow backend
       try {
@@ -307,6 +384,9 @@ export const SubscriptionDetailView: React.FC<SubscriptionDetailViewProps> = ({
           const data = await res.json();
           if (data?.checkoutUrl) {
             targetCheckoutUrl = data.checkoutUrl;
+          }
+          if (data?.purchaseId) {
+            returnedPurchaseId = data.purchaseId;
           }
         }
       } catch (apiErr) {
@@ -339,10 +419,20 @@ export const SubscriptionDetailView: React.FC<SubscriptionDetailViewProps> = ({
             if (clientData?.data?.payment?.checkout_url) {
               targetCheckoutUrl = clientData.data.payment.checkout_url;
             }
+            if (clientData?.data?.purchase?.id) {
+              returnedPurchaseId = clientData.data.purchase.id;
+            }
           }
         } catch (clientErr) {
           console.warn('Direct Chariow API failed:', clientErr);
         }
+      }
+
+      if (returnedPurchaseId) {
+        setPendingPurchaseId(returnedPurchaseId);
+        try {
+          localStorage.setItem('nassib_pending_purchase_id', returnedPurchaseId);
+        } catch {}
       }
 
       // 3. Si une session Orqex a été générée avec succès (sans passer par la page Chariow)
@@ -910,7 +1000,7 @@ export const SubscriptionDetailView: React.FC<SubscriptionDetailViewProps> = ({
           </button>
 
           {redirectCheckoutUrl && (
-            <div className="text-center pt-1 animate-fadeIn">
+            <div className="text-center pt-1 animate-fadeIn space-y-2">
               <a
                 href={redirectCheckoutUrl}
                 target="_blank"
@@ -920,6 +1010,27 @@ export const SubscriptionDetailView: React.FC<SubscriptionDetailViewProps> = ({
                 <span>Accéder directement à la page de paiement ({finalPrice.toLocaleString('fr-FR')} FCFA)</span>
                 <span className="material-symbols-outlined text-xs">open_in_new</span>
               </a>
+
+              {/* Bouton et état de vérification en direct */}
+              <div className="pt-1 flex flex-col items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={isCheckingStatus}
+                  onClick={() => checkPurchaseStatus()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#0F5C4D] bg-[#0F5C4D]/10 hover:bg-[#0F5C4D]/15 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
+                >
+                  <span className={`material-symbols-outlined text-sm ${isCheckingStatus ? 'animate-spin' : ''}`}>
+                    {isCheckingStatus ? 'progress_activity' : 'verified'}
+                  </span>
+                  <span>{isCheckingStatus ? 'Vérification en cours...' : 'Vérifier la validation de mon paiement'}</span>
+                </button>
+
+                {verificationMessage && (
+                  <p className="text-[11px] font-medium text-[#575147] max-w-sm mx-auto leading-relaxed animate-fadeIn">
+                    {verificationMessage}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
