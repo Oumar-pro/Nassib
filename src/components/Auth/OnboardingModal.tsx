@@ -39,6 +39,9 @@ export interface OnboardingData {
   bio?: string;
   height?: number;
   weight?: number;
+  bodyType?: string;
+  professionCategory?: string;
+  preferredAgeRange?: string;
   ethnicity?: string;
   originCity?: string;
   hijabStatus?: string;

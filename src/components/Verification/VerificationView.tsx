@@ -108,8 +108,8 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
     }
   };
 
-  // Complete identity verification submission logic
-  const handleProcessSubmit = async (autoVerify: boolean = false) => {
+  // Complete identity verification submission logic for admin review
+  const handleProcessSubmit = async () => {
     if (!docNumber.trim()) {
       setErrorMessage('Veuillez renseigner le numéro officiel de votre pièce.');
       return;
@@ -122,7 +122,7 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
       setErrorMessage('Veuillez téléverser la face avant (recto) de votre pièce d’identité.');
       return;
     }
-    if (docType === 'nni' && !backPreview && !backFileName && !autoVerify) {
+    if (docType === 'nni' && !backPreview && !backFileName) {
       setErrorMessage('Pour la Carte Nationale d’Identité (NNI), veuillez joindre le verso (face arrière).');
       return;
     }
@@ -143,7 +143,7 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
           expiryDate: docExpiry.trim() || undefined,
           frontDocumentUrl: frontPreview || frontFileName || undefined,
           backDocumentUrl: backPreview || backFileName || undefined,
-          autoVerify,
+          autoVerify: false,
         });
       } else {
         const docSummary = `${docType.toUpperCase()}: ${docNumber.trim()} (${docFullName.trim()})`;
@@ -154,11 +154,8 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
             verificationType: 'nni',
             documentPath: docSummary,
             adminNote: `Type: ${docType}, N°: ${docNumber.trim()}, Nom: ${docFullName.trim()}`,
-            status: autoVerify ? 'approved' : 'pending',
+            status: 'pending',
           });
-        }
-        if (autoVerify) {
-          onUploadNNI();
         }
       }
 
@@ -166,15 +163,12 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
       setExistingRequest({
         id: 'req-' + Date.now(),
         verificationType: 'nni',
-        status: autoVerify ? 'approved' : 'pending',
+        status: 'pending',
         documentPath: `${docType.toUpperCase()}: ${docNumber.trim()}`,
         submittedAt: new Date().toISOString(),
         adminNote: null,
       });
-
-      if (autoVerify) {
-        setShowEditForm(false);
-      }
+      setShowEditForm(false);
     } catch (err: any) {
       setErrorMessage(err?.message || 'Une erreur est survenue lors de la transmission.');
     } finally {
@@ -391,26 +385,6 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
                   </div>
                 </div>
 
-                {/* Instant Verification Simulation Action */}
-                <div className="p-4 bg-white border border-[#E8E3D7] rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div>
-                    <span className="font-display text-xs font-bold text-[#211E1A] block">
-                      Tester immédiatement le badge vérifié ?
-                    </span>
-                    <span className="font-body text-[11px] text-[#7D766C] block">
-                      Validez directement votre démarche pour activer le badge sur le header.
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleProcessSubmit(true)}
-                    disabled={isSubmitting}
-                    className="shrink-0 px-4 py-2 bg-[#0F5C4D] text-white text-xs font-display font-bold rounded-xl hover:bg-[#0c4a3e] transition-colors shadow-2xs cursor-pointer active:scale-95"
-                  >
-                    Valider maintenant
-                  </button>
-                </div>
-
                 <div className="flex justify-between items-center pt-1">
                   <button
                     type="button"
@@ -427,7 +401,7 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  handleProcessSubmit(false);
+                  handleProcessSubmit();
                 }}
                 className="space-y-5"
               >
@@ -654,16 +628,6 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
                         <span>Soumettre ma pièce d'identité pour vérification</span>
                       </>
                     )}
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => handleProcessSubmit(true)}
-                    className="w-full py-2.5 bg-white border border-[#C9A45C]/50 text-[#735619] font-display text-xs font-bold rounded-xl hover:bg-[#C9A45C]/10 transition-colors cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-sm text-[#C9A45C]">verified</span>
-                    <span>Valider directement et activer le badge vérifié</span>
                   </button>
                 </div>
 

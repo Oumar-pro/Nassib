@@ -1,8 +1,629 @@
-import React,{useCallback,useEffect,useMemo,useRef,useState}from'react';
-import{TabType,Profile,Conversation,Message,User,UserWaliInfo}from'./types';import{supabase,isSupabaseConfigured,fetchMessagesFromSupabase,sendMessageToSupabase,reportUserOrProfileInSupabase,blockUserInSupabase,fetchConversationsFromSupabase,fetchApprovedPhotoAccessProfileIds,fetchReceivedPhotoAccessRequests,fetchSentPhotoAccessRequests,sendPhotoAccessRequestInSupabase,respondToPhotoAccessRequestInSupabase,sendContactRequestInSupabase,respondToContactRequestInSupabase,submitVerificationRequestInSupabase,PhotoAccessRequest}from'./lib/supabase';import{getCurrentUserSession,logoutUserSession,AuthAccount,restoreCurrentUserSession,getCachedAccount}from'./lib/auth';import{getProfiles,getMyProfile,getMyProfileStats,recordProfileView,saveMyProfile,updatePhotoPrivacy,getFavorites,toggleFavorite,hasUploadedPhotos,getProfileById,checkAndConsumeContactQuota,activateProfileBoost}from'./lib/database';import{Sidebar}from'./components/Navigation/Sidebar';import{MobileHeader}from'./components/Navigation/MobileHeader';import{MobileBottomNav}from'./components/Navigation/MobileBottomNav';import{DashboardView}from'./components/Dashboard/DashboardView';import{BrowseView}from'./components/Browse/BrowseView';import{MessagesView}from'./components/Messages/MessagesView';import{VerificationView}from'./components/Verification/VerificationView';import{SettingsView}from'./components/Settings/SettingsView';import{LandingView}from'./components/Landing/LandingView';import{ImamChatView}from'./components/ImamOumar/ImamChatView';import{ProfileDetailModal}from'./components/Profile/ProfileDetailModal';import{ProfileDetailView}from'./components/Profile/ProfileDetailView';import{RequestsView}from'./components/Requests/RequestsView';import{ContactRequestModal}from'./components/Modals/ContactRequestModal';import{PhotoRequiredModal}from'./components/Modals/PhotoRequiredModal';import{PwaInstallPrompt}from'./components/Modals/PwaInstallPrompt';import{PaywallUpgradeModal}from'./components/Modals/PaywallUpgradeModal';import{AuthPage}from'./components/Auth/AuthPage';import{OnboardingPage}from'./components/Auth/OnboardingPage';import{OnboardingData}from'./components/Auth/OnboardingModal';
-const EMPTY_USER:User={id:'',profileId:undefined,name:'',email:'',phone:'',role:'candidate',gender:undefined,isVerifiedNNI:false,isWaliApproved:false,isPremium:false,photoBlurringActive:false,photoUrl:'',planName:'Sadaq (Gratuit)',waliInfo:{name:'',relation:'',phone:''},stats:{profileViews:0,profileConsultations:0,photoRequests:0,photoRequestsApproved:0,matchesCount:0,favoritesCount:0,compatibilityRateAvg:0,weeklyGrowthPercentage:0}};function accountToUser(a:AuthAccount,p?:Profile|null,b?:boolean):User{return{...EMPTY_USER,id:a.id,profileId:p?.id,name:p?.name||a.name,email:a.email,phone:a.phone,role:a.role,gender:p?.gender||a.gender,isVerifiedNNI:Boolean(p?.isVerifiedNNI??a.isVerifiedNNI),isWaliApproved:Boolean(p?.isWaliApproved??a.isWaliApproved),isPremium:Boolean(p?.isPremium??a.isPremium),photoBlurringActive:p?Boolean(p.photoPrivate):Boolean(b),boostsCount:p?.boostsCount??(a as any).boostsCount??0,boostedUntil:p?.boostedUntil,premiumExpiresAt:p?.premiumExpiresAt,dailyContactsCount:p?.dailyContactsCount??0,dailyContactsDate:p?.dailyContactsDate,photoUrl:p?.photoUrl||a.photoUrl||'',photos:p?.photos||(a.photoUrl?[a.photoUrl]:[]),planName:a.planName||'Sadaq (Gratuit)',stats:{...EMPTY_USER.stats,favoritesCount:p?.likesCount??0}}}
-export default function App(){const[curr,setCurr]=useState<TabType>(()=>{try{const c=getCachedAccount();if(c?.id){const s=localStorage.getItem('nassib_active_tab_v1')as TabType;const v:TabType[]=['dashboard','browse','requests','messages','imam','verification','settings'];if(s&&v.includes(s))return s;return'dashboard'}}catch{}return'landing'});const[user,setUser]=useState<User>(()=>{try{const c=getCachedAccount();return c?.id?accountToUser(c,null,false):EMPTY_USER}catch{return EMPTY_USER}});const[my,setMy]=useState<Profile|null>(null);const[profiles,setProfiles]=useState<Profile[]>([]);const[convs,setConvs]=useState<Conversation[]>([]);const[msgs,setMsgs]=useState<Message[]>([]);const[active,setActive]=useState<string|null>(null);const[favs,setFavs]=useState<string[]>([]);const[selected,setSelected]=useState<Profile|null>(null);const[returnTab,setReturnTab]=useState<TabType>('browse');const[contactProfile,setContactProfile]=useState<Profile|null>(null);const[approved,setApproved]=useState<string[]>([]);const[receivedPhoto,setReceivedPhoto]=useState<PhotoAccessRequest[]>([]);const[sentPhoto,setSentPhoto]=useState<PhotoAccessRequest[]>([]);const[authMode,setAuthMode]=useState<'login'|'register'>('register');const[registered,setRegistered]=useState<{id?:string;email?:string;name:string;role:'candidate'|'wali';phone:string}>({name:'',role:'candidate',phone:''});const[toast,setToast]=useState<string|null>(null);const[photoRequired,setPhotoRequired]=useState(false);const[paywall,setPaywall]=useState(false);const[paywallConfig,setPaywallConfig]=useState({title:'Passez à Premium',description:'Débloquez toutes les fonctionnalités.',icon:'workspace_premium'});const loading=useRef(false);const syncing=useRef(false);const uploaded=useMemo(()=>!!user.id&&(hasUploadedPhotos(my)||Boolean(user.photoUrl?.trim())||Boolean(user.photos?.some(p=>typeof p==='string'&&p.trim()))),[user.id,my,user.photoUrl,user.photos]);const favoriteProfiles=useMemo(()=>profiles.filter(p=>favs.includes(p.id)),[profiles,favs]);const show=useCallback((m:string)=>{setToast(m);window.setTimeout(()=>setToast(null),3500)},[]);
-const load=useCallback(async(id:string)=>{if(!id||loading.current)return;loading.current=true;try{const p=await getMyProfile(id).catch(()=>null);if(p)setMy(p);const[rp,rf,rc,ap,rr,sr,st]=await Promise.all([getProfiles(id,p).catch(()=>[]),getFavorites(id).catch(()=>[]),fetchConversationsFromSupabase(p?.id).catch(()=>[]),p?.id?fetchApprovedPhotoAccessProfileIds(p.id).catch(()=>[]):Promise.resolve([]),p?.id?fetchReceivedPhotoAccessRequests(p.id).catch(()=>[]):Promise.resolve([]),p?.id?fetchSentPhotoAccessRequests(p.id).catch(()=>[]):Promise.resolve([]),getMyProfileStats().catch(()=>null)]);setProfiles((rp||[]).filter(hasUploadedPhotos));setFavs(rf||[]);setConvs(rc||[]);setApproved(ap||[]);setReceivedPhoto(rr||[]);setSentPhoto(sr||[]);const a=getCurrentUserSession();if(a)setUser(prev=>{const next=accountToUser(a,p,p?.photoPrivate??prev.photoBlurringActive);if(st)next.stats={...next.stats,...st};return next})}catch(error){console.error('NASSIB: failed to load authenticated data',error)}finally{loading.current=false}},[]);const sync=useCallback(async()=>{if(syncing.current)return;syncing.current=true;try{const a=await restoreCurrentUserSession().catch(()=>null);if(!a){setUser(EMPTY_USER);setMy(null);setProfiles([]);setConvs([]);setMsgs([]);setFavs([]);setApproved([]);setReceivedPhoto([]);setSentPhoto([]);setActive(null);setCurr('landing');return}await load(a.id);setCurr(x=>x==='landing'||x==='auth'?'dashboard':x)}catch(error){console.error('NASSIB: session sync failed',error);setCurr(x=>x==='auth'?'landing':x)}finally{syncing.current=false}},[load]);useEffect(()=>{void sync();if(!supabase)return;const{data}=supabase.auth.onAuthStateChange(e=>{if(e!=='TOKEN_REFRESHED')window.setTimeout(()=>void sync(),100)});return()=>data.subscription.unsubscribe()},[sync]);useEffect(()=>{if(!supabase||!user.id)return;const reload=()=>void load(user.id);const ch=supabase.channel(`nassib:${user.id}`).on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:`user_id=eq.${user.id}`},reload).on('postgres_changes',{event:'*',schema:'public',table:'user_favorites'},reload).on('postgres_changes',{event:'*',schema:'public',table:'conversations'},reload).on('postgres_changes',{event:'*',schema:'public',table:'photo_access_requests'},reload).subscribe();return()=>{supabase.removeChannel(ch)}},[user.id,load]);useEffect(()=>{if(!active||!user.profileId){setMsgs([]);return}void fetchMessagesFromSupabase(active).then(remote=>{setMsgs(remote.map(m=>({...m,isMine:m.senderId===user.profileId})))}).catch(error=>console.error('NASSIB: failed to load messages',error));},[active,user.profileId]);
-const rel=useMemo(()=>{const m:Record<string,any>={};const id=user.profileId;if(!id)return m;for(const c of convs){const other=c.candidateId===id?c.requesterId:c.candidateId;if(other)m[other]=c.status==='accepted'?'ACCEPTED':c.status==='rejected'?'REJECTED':c.requesterId===id?'PENDING_SENT':'PENDING_RECEIVED'}return m},[convs,user.profileId]);const photoMap=useMemo(()=>{const m:Record<string,any>={};for(const p of profiles){if(approved.includes(p.id))m[p.id]='ALLOWED';else{const r=sentPhoto.find(x=>x.target_profile_id===p.id||(x as any).targetProfileId===p.id);m[p.id]=r?.status==='pending'?'PENDING':r?.status==='rejected'?'REJECTED':'NO_REQUEST'}}return m},[profiles,approved,sentPhoto]);const pending=useMemo(()=>user.profileId?convs.filter(c=>c.status==='pending'&&c.requesterId!==user.profileId):[],[convs,user.profileId]);const sentPending=useMemo(()=>user.profileId?convs.filter(c=>c.status==='pending'&&c.requesterId===user.profileId):[],[convs,user.profileId]);const total=pending.length+receivedPhoto.filter(r=>r.status==='pending').length;
-const select=async(p:Profile,t:TabType)=>{setReturnTab(t);setSelected(p);setCurr('profile-detail');if(user.profileId&&p.id!==user.profileId)await recordProfileView(p.id)};const toggleFav=async(id:string)=>{if(!user.id)return show('Veuillez vous connecter.');if(!uploaded)return setPhotoRequired(true);const old=favs.includes(id);if(!await toggleFavorite(user.id,id))return show('Impossible de modifier le favori.');setFavs(await getFavorites(user.id));show(old?'Profil retiré des favoris.':'Profil ajouté aux favoris.')};const sendContact=async(p:Profile)=>{if(!user.profileId)return show('Profil utilisateur introuvable.');setContactProfile(p)};const confirmContact=async(p:Profile,text:string)=>{if(!user.profileId||!uploaded)return false;const q=await checkAndConsumeContactQuota();if(!q.allowed){setContactProfile(null);setPaywallConfig({title:'Contacte sans limite',description:'Passe à Premium pour échanger en illimité.',icon:'forum'});setPaywall(true);return false}const r=await sendContactRequestInSupabase({senderProfileId:user.profileId,targetProfileId:p.id,senderName:user.name,senderAvatar:user.photoUrl,firstMessage:text});if(!r.conversationId||r.error){show(r.error||'Impossible d’envoyer la demande.');return false}await load(user.id);show('Demande de contact envoyée.');return true};const respond=async(id:string,s:'accepted'|'rejected')=>{if(await respondToContactRequestInSupabase(id,s)){await load(user.id);show(s==='accepted'?'Demande acceptée.':'Demande refusée')}};const requestPhoto=async(p:Profile)=>{if(!uploaded)return setPhotoRequired(true);if(!user.profileId)return;const r=await sendPhotoAccessRequestInSupabase({requesterProfileId:user.profileId,targetProfileId:p.id,requesterUserId:user.id,targetUserId:p.userId});if(r.success){await load(user.id);show('Demande photo envoyée.')}else show(r.error||'Demande déjà existante.')};const respondPhoto=async(id:string,s:'approved'|'rejected')=>{if(await respondToPhotoAccessRequestInSupabase(id,s)){await load(user.id);show(s==='approved'?'Accès accordé.':'Demande refusée.')}};const authSuccess=async(a:AuthAccount,isReg:boolean)=>{setUser(p=>({...p,id:a.id,name:a.name||p.name,email:a.email||p.email,phone:a.phone||p.phone,role:a.role,gender:a.gender,isPremium:Boolean(a.isPremium),isVerifiedNNI:Boolean(a.isVerifiedNNI),isWaliApproved:Boolean(a.isWaliApproved),photoUrl:a.photoUrl||p.photoUrl}));if(isReg){setRegistered({id:a.id,email:a.email,name:a.name,role:a.role,phone:a.phone||''});setCurr('onboarding');show('Compte créé. Complétez votre profil.')}else{setCurr('dashboard');show(`Ravi de vous revoir, ${a.name||''} !`)}void load(a.id)};const logout=async()=>{await logoutUserSession();try{localStorage.removeItem('nassib_active_tab_v1')}catch{}setUser(EMPTY_USER);setMy(null);setProfiles([]);setConvs([]);setMsgs([]);setFavs([]);setActive(null);setCurr('landing')};const complete=async(d:OnboardingData)=>{const id=registered.id||user.id;if(!id)return show('Session invalide.');const photos=d.photos||[];const p:Partial<Profile>={name:registered.name||user.name,age:d.age,gender:d.gender,profession:d.profession?.trim()||undefined,professionCategory:d.professionCategory?.trim()||undefined,city:d.region?.trim()||undefined,country:d.country?.trim()||undefined,neighborhood:d.neighborhood?.trim()||undefined,maritalStatus:d.maritalStatus?.trim()||undefined,religion:d.religion?.trim()||undefined,education:d.education?.trim()||undefined,photoUrl:photos[0]?.trim()||undefined,photos,photoPrivate:false,bio:d.bio?.trim()||undefined,personality:d.personalityTrait?.trim()||undefined,familyImportance:d.familyImportance?.trim()||undefined,height:d.height,weight:d.weight,bodyType:d.bodyType?.trim()||undefined,ethnicity:d.ethnicity?.trim()||undefined,originCity:d.originCity?.trim()||undefined,hijabStatus:d.hijabStatus?.trim()||undefined,religiousPracticeDetails:d.religiousPracticeDetails?.trim()||d.religiousPractice?.trim()||undefined,values:d.values,partnerCriteria:d.partnerCriteria?.trim()||undefined,dealBreakers:d.dealBreakers,preferredAgeRange:d.preferredAgeRange?.trim()||undefined,marriageHorizon:d.marriageHorizon?.trim()||undefined,polygamyOpinion:d.polygamyPreference?.trim()||undefined,isVerifiedNNI:false,isPremium:false};const saved=await saveMyProfile(id,p,d);if(!saved)return show('Profil incomplet ou impossible à enregistrer. Aucune donnée fictive n’a été ajoutée.');await load(id);setCurr('browse');show('Profil enregistré dans Supabase.')};const updateUser=async(u:Partial<User>)=>{if(!user.id)return;if(u.photoBlurringActive!==undefined&&!await updatePhotoPrivacy(user.id,u.photoBlurringActive))return show('Impossible d’enregistrer le floutage.');const e=await getMyProfile(user.id);if(!e)return show('Profil introuvable dans Supabase.');const s=await saveMyProfile(user.id,{...e,name:u.name??e.name,gender:u.gender??e.gender,photoUrl:u.photoUrl!==undefined?u.photoUrl:e.photoUrl,photos:u.photos!==undefined?u.photos:e.photos,photoPrivate:u.photoBlurringActive!==undefined?u.photoBlurringActive:e.photoPrivate,isPremium:u.isPremium!==undefined?u.isPremium:e.isPremium});if(!s)return show('Impossible d’enregistrer les modifications.');setMy(s);setUser(prev=>({...prev,...u,photoBlurringActive:s.photoPrivate}));await load(user.id)};const toggleBlur=async()=>{if(!user.id)return;const next=!user.photoBlurringActive;if(!await updatePhotoPrivacy(user.id,next))return show('Impossible d’enregistrer le floutage.');const fresh=await getMyProfile(user.id);if(!fresh)return;setMy(fresh);const a=getCurrentUserSession();if(a)setUser(accountToUser(a,fresh));show(next?'Mode Floutage activé.':'Mode Floutage désactivé.')};const updateWali=async(w:UserWaliInfo)=>{if(!user.id)return;const e=await getMyProfile(user.id);if(!e)return;const s=await saveMyProfile(user.id,{...e},{waliName:w.name,waliRelation:w.relation,waliPhone:w.phone});if(s){setUser(p=>({...p,waliInfo:w}));await load(user.id)}};const uploadNni=async()=>{if(!user.id)return;const e=await getMyProfile(user.id);if(!e)return;const s=await saveMyProfile(user.id,{...e,isVerifiedNNI:true});if(s){setUser(p=>({...p,isVerifiedNNI:true}));await load(user.id)}};const verify=async(x:{documentType:string;documentNumber:string;fullName:string;expiryDate?:string;frontDocumentUrl?:string;backDocumentUrl?:string;autoVerify?:boolean})=>{if(!user.id)return false;const e=await getMyProfile(user.id);const pid=e?.id||user.profileId||user.id;if(isSupabaseConfigured)await submitVerificationRequestInSupabase({profileId:pid,userId:user.id,verificationType:'nni',documentPath:`${x.documentType.toUpperCase()} - N° ${x.documentNumber} (${x.fullName})`,adminNote:`Document: ${x.documentType}, N°: ${x.documentNumber}, Nom: ${x.fullName}`,status:x.autoVerify?'approved':'pending'});await load(user.id);return true};
-return <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] flex flex-col">{toast&&<div className="fixed top-20 right-4 z-50 bg-[#0F5C4D] text-white px-5 py-3 rounded-2xl shadow-xl">{toast}</div>}{curr==='auth'?<AuthPage initialMode={authMode} onBack={()=>setCurr('landing')} onSuccess={authSuccess}/>:curr==='onboarding'?<OnboardingPage userName={registered.name||user.name} userRole={registered.role||user.role} userPhone={registered.phone||user.phone} onComplete={complete} onCancel={()=>setCurr('dashboard')}/>:curr==='landing'?<LandingView onEnterApp={()=>setCurr('dashboard')} onOpenAuth={m=>{setAuthMode(m);setCurr('auth')}} onNavigateTab={setCurr}/>:<><Sidebar currentTab={curr} onSelectTab={setCurr} user={user} onOpenAuth={m=>{setAuthMode(m);setCurr('auth')}} onLogout={logout} unreadCount={0} pendingRequestsCount={total}/><main className="flex-1 md:ml-64 px-3 sm:px-8 pb-28 pt-16 md:pt-10">{curr==='dashboard'&&<DashboardView user={user} recommendedProfiles={profiles.filter(p=>p.userId!==user.id&&p.gender!==user.gender)} favoriteProfiles={favoriteProfiles} favoriteProfileIds={favs} fansCount={my?.likesCount??0} onSelectProfile={p=>void select(p,'dashboard')} onNavigateToTab={setCurr} onTogglePhotoBlurring={toggleBlur} onToggleFavorite={toggleFav} approvedPhotoIds={approved} photoAccessMap={photoMap} hasUploadedPhoto={uploaded} onRequestPhotoUpload={()=>setPhotoRequired(true)} onActivateBoost={async()=>{if(!user.isPremium){setPaywallConfig({title:'Priorité dans la sélection',description:'Passe à Premium pour utiliser les Boosts.',icon:'bolt'});setPaywall(true);return}const r=await activateProfileBoost();if(r.success){await load(user.id);show('Profil boosté.')}else show(r.error||'Impossible de booster le profil.')}} onUpgradeToPremium={()=>setCurr('settings')}/>} {curr==='browse'&&<BrowseView user={user} profiles={profiles} onSelectProfile={p=>void select(p,'browse')} onRequestAccess={requestPhoto} favoriteProfileIds={favs} onToggleFavorite={toggleFav} approvedPhotoIds={approved} photoAccessMap={photoMap} contactRelationshipMap={rel} onSendContactRequest={sendContact} hasUploadedPhoto={uploaded} onRequestPhotoUpload={()=>setPhotoRequired(true)}/>} {curr==='profile-detail'&&selected&&<ProfileDetailView profile={selected} currentUser={user} onBack={()=>{setCurr(returnTab);setSelected(null)}} onStartMessage={p=>setContactProfile(p)} onSendContactRequest={sendContact} onRequestPhotoAccess={requestPhoto} contactState={rel[selected.id]||'NO_REQUEST'} photoAccessState={photoMap[selected.id]||'NO_REQUEST'} conversationId={convs.find(c=>c.candidateId===selected.id||c.requesterId===selected.id)?.id} onAcceptContactRequest={id=>respond(id,'accepted')} onRejectContactRequest={id=>respond(id,'rejected')} onOpenConversation={id=>{setActive(id);setSelected(null);setCurr('messages')}} isFavorited={favs.includes(selected.id)} onToggleFavorite={toggleFav} onReport={async(p,r,d)=>{await reportUserOrProfileInSupabase({reporterUserId:user.id,reportedProfileId:p.id,reportedUserId:p.userId,reason:r,description:d});show('Signalement enregistré.')}} onBlock={async p=>{if(p.userId)await blockUserInSupabase(user.id,p.userId);setProfiles(x=>x.filter(z=>z.id!==p.id));show('Profil bloqué.')}} onAcceptContact={id=>respond(id,'accepted')} onRejectContact={id=>respond(id,'rejected')} hasUploadedPhoto={uploaded} onRequestPhotoUpload={()=>setPhotoRequired(true)}/>} {curr==='requests'&&<RequestsView user={user} conversations={convs} contactRequests={pending} sentContactRequests={sentPending} receivedPhotoRequests={receivedPhoto} sentPhotoRequests={sentPhoto} profiles={profiles} onAcceptContact={id=>respond(id,'accepted')} onRejectContact={id=>respond(id,'rejected')} onAcceptPhotoRequest={id=>respondPhoto(id,'approved')} onRejectPhotoRequest={id=>respondPhoto(id,'rejected')} onViewProfile={id=>{const p=profiles.find(x=>x.id===id);if(p)void select(p,'requests')}} onOpenConversation={id=>{setActive(id);setCurr('messages')}} hasUploadedPhoto={uploaded} onRequestPhotoUpload={()=>setPhotoRequired(true)}/>} {curr==='messages'&&<MessagesView user={user} conversations={convs} activeMessages={msgs} activeConvId={active} onSelectConversation={setActive} onSendMessage={t=>sendMessageToSupabase(active||'',user.profileId||'',user.name,user.photoUrl,t).then(()=>load(user.id))} onAcceptContact={id=>respond(id,'accepted')} onRejectContact={id=>respond(id,'rejected')} onOpenProfile={id=>{const p=profiles.find(x=>x.id===id);if(p)void select(p,'messages');else void getProfileById(id).then(x=>{if(x)void select(x,'messages')})}} hasUploadedPhoto={uploaded} onRequestPhotoUpload={()=>setPhotoRequired(true)} onUpgradeToPremium={()=>setCurr('settings')}/>} {curr==='verification'&&<VerificationView user={user} onUpdateWaliInfo={updateWali} onUploadNNI={uploadNni} onSubmitVerification={verify}/>} {curr==='settings'&&<SettingsView user={user} profile={my} onUpdateUser={updateUser} onUpdateProfile={async u=>{if(!user.id)return;const e=await getMyProfile(user.id);if(!e)return show('Profil introuvable dans Supabase.');const s=await saveMyProfile(user.id,{...e,...u});if(s){setMy(s);await load(user.id)}}} onNavigateTab={setCurr} onLogout={logout}/>}</main><MobileBottomNav currentTab={curr} onSelectTab={setCurr} unreadCount={0} pendingRequestsCount={total}/></>}{selected&&curr!=='profile-detail'&&<ProfileDetailModal profile={selected} currentUser={user} onClose={()=>setSelected(null)} onStartMessage={p=>setContactProfile(p)} onRequestPhotoAccess={requestPhoto} photoAccessState={photoMap[selected.id]||'NO_REQUEST'} isFavorited={favs.includes(selected.id)} onToggleFavorite={toggleFav} onReport={async(p,r,d)=>{await reportUserOrProfileInSupabase({reporterUserId:user.id,reportedProfileId:p.id,reportedUserId:p.userId,reason:r,description:d})}} onBlock={async p=>{if(p.userId)await blockUserInSupabase(user.id,p.userId);setSelected(null)}} hasUploadedPhoto={uploaded} onRequestPhotoUpload={()=>setPhotoRequired(true)}/>} {contactProfile&&<ContactRequestModal targetProfile={contactProfile} isOpen={true} onClose={()=>setContactProfile(null)} onSend={confirmContact}/>}<PhotoRequiredModal isOpen={photoRequired} onClose={()=>setPhotoRequired(false)} onGoToUpload={()=>{setPhotoRequired(false);setCurr('settings')}}/><PaywallUpgradeModal isOpen={paywall} onClose={()=>setPaywall(false)} onUpgrade={()=>{setPaywall(false);setCurr('settings')}} featureTitle={paywallConfig.title} featureDescription={paywallConfig.description} featureIcon={paywallConfig.icon}/><PwaInstallPrompt/></div>}
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { TabType, Profile, Conversation, Message, User, UserWaliInfo } from './types';
+import {
+  supabase,
+  isSupabaseConfigured,
+  fetchMessagesFromSupabase,
+  sendMessageToSupabase,
+  createOrGetConversationInSupabase,
+  reportUserOrProfileInSupabase,
+  blockUserInSupabase,
+  fetchConversationsFromSupabase,
+  fetchApprovedPhotoAccessProfileIds,
+  fetchReceivedPhotoAccessRequests,
+  fetchSentPhotoAccessRequests,
+  sendPhotoAccessRequestInSupabase,
+  respondToPhotoAccessRequestInSupabase,
+  sendContactRequestInSupabase,
+  respondToContactRequestInSupabase,
+  submitVerificationRequestInSupabase,
+  PhotoAccessRequest,
+} from './lib/supabase';
+import { getCurrentUserSession, logoutUserSession, AuthAccount, restoreCurrentUserSession, getCachedAccount } from './lib/auth';
+import { 
+  getProfiles, 
+  getMyProfile, 
+  getMyProfileStats, 
+  recordProfileView, 
+  saveMyProfile, 
+  updatePhotoPrivacy, 
+  getFavorites, 
+  toggleFavorite, 
+  hasUploadedPhotos, 
+  getProfileById,
+  checkAndConsumeContactQuota,
+  activateProfileBoost,
+} from './lib/database';
+import { Sidebar } from './components/Navigation/Sidebar';
+import { MobileHeader } from './components/Navigation/MobileHeader';
+import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
+import { NasibaLogo } from './components/NasibaLogo';
+import { DashboardView } from './components/Dashboard/DashboardView';
+import { BrowseView } from './components/Browse/BrowseView';
+import { MessagesView } from './components/Messages/MessagesView';
+import { VerificationView } from './components/Verification/VerificationView';
+import { SettingsView } from './components/Settings/SettingsView';
+import { LandingView } from './components/Landing/LandingView';
+import { ImamChatView } from './components/ImamOumar/ImamChatView';
+import { ProfileDetailModal } from './components/Profile/ProfileDetailModal';
+import { ProfileDetailView } from './components/Profile/ProfileDetailView';
+import { RequestsView } from './components/Requests/RequestsView';
+import { ContactRequestModal } from './components/Modals/ContactRequestModal';
+import { PhotoRequiredModal } from './components/Modals/PhotoRequiredModal';
+import { ProfileInvisibilityNotice } from './components/Modals/ProfileInvisibilityNotice';
+import { PwaInstallPrompt } from './components/Modals/PwaInstallPrompt';
+import { PaywallUpgradeModal } from './components/Modals/PaywallUpgradeModal';
+import { AuthPage } from './components/Auth/AuthPage';
+import { OnboardingPage } from './components/Auth/OnboardingPage';
+import { OnboardingData } from './components/Auth/OnboardingModal';
+
+const EMPTY_USER: User = {
+  id: '', profileId: undefined, name: '', email: '', phone: '', role: 'candidate', gender: undefined,
+  isVerifiedNNI: false, isWaliApproved: false, isPremium: false, photoBlurringActive: false, photoUrl: '', planName: 'Sadaq (Gratuit)',
+  waliInfo: { name: '', relation: '', phone: '' },
+  stats: { profileViews: 0, profileConsultations: 0, photoRequests: 0, photoRequestsApproved: 0, matchesCount: 0, favoritesCount: 0, compatibilityRateAvg: 0, weeklyGrowthPercentage: 0 },
+};
+
+function accountToUser(account: AuthAccount, profile?: Profile | null, currentBlur?: boolean): User {
+  const photoBlurringActive = profile ? Boolean(profile.photoPrivate) : Boolean(currentBlur);
+  return {
+    ...EMPTY_USER,
+    id: account.id, profileId: profile?.id, name: profile?.name || account.name, email: account.email, phone: account.phone,
+    role: account.role, gender: profile?.gender || account.gender,
+    isVerifiedNNI: Boolean(profile?.isVerifiedNNI ?? account.isVerifiedNNI),
+    isWaliApproved: Boolean(profile?.isWaliApproved ?? account.isWaliApproved),
+    isPremium: Boolean(profile?.isPremium ?? account.isPremium), photoBlurringActive,
+    boostsCount: profile?.boostsCount ?? (account as any).boostsCount ?? 0,
+    boostedUntil: profile?.boostedUntil,
+    premiumExpiresAt: profile?.premiumExpiresAt,
+    dailyContactsCount: profile?.dailyContactsCount ?? 0,
+    dailyContactsDate: profile?.dailyContactsDate,
+    photoUrl: profile?.photoUrl || account.photoUrl || '', photos: profile?.photos || (account.photoUrl ? [account.photoUrl] : []),
+    planName: account.planName || 'Sadaq (Gratuit)', stats: { ...EMPTY_USER.stats, favoritesCount: profile?.likesCount ?? 0 },
+  };
+}
+
+export default function App() {
+  const [currentTab, setCurrentTab] = useState<TabType>(() => {
+    try {
+      const cached = getCachedAccount();
+      if (cached?.id) {
+        const savedTab = localStorage.getItem('nassib_active_tab_v1') as TabType;
+        const validTabs: TabType[] = ['dashboard', 'browse', 'requests', 'messages', 'imam', 'verification', 'settings'];
+        if (savedTab && validTabs.includes(savedTab)) return savedTab;
+        return 'dashboard';
+      }
+    } catch {}
+    return 'landing';
+  });
+  const [user, setUser] = useState<User>(() => {
+    const cached = getCachedAccount();
+    if (cached?.id) {
+      return accountToUser(cached, null, false);
+    }
+    return EMPTY_USER;
+  });
+  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [favoriteProfileIds, setFavoriteProfileIds] = useState<string[]>([]);
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [returnTab, setReturnTab] = useState<TabType>('browse');
+  const previousNonImamTabRef = useRef<TabType>('dashboard');
+
+  useEffect(() => {
+    if (currentTab !== 'imam' && currentTab !== 'auth' && currentTab !== 'onboarding' && currentTab !== 'landing') {
+      previousNonImamTabRef.current = currentTab;
+    }
+  }, [currentTab]);
+  const [contactModalProfile, setContactModalProfile] = useState<Profile | null>(null);
+  const [approvedPhotoIds, setApprovedPhotoIds] = useState<string[]>([]);
+  const [receivedPhotoRequests, setReceivedPhotoRequests] = useState<PhotoAccessRequest[]>([]);
+  const [sentPhotoRequests, setSentPhotoRequests] = useState<PhotoAccessRequest[]>([]);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
+  const [registeredUserData, setRegisteredUserData] = useState<{ id?: string; email?: string; name: string; role: 'candidate' | 'wali'; phone: string }>({ name: '', role: 'candidate', phone: '' });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showPhotoRequiredModal, setShowPhotoRequiredModal] = useState(false);
+  const [showPaywallModal, setShowPaywallModal] = useState(false);
+  const [paywallConfig, setPaywallConfig] = useState<{
+    title: string;
+    description: string;
+    icon: string;
+  }>({
+    title: 'Passez à Premium',
+    description: 'Débloquez toutes les fonctionnalités exclusives sans aucune restriction.',
+    icon: 'workspace_premium',
+  });
+
+  const hasCurrentUserUploadedPhoto = useMemo(() => {
+    if (!user.id) return false;
+    if (hasUploadedPhotos(currentUserProfile)) return true;
+    if (Boolean(user.photoUrl?.trim())) return true;
+    if (Array.isArray(user.photos) && user.photos.some((p) => typeof p === 'string' && p.trim() !== '')) return true;
+    return false;
+  }, [user.id, currentUserProfile, user.photoUrl, user.photos]);
+
+  const showToast = useCallback((message: string) => { setToastMessage(message); window.setTimeout(() => setToastMessage(null), 3500); }, []);
+
+  const isLoadingDbRef = useRef(false);
+  const isSyncingRef = useRef(false);
+
+  const loadDatabaseState = useCallback(async (userId: string) => {
+    if (!userId || isLoadingDbRef.current) return;
+    isLoadingDbRef.current = true;
+    try {
+      const myProfile = await getMyProfile(userId);
+      if (myProfile) setCurrentUserProfile(myProfile);
+      const [dbProfiles, dbFavorites, dbConversations, approvedPhotos, recPhotoReqs, sentPhotoReqs, dbStats] = await Promise.all([
+        getProfiles(userId, myProfile).catch(() => []),
+        getFavorites(userId).catch(() => []),
+        fetchConversationsFromSupabase(myProfile?.id).catch(() => []),
+        myProfile?.id ? fetchApprovedPhotoAccessProfileIds(myProfile.id).catch(() => []) : Promise.resolve([]),
+        myProfile?.id ? fetchReceivedPhotoAccessRequests(myProfile.id).catch(() => []) : Promise.resolve([]),
+        myProfile?.id ? fetchSentPhotoAccessRequests(myProfile.id).catch(() => []) : Promise.resolve([]),
+        getMyProfileStats().catch(() => null),
+      ]);
+      setProfiles((dbProfiles || []).filter(hasUploadedPhotos));
+      setFavoriteProfileIds(dbFavorites);
+      setConversations(dbConversations);
+      setApprovedPhotoIds(approvedPhotos);
+      setReceivedPhotoRequests(recPhotoReqs);
+      setSentPhotoRequests(sentPhotoReqs);
+      const account = getCurrentUserSession();
+      if (account) {
+        setUser((prev) => {
+          const next = accountToUser(account, myProfile, myProfile?.photoPrivate ?? prev.photoBlurringActive);
+          if (dbStats) next.stats = { ...next.stats, ...dbStats };
+          return next;
+        });
+      }
+    } finally {
+      isLoadingDbRef.current = false;
+    }
+  }, []);
+
+  const syncAuth = useCallback(async () => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
+    try {
+      const account = await restoreCurrentUserSession();
+      if (!account) {
+        setUser(EMPTY_USER);
+        setCurrentUserProfile(null);
+        setProfiles([]);
+        setConversations([]);
+        setMessages([]);
+        setFavoriteProfileIds([]);
+        setApprovedPhotoIds([]);
+        setReceivedPhotoRequests([]);
+        setSentPhotoRequests([]);
+        setActiveConvId(null);
+        setCurrentTab((prev) => (prev !== 'landing' && prev !== 'auth' ? 'landing' : prev));
+        return;
+      }
+      await loadDatabaseState(account.id);
+      setCurrentTab((prev) => {
+        if (prev === 'landing' || prev === 'auth') {
+          try {
+            const savedTab = localStorage.getItem('nassib_active_tab_v1') as TabType;
+            const validTabs: TabType[] = ['dashboard', 'browse', 'requests', 'messages', 'imam', 'verification', 'settings'];
+            if (savedTab && validTabs.includes(savedTab)) return savedTab;
+          } catch {}
+          return 'dashboard';
+        }
+        return prev;
+      });
+    } finally {
+      isSyncingRef.current = false;
+    }
+  }, [loadDatabaseState]);
+
+  useEffect(() => {
+    const validTabs: TabType[] = ['dashboard', 'browse', 'requests', 'messages', 'imam', 'verification', 'settings'];
+    if (user.id && validTabs.includes(currentTab)) {
+      try {
+        localStorage.setItem('nassib_active_tab_v1', currentTab);
+      } catch {}
+    }
+  }, [currentTab, user.id]);
+
+  useEffect(() => {
+    syncAuth();
+    if (!supabase) return;
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'TOKEN_REFRESHED') return;
+      window.setTimeout(() => syncAuth(), 100);
+    });
+    return () => data.subscription.unsubscribe();
+  }, [syncAuth]);
+
+  useEffect(() => {
+    if (!supabase || !user.id) return;
+    const reload = () => loadDatabaseState(user.id);
+    const channel = supabase
+      .channel(`nassib:${user.id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `user_id=eq.${user.id}` }, reload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_favorites' }, reload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, reload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'photo_access_requests' }, reload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async (payload) => {
+        const conversationId = (payload.new as any)?.conversation_id || (payload.old as any)?.conversation_id;
+        if (conversationId && conversationId === activeConvId) {
+          const remote = await fetchMessagesFromSupabase(conversationId);
+          setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.profileId })));
+        }
+        reload();
+      }).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user.id, user.profileId, activeConvId, loadDatabaseState]);
+
+  useEffect(() => {
+    if (!activeConvId || !user.profileId) { setMessages([]); return; }
+    fetchMessagesFromSupabase(activeConvId).then((remote) => setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.profileId }))));
+  }, [activeConvId, user.profileId]);
+
+  const contactRelationshipMap = useMemo(() => {
+    const map: Record<string, 'NO_REQUEST' | 'PENDING_SENT' | 'PENDING_RECEIVED' | 'ACCEPTED' | 'REJECTED'> = {};
+    const myProfileId = user.profileId; if (!myProfileId) return map;
+    for (const conv of conversations) {
+      const otherId = conv.candidateId === myProfileId ? conv.requesterId : conv.candidateId; if (!otherId) continue;
+      if (conv.status === 'accepted') map[otherId] = 'ACCEPTED'; else if (conv.status === 'rejected') map[otherId] = 'REJECTED';
+      else if (conv.status === 'pending') map[otherId] = conv.requesterId === myProfileId ? 'PENDING_SENT' : 'PENDING_RECEIVED';
+    }
+    return map;
+  }, [conversations, user.profileId]);
+
+  const effectiveApprovedPhotoIds = useMemo(() => {
+    const set = new Set<string>(approvedPhotoIds);
+    for (const r of sentPhotoRequests) {
+      if (r.status === 'approved' || r.status === 'accepted') {
+        const targetId = r.target_profile_id || (r as any).targetProfileId;
+        if (targetId) set.add(targetId);
+      }
+    }
+    return Array.from(set);
+  }, [approvedPhotoIds, sentPhotoRequests]);
+
+  const photoAccessMap = useMemo(() => {
+    const map: Record<string, 'NO_REQUEST' | 'PENDING' | 'ALLOWED' | 'REJECTED'> = {};
+    for (const profile of profiles) {
+      if (effectiveApprovedPhotoIds.includes(profile.id)) map[profile.id] = 'ALLOWED';
+      else {
+        const sent = sentPhotoRequests.find(
+          (r) => r.target_profile_id === profile.id || (r as any).targetProfileId === profile.id
+        );
+        if (sent?.status === 'pending') map[profile.id] = 'PENDING';
+        else if (sent?.status === 'rejected') map[profile.id] = 'REJECTED';
+        else if (sent?.status === 'approved' || sent?.status === 'accepted') map[profile.id] = 'ALLOWED';
+        else map[profile.id] = 'NO_REQUEST';
+      }
+    }
+    return map;
+  }, [profiles, effectiveApprovedPhotoIds, sentPhotoRequests]);
+
+  const pendingContactRequests = useMemo(() => { const id=user.profileId; return id ? conversations.filter((c)=>c.status==='pending'&&c.requesterId!==id) : []; }, [conversations,user.profileId]);
+  const sentPendingContactRequests = useMemo(() => { const id=user.profileId; return id ? conversations.filter((c)=>c.status==='pending'&&c.requesterId===id) : []; }, [conversations,user.profileId]);
+  const pendingPhotoRequests = useMemo(() => receivedPhotoRequests.filter((r)=>r.status==='pending'), [receivedPhotoRequests]);
+  const totalPendingRequestsCount = pendingContactRequests.length + pendingPhotoRequests.length;
+
+  const handleOpenAuth = (mode: 'login' | 'register') => { setAuthMode(mode); setCurrentTab('auth'); };
+
+  const handleSelectProfile = async (profile: Profile, destination: TabType) => {
+    setReturnTab(destination); setSelectedProfile(profile); setCurrentTab('profile-detail');
+    if (user.profileId && profile.id !== user.profileId) await recordProfileView(profile.id);
+  };
+
+  const handleToggleFavorite = async (profileId: string) => {
+    if (!user.id) return showToast('Veuillez vous connecter pour enregistrer vos favoris.');
+    if (!hasCurrentUserUploadedPhoto) {
+      setShowPhotoRequiredModal(true);
+      return;
+    }
+    const wasFavorited = favoriteProfileIds.includes(profileId);
+    const success = await toggleFavorite(user.id, profileId);
+    if (!success) return showToast('Impossible de modifier vos favoris. Réessayez.');
+    setFavoriteProfileIds(await getFavorites(user.id));
+    const profile = profiles.find((p) => p.id === profileId);
+    showToast(!wasFavorited ? `❤️ ${profile?.name || 'Profil'} ajouté(e) à vos favoris.` : `${profile?.name || 'Profil'} retiré(e) de vos favoris.`);
+  };
+
+  const favoriteProfiles = profiles.filter((p) => hasUploadedPhotos(p) && favoriteProfileIds.includes(p.id));
+  const userFansCount = currentUserProfile?.likesCount ?? 0;
+
+  const handleSendMessage = async (text: string, targetConvId?: string) => {
+    if (!hasCurrentUserUploadedPhoto) {
+      setShowPhotoRequiredModal(true);
+      return;
+    }
+    const convId = targetConvId || activeConvId; if (!convId || !user.profileId) return;
+    const result = await sendMessageToSupabase(convId, user.profileId, user.name, user.photoUrl, text);
+    if (!result) return showToast('Impossible d’envoyer le message. Réessayez.');
+    const remote = await fetchMessagesFromSupabase(convId); setMessages(remote.map((m) => ({ ...m, isMine: m.senderId === user.profileId })));
+  };
+
+  const handleOpenContactModal = (profile: Profile) => {
+    if (!user.id || !user.profileId) return showToast('Veuillez vous connecter pour contacter ce profil.');
+    if (!hasCurrentUserUploadedPhoto) {
+      setShowPhotoRequiredModal(true);
+      return;
+    }
+    if (user.profileId === profile.id) return showToast('Vous ne pouvez pas envoyer de demande à vous-même.');
+    setContactModalProfile(profile);
+  };
+
+  const handleConfirmSendContactRequest = async (targetProfile: Profile, messageText: string): Promise<boolean> => {
+    if (!user.profileId) { showToast('Veuillez vous connecter pour envoyer une demande.'); return false; }
+    if (!hasCurrentUserUploadedPhoto) {
+      setShowPhotoRequiredModal(true);
+      return false;
+    }
+
+    // Restriction Contact Freemium vs Premium (Free: 3/jour, Premium: Illimité)
+    const quota = await checkAndConsumeContactQuota();
+    if (!quota.allowed) {
+      setContactModalProfile(null);
+      setPaywallConfig({
+        title: 'Contacte sans limite',
+        description: "Tu as flashé sur ce profil ? Écris-lui maintenant, sans attendre demain. Tu as atteint la limite de 3 contacts par jour du compte Gratuit. Passe à Premium pour échanger en illimité !",
+        icon: 'forum',
+      });
+      setShowPaywallModal(true);
+      return false;
+    }
+
+    const result = await sendContactRequestInSupabase({ senderProfileId: user.profileId, targetProfileId: targetProfile.id, senderName: user.name || 'Membre', senderAvatar: user.photoUrl, firstMessage: messageText });
+    if (!result.conversationId || result.error) { showToast(result.error || 'Impossible d’envoyer la demande. Une demande existe peut-être déjà.'); return false; }
+    showToast(`Demande de contact transmise avec succès à ${targetProfile.name}.`); await loadDatabaseState(user.id); setActiveConvId(result.conversationId); return true;
+  };
+
+  const handleActivateBoost = async () => {
+    if (!user.profileId) return;
+    if (!user.isPremium) {
+      setPaywallConfig({
+        title: 'Priorité dans la Sélection & Boosts',
+        description: 'Ton profil est proposé en priorité dans la Sélection et dans Découvrir chaque jour. Passe à Premium pour obtenir des Boosts et être vu(e) en premier !',
+        icon: 'bolt',
+      });
+      setShowPaywallModal(true);
+      return;
+    }
+    const res = await activateProfileBoost();
+    if (res.success) {
+      showToast('🚀 Profil boosté avec succès ! Vous apparaissez en 1ère position pendant 24h.');
+      await loadDatabaseState(user.id);
+    } else {
+      showToast(res.error || 'Impossible d’activer le boost.');
+    }
+  };
+
+  const handleRespondContact = async (convId: string, status: 'accepted' | 'rejected') => {
+    if (!hasCurrentUserUploadedPhoto) {
+      setShowPhotoRequiredModal(true);
+      return;
+    }
+    const ok = await respondToContactRequestInSupabase(convId, status);
+    if (ok) { showToast(status === 'accepted' ? 'Demande acceptée ! La discussion est ouverte.' : 'Demande refusée.'); await loadDatabaseState(user.id); }
+    else showToast('Erreur lors du traitement de la demande.');
+  };
+
+  const handleStartMessageWithProfile = async (profile: Profile) => {
+    if (!hasCurrentUserUploadedPhoto) {
+      setShowPhotoRequiredModal(true);
+      return;
+    }
+    let myProfileId = user.profileId;
+    if (!myProfileId && user.id) { const myProf = profiles.find((p)=>p.userId===user.id) || await getMyProfile(user.id); if (myProf) myProfileId=myProf.id; }
+    if (!myProfileId) return showToast('Veuillez vous connecter pour contacter ce profil.');
+    if (myProfileId === profile.id) return showToast('Vous ne pouvez pas démarrer une discussion avec votre propre profil.');
+    const relState = contactRelationshipMap[profile.id];
+    if (relState === 'PENDING_SENT') return showToast('Votre demande de contact est en attente d’acceptation par ce profil.');
+    if (relState === 'REJECTED') return showToast('Cette demande de contact a été clôturée.');
+    if (relState === 'ACCEPTED') { const conv=conversations.find((c)=>(c.candidateId===profile.id||c.requesterId===profile.id)&&c.status==='accepted'); if(conv){setActiveConvId(conv.id);setSelectedProfile(null);setCurrentTab('messages');return;} }
+    handleOpenContactModal(profile);
+  };
+
+  const handleReportProfile = async (targetProfile: Profile, reason: string, description?: string) => { if (!user.id) return; await reportUserOrProfileInSupabase({ reporterUserId:user.id, reportedProfileId:targetProfile.id, reportedUserId:targetProfile.userId, reason, description }); showToast('Signalement enregistré. Merci.'); };
+  const handleBlockProfile = async (targetProfile: Profile, reason?: string) => { if (!user.id || !targetProfile.userId) return; const ok=await blockUserInSupabase(user.id,targetProfile.userId,reason); if(ok!==false){setProfiles((prev)=>prev.filter((p)=>p.id!==targetProfile.id));showToast(`${targetProfile.name} a été bloqué(e).`);} };
+
+  const handleRequestPhotoAccess = async (profile: Profile) => {
+    if (!hasCurrentUserUploadedPhoto) {
+      setShowPhotoRequiredModal(true);
+      return;
+    }
+    let myProfileId=user.profileId; if(!myProfileId&&user.id){const myProf=profiles.find((p)=>p.userId===user.id)||await getMyProfile(user.id);if(myProf)myProfileId=myProf.id;}
+    if(!myProfileId)return showToast('Veuillez vous connecter pour demander l’accès aux photos.'); if(myProfileId===profile.id)return showToast('Il s’agit de votre propre profil.');
+    const result=await sendPhotoAccessRequestInSupabase({requesterProfileId:myProfileId,targetProfileId:profile.id,requesterUserId:user.id,targetUserId:profile.userId});
+    if(result.success){showToast(`Demande d’accès aux photos transmise à ${profile.name}.`);await loadDatabaseState(user.id);}else showToast(result.error||'Une demande d’accès aux photos est déjà en cours ou a déjà été envoyée.');
+  };
+  const handleRespondPhotoRequest = async (requestId:string,status:'approved'|'rejected') => {
+    if (!hasCurrentUserUploadedPhoto) {
+      setShowPhotoRequiredModal(true);
+      return;
+    }
+    const ok = await respondToPhotoAccessRequestInSupabase(requestId,status);
+    if(ok){
+      showToast(status==='approved'?'Accès aux photos accordé.':'Demande d’accès refusée.');
+      setReceivedPhotoRequests((prev) =>
+        prev.map((r) => (r.id === requestId ? { ...r, status: status === 'approved' ? 'approved' : 'rejected' } : r))
+      );
+      await loadDatabaseState(user.id);
+    } else showToast('Erreur lors de la réponse à la demande.');
+  };
+
+  const handleAuthSuccess = async (userAcc: AuthAccount, isRegister: boolean) => {
+    // 1. Mettre à jour l'utilisateur immédiatement en mémoire
+    setUser((prev) => ({
+      ...prev,
+      id: userAcc.id,
+      name: userAcc.name || prev.name,
+      email: userAcc.email || prev.email,
+      phone: userAcc.phone || prev.phone,
+      role: userAcc.role || prev.role,
+      gender: userAcc.gender || prev.gender,
+      isPremium: Boolean(userAcc.isPremium),
+      isVerifiedNNI: Boolean(userAcc.isVerifiedNNI),
+      isWaliApproved: Boolean(userAcc.isWaliApproved),
+      photoUrl: userAcc.photoUrl || prev.photoUrl,
+    }));
+
+    if (isRegister) {
+      setRegisteredUserData({
+        id: userAcc.id,
+        email: userAcc.email,
+        name: userAcc.name,
+        role: userAcc.role,
+        phone: userAcc.phone || '',
+      });
+      setCurrentTab('onboarding');
+      showToast('Compte créé. Complétez maintenant votre profil.');
+    } else {
+      setCurrentTab('dashboard');
+      try {
+        localStorage.setItem('nassib_active_tab_v1', 'dashboard');
+      } catch {}
+      showToast(`Ravi de vous revoir sur Nassib, ${userAcc.name || ''} !`);
+    }
+
+    // 2. Charger les données en arrière-plan sans bloquer l'interface
+    loadDatabaseState(userAcc.id);
+  };
+
+  const handleLogout = async () => { await logoutUserSession(); try{localStorage.removeItem('nassib_active_tab_v1');}catch{} setUser(EMPTY_USER);setProfiles([]);setConversations([]);setMessages([]);setFavoriteProfileIds([]);setActiveConvId(null);setMobileMenuOpen(false);setCurrentTab('landing'); };
+
+  const handleOnboardingComplete = async (data: OnboardingData) => {
+    const userId=registeredUserData.id||user.id;if(!userId)return showToast('Session invalide. Veuillez vous reconnecter.');
+    const photos=data.photos||[];const hasWaliInfo=Boolean(data.waliName?.trim()&&data.waliPhone?.trim());
+    const profile: Partial<Profile> = {
+      name: registeredUserData.name || user.name,
+      age: data.age,
+      gender: data.gender,
+      profession: data.profession,
+      professionCategory: data.professionCategory,
+      city: data.region,
+      country: data.country || 'Niger',
+      neighborhood: data.neighborhood || undefined,
+      maritalStatus: data.maritalStatus as any,
+      marriageHorizon: data.marriageHorizon,
+      religion: data.religion || 'Sunnite',
+      education: data.education as any,
+      isVerifiedNNI: false,
+      isWaliApproved: hasWaliInfo,
+      isPremium: false,
+      photoUrl: photos[0] || '',
+      photoPrivate: false,
+      bio: data.bio || '',
+      photos,
+      personality: data.personalityTrait,
+      familyImportance: data.familyImportance,
+      presentation: data.bio || data.partnerCriteria || '',
+      height: data.height,
+      weight: data.weight,
+      bodyType: data.bodyType,
+      preferredAgeRange: data.preferredAgeRange,
+      ethnicity: data.ethnicity,
+      originCity: data.originCity,
+      hijabStatus: data.gender === 'female' ? data.hijabStatus : undefined,
+      religiousPracticeDetails: data.religiousPracticeDetails || data.religiousPractice,
+      values: data.values,
+      partnerCriteria: data.partnerCriteria,
+      dealBreakers: data.dealBreakers
+    };
+    const saved=await saveMyProfile(userId,profile,data);if(!saved)return showToast('Impossible d’enregistrer le profil. Vos données n’ont pas été enregistrées.');
+    await loadDatabaseState(userId);setCurrentTab('browse');try{localStorage.setItem('nassib_active_tab_v1','browse');}catch{}showToast('Profil enregistré dans la base de données Nassib.');
+  };
+
+  const handleUpdateUser = async (updated: Partial<User>) => {
+    if(!user.id)return;
+    setUser((prev) => ({ ...prev, ...updated, gender: prev.gender || 'female' }));
+    if(updated.photoBlurringActive!==undefined){const privacySaved=await updatePhotoPrivacy(user.id,updated.photoBlurringActive);if(!privacySaved)return showToast('Impossible d’enregistrer cette préférence dans Supabase.');}
+    const existing=await getMyProfile(user.id);const baseProfile:Partial<Profile>=existing||{userId:user.id,name:updated.name||user.name||'Membre',gender:existing?.gender||user.gender||'female',photoUrl:updated.photoUrl||user.photoUrl||'',age:25,city:'Niamey',maritalStatus:'Célibataire'};
+    const saved=await saveMyProfile(user.id,{...baseProfile,name:updated.name||baseProfile.name,gender:existing?.gender||user.gender||'female',photoUrl:updated.photoUrl!==undefined?updated.photoUrl:baseProfile.photoUrl,photos:updated.photos||baseProfile.photos,photoPrivate:updated.photoBlurringActive!==undefined?updated.photoBlurringActive:baseProfile.photoPrivate,isPremium:updated.isPremium!==undefined?updated.isPremium:baseProfile.isPremium},updated.waliInfo?{waliName:updated.waliInfo.name,waliRelation:updated.waliInfo.relation,waliPhone:updated.waliInfo.phone}:undefined);
+    if(saved){setCurrentUserProfile(saved);await loadDatabaseState(user.id);}else return showToast('Impossible d’enregistrer les modifications dans Supabase.');
+    showToast('Modifications enregistrées.');
+  };
+
+  const handleTogglePhotoBlurring = async () => {
+    if(!user.id)return;const next=!user.photoBlurringActive;const saved=await updatePhotoPrivacy(user.id,next);if(!saved)return showToast('Impossible d’enregistrer le mode Floutage dans Supabase.');
+    const freshProfile=await getMyProfile(user.id);if(!freshProfile)return showToast('Préférence enregistrée mais profil introuvable.');setCurrentUserProfile(freshProfile);const account=getCurrentUserSession();if(account)setUser((prev)=>accountToUser(account,freshProfile,freshProfile.photoPrivate));
+    showToast(next?'Mode Floutage activé : vos photos sont désormais protégées.':'Mode Floutage désactivé : vos photos sont désormais visibles.');
+  };
+
+  const handleUpdateWaliInfo = async (waliInfo: UserWaliInfo) => { if(!user.id)return;const existing=await getMyProfile(user.id);if(!existing)return;const saved=await saveMyProfile(user.id,{...existing,isWaliApproved:true},{waliName:waliInfo.name,waliRelation:waliInfo.relation,waliPhone:waliInfo.phone});if(saved){setUser((prev)=>({...prev,isWaliApproved:true,waliInfo}));await loadDatabaseState(user.id);showToast('Informations du Wali enregistrées.');} };
+  const handleUploadNNI = async () => { if(!user.id)return;const existing=await getMyProfile(user.id);if(!existing)return;const saved=await saveMyProfile(user.id,{...existing,isVerifiedNNI:true});if(saved){setUser((prev)=>({...prev,isVerifiedNNI:true}));await loadDatabaseState(user.id);showToast('Identité vérifiée par carte. Le badge officiel est activé.');} };
+  const handleSubmitIdentityVerification = async (params: { documentType: string; documentNumber: string; fullName: string; expiryDate?: string; frontDocumentUrl?: string; backDocumentUrl?: string; autoVerify?: boolean; }): Promise<boolean> => {
+    if (!user.id) return false;
+    const existing = await getMyProfile(user.id);
+    const profileId = existing?.id || user.profileId || user.id;
+    const isApproved = Boolean(params.autoVerify);
+    const docPathSummary = `${params.documentType.toUpperCase()} - N° ${params.documentNumber} (${params.fullName})`;
+    const adminNote = `Document: ${params.documentType}, N°: ${params.documentNumber}, Nom: ${params.fullName}${params.expiryDate ? `, Exp: ${params.expiryDate}` : ''}`;
+    
+    if (isSupabaseConfigured) {
+      await submitVerificationRequestInSupabase({
+        profileId,
+        userId: user.id,
+        verificationType: 'nni',
+        documentPath: docPathSummary,
+        adminNote,
+        status: isApproved ? 'approved' : 'pending',
+      });
+    }
+
+    if (isApproved) {
+      if (existing) {
+        await saveMyProfile(user.id, { ...existing, isVerifiedNNI: true });
+      }
+      setUser((prev) => ({ ...prev, isVerifiedNNI: true }));
+      await loadDatabaseState(user.id);
+      showToast('Félicitations ! Votre identité est vérifiée par carte. Le badge officiel est maintenant actif.');
+    } else {
+      await loadDatabaseState(user.id);
+      showToast('Votre pièce d’identité a été transmise. Elle sera examinée et validée par l’administrateur.');
+    }
+    return true;
+  };
+  const isHeaderlessTab=['browse','messages','settings','requests','profile-detail','imam'].includes(currentTab);
+
+  return (<div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] flex flex-col font-body">
+    {toastMessage&&<div className="fixed top-20 right-4 left-4 sm:left-auto sm:right-6 z-50 bg-[#0F5C4D] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn border border-[#8BAE9F]/40"><span className="material-symbols-outlined text-[#C9A45C]">check_circle</span><span className="font-display text-xs sm:text-sm font-semibold">{toastMessage}</span></div>}
+    {currentTab==='auth'?<AuthPage initialMode={authMode} onBack={()=>setCurrentTab('landing')} onSuccess={handleAuthSuccess}/>:currentTab==='onboarding'?<OnboardingPage userName={registeredUserData.name||user.name} userRole={registeredUserData.role||user.role} userPhone={registeredUserData.phone||user.phone} onComplete={handleOnboardingComplete} onCancel={()=>setCurrentTab('dashboard')}/>:currentTab==='landing'?<LandingView onEnterApp={()=>setCurrentTab('dashboard')} onOpenAuth={handleOpenAuth} onNavigateTab={setCurrentTab}/>:<>
+      <Sidebar currentTab={currentTab} onSelectTab={setCurrentTab} user={user} onOpenAuth={handleOpenAuth} onLogout={handleLogout} unreadCount={0} pendingRequestsCount={totalPendingRequestsCount}/>
+      {!isHeaderlessTab&&<MobileHeader user={user} onSelectTab={setCurrentTab} onToggleMobileMenu={()=>setMobileMenuOpen((v)=>!v)}/>} 
+      {mobileMenuOpen&&<div className="md:hidden fixed inset-0 z-50 bg-[#211E1A]/60 backdrop-blur-sm flex justify-end"><div className="w-4/5 max-w-xs bg-[#FAF8F2] h-full p-6 flex flex-col justify-between shadow-2xl"><div><div className="flex justify-between items-center pb-6 border-b border-[#E8E3D7] mb-6"><NasibaLogo size="sm"/><button onClick={()=>setMobileMenuOpen(false)} className="p-1 text-[#7D766C]"><span className="material-symbols-outlined">close</span></button></div><nav className="space-y-1.5">{[['dashboard','Tableau de bord','dashboard'],['browse','Parcourir','search'],['requests','Demandes','mark_email_unread'],['messages','Messages','chat_bubble'],['imam','Imam Oumar IA','auto_awesome'],['verification','Vérification Wali','verified_user'],['settings','Paramètres','settings']].map(([id,label,icon])=><button key={id} onClick={()=>{setCurrentTab(id as TabType);setMobileMenuOpen(false)}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-display text-sm font-semibold text-left ${currentTab===id?'bg-[#8BAE9F]/20 text-[#0F5C4D]':'text-[#575147] hover:bg-[#8BAE9F]/10'}`}><span className="material-symbols-outlined text-lg">{icon}</span><span className="flex-1">{label}</span>{id==='requests'&&totalPendingRequestsCount>0&&<span className="bg-[#0F5C4D] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{totalPendingRequestsCount}</span>}</button>)}</nav></div><button onClick={handleLogout} className="w-full border border-[#E8E3D7] bg-white text-[#575147] font-display font-semibold py-2.5 rounded-xl text-xs">Se déconnecter</button></div></div>}
+      {(()=>{const isMessagingProfileOpen=currentTab==='messages'&&Boolean(activeConvId);const isProfileDetailOpen=currentTab==='profile-detail'||Boolean(selectedProfile);const isImamTab=currentTab==='imam';const shouldHideTabBar=isMessagingProfileOpen||isProfileDetailOpen||isImamTab||currentTab==='auth'||currentTab==='onboarding';return <><main className={`flex-1 md:ml-64 px-3 sm:px-8 ${isMessagingProfileOpen||isImamTab?'pb-1 md:pb-3':'pb-28 md:pb-12'} min-h-screen ${isHeaderlessTab?'pt-[max(0.5rem,env(safe-area-inset-top))] md:pt-4':'pt-16 md:pt-10'}`}>
+        {currentTab==='dashboard'&&<DashboardView user={user} recommendedProfiles={profiles.filter((p)=>hasUploadedPhotos(p)&&p.userId!==user.id&&p.gender!==user.gender)} favoriteProfiles={favoriteProfiles} favoriteProfileIds={favoriteProfileIds} fansCount={userFansCount} onSelectProfile={(p)=>{void handleSelectProfile(p,'dashboard')}} onNavigateToTab={setCurrentTab} onTogglePhotoBlurring={handleTogglePhotoBlurring} onToggleFavorite={handleToggleFavorite} approvedPhotoIds={effectiveApprovedPhotoIds} photoAccessMap={photoAccessMap} hasUploadedPhoto={hasCurrentUserUploadedPhoto} onRequestPhotoUpload={()=>setShowPhotoRequiredModal(true)} onActivateBoost={handleActivateBoost} onUpgradeToPremium={()=>setCurrentTab('settings')}/>} 
+        {currentTab==='browse'&&<BrowseView user={user} profiles={profiles} onSelectProfile={(p)=>{void handleSelectProfile(p,'browse')}} onRequestAccess={handleRequestPhotoAccess} favoriteProfileIds={favoriteProfileIds} onToggleFavorite={handleToggleFavorite} approvedPhotoIds={effectiveApprovedPhotoIds} photoAccessMap={photoAccessMap} contactRelationshipMap={contactRelationshipMap} onSendContactRequest={handleOpenContactModal} hasUploadedPhoto={hasCurrentUserUploadedPhoto} onRequestPhotoUpload={()=>setShowPhotoRequiredModal(true)}/>} 
+        {currentTab==='profile-detail'&&selectedProfile&&<ProfileDetailView profile={selectedProfile} currentUser={user} onBack={()=>{setCurrentTab(returnTab);setSelectedProfile(null)}} onStartMessage={handleStartMessageWithProfile} onSendContactRequest={handleOpenContactModal} onRequestPhotoAccess={handleRequestPhotoAccess} contactState={contactRelationshipMap[selectedProfile.id]||'NO_REQUEST'} photoAccessState={photoAccessMap[selectedProfile.id]||'NO_REQUEST'} conversationId={conversations.find((c)=>c.candidateId===selectedProfile.id||c.requesterId===selectedProfile.id)?.id} onAcceptContactRequest={async(id)=>{await handleRespondContact(id,'accepted')}} onRejectContactRequest={async(id)=>{await handleRespondContact(id,'rejected')}} onOpenConversation={(id)=>{setActiveConvId(id);setSelectedProfile(null);setCurrentTab('messages')}} isFavorited={favoriteProfileIds.includes(selectedProfile.id)} onToggleFavorite={handleToggleFavorite} onReport={handleReportProfile} onBlock={handleBlockProfile} onAcceptContact={async(pid)=>{const c=conversations.find((x)=>(x.candidateId===pid||x.requesterId===pid)&&x.status==='pending');if(c)await handleRespondContact(c.id,'accepted')}} onRejectContact={async(pid)=>{const c=conversations.find((x)=>(x.candidateId===pid||x.requesterId===pid)&&x.status==='pending');if(c)await handleRespondContact(c.id,'rejected')}} hasUploadedPhoto={hasCurrentUserUploadedPhoto} onRequestPhotoUpload={()=>setShowPhotoRequiredModal(true)}/>}
+        {currentTab==='requests'&&<RequestsView user={user} conversations={conversations} contactRequests={pendingContactRequests} sentContactRequests={sentPendingContactRequests} receivedPhotoRequests={receivedPhotoRequests} sentPhotoRequests={sentPhotoRequests} profiles={profiles} onAcceptContact={(id)=>handleRespondContact(id,'accepted')} onRejectContact={(id)=>handleRespondContact(id,'rejected')} onAcceptPhotoRequest={(id)=>handleRespondPhotoRequest(id,'approved')} onRejectPhotoRequest={(id)=>handleRespondPhotoRequest(id,'rejected')} onViewProfile={(pid)=>{const found=profiles.find((p)=>p.id===pid);if(found)void handleSelectProfile(found,'requests')}} onOpenConversation={(id)=>{setActiveConvId(id);setCurrentTab('messages')}} hasUploadedPhoto={hasCurrentUserUploadedPhoto} onRequestPhotoUpload={()=>setShowPhotoRequiredModal(true)}/>}
+        {currentTab==='imam'&&<ImamChatView user={user} onBack={()=>setCurrentTab(previousNonImamTabRef.current||'dashboard')}/>} 
+        {currentTab==='messages'&&<MessagesView user={user} conversations={conversations} activeMessages={messages} activeConvId={activeConvId} onSelectConversation={setActiveConvId} onSendMessage={handleSendMessage} onAcceptContact={(id)=>handleRespondContact(id,'accepted')} onRejectContact={(id)=>handleRespondContact(id,'rejected')} onOpenProfile={(pid)=>{const found=profiles.find((p)=>p.id===pid);if(found)void handleSelectProfile(found,'messages');else getProfileById(pid).then((p)=>{if(p)void handleSelectProfile(p,'messages')})}} hasUploadedPhoto={hasCurrentUserUploadedPhoto} onRequestPhotoUpload={()=>setShowPhotoRequiredModal(true)} onUpgradeToPremium={()=>setCurrentTab('settings')}/>}
+        {currentTab==='verification'&&<VerificationView user={user} onUpdateWaliInfo={handleUpdateWaliInfo} onUploadNNI={handleUploadNNI} onSubmitVerification={handleSubmitIdentityVerification}/>} 
+        {currentTab==='settings'&&<SettingsView user={user} profile={currentUserProfile} onUpdateUser={handleUpdateUser} onUpdateProfile={async(updatedProfile)=>{if(!user.id)return;const existing=await getMyProfile(user.id);const baseProfile=existing||{userId:user.id,name:user.name||'Membre',gender:user.gender||'female',photoUrl:user.photoUrl||'',age:25,city:'Niamey',maritalStatus:'Célibataire'};const saved=await saveMyProfile(user.id,{...baseProfile,...updatedProfile});if(saved){setCurrentUserProfile(saved);await loadDatabaseState(user.id);showToast('Profil mis à jour avec succès.')}else showToast('Impossible de mettre à jour le profil dans Supabase.')}} onNavigateTab={setCurrentTab} onLogout={handleLogout}/>} 
+      </main>{!shouldHideTabBar&&<MobileBottomNav currentTab={currentTab} onSelectTab={setCurrentTab} unreadCount={0} pendingRequestsCount={totalPendingRequestsCount}/>}</>})()}
+    </>}
+    {selectedProfile&&currentTab!=='profile-detail'&&<ProfileDetailModal profile={selectedProfile} currentUser={user} onClose={()=>setSelectedProfile(null)} onStartMessage={handleStartMessageWithProfile} onRequestPhotoAccess={handleRequestPhotoAccess} photoAccessState={photoAccessMap[selectedProfile.id]||(effectiveApprovedPhotoIds.includes(selectedProfile.id)?'ALLOWED':'NO_REQUEST')} isFavorited={favoriteProfileIds.includes(selectedProfile.id)} onToggleFavorite={handleToggleFavorite} onReport={handleReportProfile} onBlock={handleBlockProfile} hasUploadedPhoto={hasCurrentUserUploadedPhoto} onRequestPhotoUpload={()=>setShowPhotoRequiredModal(true)}/>} 
+    {contactModalProfile&&<ContactRequestModal targetProfile={contactModalProfile} isOpen={Boolean(contactModalProfile)} onClose={()=>setContactModalProfile(null)} onSend={handleConfirmSendContactRequest}/>} 
+    <PhotoRequiredModal isOpen={showPhotoRequiredModal} onClose={()=>setShowPhotoRequiredModal(false)} onGoToUpload={()=>{setShowPhotoRequiredModal(false);setCurrentTab('settings');}}/>
+    {user.id && currentTab !== 'landing' && currentTab !== 'auth' && currentTab !== 'onboarding' && currentTab !== 'settings' && currentTab !== 'imam' && (
+      <ProfileInvisibilityNotice
+        hasUploadedPhoto={hasCurrentUserUploadedPhoto}
+        onGoToUpload={() => setCurrentTab('settings')}
+      />
+    )}
+    <PaywallUpgradeModal
+      isOpen={showPaywallModal}
+      onClose={() => setShowPaywallModal(false)}
+      onUpgrade={() => {
+        setShowPaywallModal(false);
+        setCurrentTab('settings');
+      }}
+      featureTitle={paywallConfig.title}
+      featureDescription={paywallConfig.description}
+      featureIcon={paywallConfig.icon}
+    />
+    <PwaInstallPrompt />
+  </div>);
+}

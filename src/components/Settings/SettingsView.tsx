@@ -80,7 +80,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   );
   const [email, setEmail] = useState<string>(user.email || '');
   const [phone, setPhone] = useState<string>(user.phone || '');
-  const [gender, setGender] = useState<'female' | 'male'>(user.gender || 'female');
+  const gender: 'female' | 'male' = (user.gender === 'male' || profile?.gender === 'male') ? 'male' : 'female';
   const [photos, setPhotos] = useState<string[]>(
     user.photos && user.photos.length > 0
       ? [user.photos[0] || user.photoUrl || '', user.photos[1] || '', user.photos[2] || '']
@@ -90,6 +90,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // Profile details state
   const [bio, setBio] = useState<string>(profile?.bio || '');
   const [partnerCriteria, setPartnerCriteria] = useState<string>(profile?.partnerCriteria || profile?.presentation || '');
+  const [familyImportance, setFamilyImportance] = useState<string>(profile?.familyImportance || '');
   const [height, setHeight] = useState<number | ''>(profile?.height || '');
   const [weight, setWeight] = useState<number | ''>(profile?.weight || '');
   const [ethnicity, setEthnicity] = useState<string>(profile?.ethnicity || '');
@@ -116,6 +117,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       if (typeof profile.age === 'number' && profile.age >= 18) setAge(profile.age);
       if (profile.bio) setBio(profile.bio);
       if (profile.partnerCriteria) setPartnerCriteria(profile.partnerCriteria);
+      if (profile.familyImportance) setFamilyImportance(profile.familyImportance);
       if (profile.height) setHeight(profile.height);
       if (profile.weight) setWeight(profile.weight);
       if (profile.ethnicity) setEthnicity(profile.ethnicity);
@@ -156,12 +158,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     photos: effectivePhotos,
     bio,
     partnerCriteria,
-    presentation: partnerCriteria,
+    presentation: bio || partnerCriteria,
+    familyImportance,
     height: typeof height === 'number' && height > 0 ? height : undefined,
     weight: typeof weight === 'number' && weight > 0 ? weight : undefined,
     ethnicity,
     originCity,
-    hijabStatus,
+    hijabStatus: gender === 'female' ? hijabStatus : undefined,
     religiousPracticeDetails: religiousPractice,
     values: selectedValues,
     dealBreakers: selectedDealBreakers,
@@ -195,16 +198,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const isMarriageComplete = Boolean(
     partnerCriteria && partnerCriteria.trim().length >= 15 &&
     selectedValues && selectedValues.length > 0 &&
-    selectedDealBreakers && selectedDealBreakers.length > 0
+    selectedDealBreakers && selectedDealBreakers.length > 0 &&
+    familyImportance && familyImportance.trim().length >= 5
   );
   const isPersonalityComplete = Boolean(bio && bio.trim().length >= 20);
   const isReligionComplete = Boolean(
     religiousPractice && religiousPractice.trim().length > 0 &&
-    hijabStatus && hijabStatus.trim().length > 0
+    (gender === 'male' || (hijabStatus && hijabStatus.trim().length > 0))
   );
   const isWaliComplete = gender === 'female'
     ? Boolean(user.isWaliApproved || (waliName && waliName.trim().length >= 2 && waliPhone && waliPhone.trim().length >= 8))
-    : Boolean(user.isWaliApproved || (waliName && waliName.trim().length > 0) || true);
+    : true;
   const isSecurityComplete = Boolean(
     email && email.trim().length > 0 &&
     phone && phone.trim().length > 0
@@ -381,12 +385,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         photos: activePhotos,
         bio,
         partnerCriteria,
-        presentation: partnerCriteria,
+        presentation: bio || partnerCriteria,
+        familyImportance,
         height: typeof height === 'number' ? height : undefined,
         weight: typeof weight === 'number' ? weight : undefined,
         ethnicity,
         originCity,
-        hijabStatus,
+        hijabStatus: gender === 'female' ? hijabStatus : undefined,
         religiousPracticeDetails: religiousPractice,
         values: selectedValues,
         dealBreakers: selectedDealBreakers,
@@ -657,15 +662,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="font-display text-xs font-bold text-[#211E1A]">Civilité (Genre)</label>
+                <div className="flex items-center justify-between">
+                  <label className="font-display text-xs font-bold text-[#211E1A]">Civilité (Genre)</label>
+                  <span className="text-[11px] font-medium text-[#7D766C] flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs">lock</span>
+                    Fixé à l'inscription
+                  </span>
+                </div>
                 <div className="grid grid-cols-2 gap-3 h-11">
                   <button
                     type="button"
-                    onClick={() => setGender('female')}
-                    className={`rounded-xl text-xs font-display font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                    disabled
+                    aria-disabled="true"
+                    title="Le genre est fixé lors de l'inscription et ne peut plus être modifié"
+                    className={`rounded-xl text-xs font-display font-bold flex items-center justify-center gap-2 border transition-all cursor-default ${
                       gender === 'female'
                         ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-2xs'
-                        : 'bg-[#FAF8F2] text-[#575147] border-[#E8E3D7] hover:border-[#8BAE9F]'
+                        : 'bg-[#FAF8F2] text-[#8C8476] border-[#E8E3D7] opacity-60'
                     }`}
                   >
                     <span className="material-symbols-outlined text-base">female</span>
@@ -673,11 +686,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setGender('male')}
-                    className={`rounded-xl text-xs font-display font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                    disabled
+                    aria-disabled="true"
+                    title="Le genre est fixé lors de l'inscription et ne peut plus être modifié"
+                    className={`rounded-xl text-xs font-display font-bold flex items-center justify-center gap-2 border transition-all cursor-default ${
                       gender === 'male'
                         ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-2xs'
-                        : 'bg-[#FAF8F2] text-[#575147] border-[#E8E3D7] hover:border-[#8BAE9F]'
+                        : 'bg-[#FAF8F2] text-[#8C8476] border-[#E8E3D7] opacity-60'
                     }`}
                   >
                     <span className="material-symbols-outlined text-base">male</span>
@@ -853,10 +868,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   Ce que vous recherchez chez votre futur(e) époux(se)
                 </label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={partnerCriteria}
                   onChange={(e) => setPartnerCriteria(e.target.value)}
                   placeholder="Décrivez les qualités religieuses, humaines et morales attendues..."
+                  className="w-full bg-[#FAF8F2] border border-[#E8E3D7] rounded-2xl p-3.5 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
+                />
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <label className="font-display text-xs font-bold text-[#211E1A]">
+                  Vision de la famille &amp; foyer musulman
+                </label>
+                <textarea
+                  rows={3}
+                  value={familyImportance}
+                  onChange={(e) => setFamilyImportance(e.target.value)}
+                  placeholder="Partagez votre vision du foyer, l'importance accordée à la famille et l'éducation..."
                   className="w-full bg-[#FAF8F2] border border-[#E8E3D7] rounded-2xl p-3.5 text-xs sm:text-sm font-body text-[#211E1A] focus:outline-none focus:border-[#0F5C4D]"
                 />
               </div>
