@@ -70,7 +70,7 @@ export const OnboardingPageV2: React.FC<Props> = ({ userName, userRole = 'candid
     religion, religiousPracticeDetails, hijabStatus, bio, education, professionCategory, profession,
     personality, familyImportance, values, partnerCriteria, preferredAgeRange,
     dealBreakers: [...dealBreakers, ...(customDealBreaker.trim() ? [customDealBreaker.trim()] : [])],
-    maritalStatus, polygamyPreference, marriageHorizon, photos,
+    maritalStatus, polygamyOpinion: polygamyPreference, marriageHorizon, photos,
   }), [userName, gender, age, country, city, neighborhood, originCity, ethnicity, height, weight, bodyType, religion, religiousPracticeDetails, hijabStatus, bio, education, professionCategory, profession, personality, familyImportance, values, partnerCriteria, preferredAgeRange, dealBreakers, customDealBreaker, maritalStatus, polygamyPreference, marriageHorizon, photos]);
 
   const setPhoto = async (index: number, event: React.ChangeEvent<HTMLInputElement>) => {

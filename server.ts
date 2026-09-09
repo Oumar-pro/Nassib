@@ -4,12 +4,19 @@ import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { generateText } from 'ai';
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
 app.use(express.json());
+
+const getOpenRouterClient = () => {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  return apiKey ? createOpenRouter({ apiKey }) : null;
+};
 
 const getGenAIClient = () => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -260,6 +267,352 @@ app.post('/api/imam-chat', async (_req, res) => {
   return res.json({
     reply: "As-salamu alaykum. Le service de l'Imam Oumar est indisponible pour le moment. Il sera très bientôt disponible in sha Allah.",
   });
+});
+
+// Helper pour construire le prompt de rédaction matrimoniale éthique
+function buildMatrimonialPrompt(
+  type: string,
+  hints: string,
+  currentDraft: string,
+  tone: string,
+  profileContext: any = {}
+): string {
+  const isFemale = profileContext.gender === 'female';
+  const genderLabel = isFemale ? 'une femme musulmane' : 'un homme musulman';
+  const age = profileContext.age ? `${profileContext.age} ans` : '';
+  const city = profileContext.city ? `habitant à ${profileContext.city}` : '';
+  const profession = profileContext.profession ? `exerçant comme ${profileContext.profession}` : '';
+  const education = profileContext.education ? `niveau d'études : ${profileContext.education}` : '';
+  const personality = profileContext.personalityTrait ? `personnalité : ${profileContext.personalityTrait}` : '';
+  const practice = profileContext.religiousPractice ? `pratique religieuse : ${profileContext.religiousPractice}` : '';
+
+  const contextDetails = [genderLabel, age, city, profession, education, personality, practice]
+    .filter(Boolean)
+    .join(', ');
+
+  const toneInstruction =
+    tone === 'detailed'
+      ? 'chaleureux, expressif et détaillé'
+      : tone === 'concise'
+      ? 'concis, direct et percutant'
+      : 'sincère, noble, mesuré et équilibré';
+
+  if (type === 'bio' || type === 'presentation') {
+    return `Tu es l'assistant de rédaction matrimoniale bienveillant de la plateforme NASSIB (application de mariage musulman sunnite respectant la Sharia et les convenances éthiques).
+Mission : Rédige une présentation personnelle (biographie de profil) matrimoniale musulmane sincère, sobre, pudique et positive à la 1ère personne du singulier ('Je').
+Profil du membre : ${contextDetails || 'Candidat au mariage pieux'}.
+${hints ? `Éléments clés / Mots-clés donnés par le membre : "${hints}"` : ''}
+${currentDraft ? `Brouillon actuel rédigé par le membre (à corriger, sublimer et enrichir tout en restant authentique) : "${currentDraft}"` : ''}
+Ton requis : ${toneInstruction}.
+Règles strictes :
+- Rédige en français soigné, naturel et mature.
+- Rédige entre 3 et 5 phrases fluides.
+- Valorise la spiritualité (Taqwa), la loyauté, le sens de la famille et le désir d'un foyer serein (Sakina).
+- Ne commence PAS par 'Salam', 'Bonjour' ou 'Je m'appelle'. Entre directement dans le vif du sujet.
+- Rédige UNIQUEMENT le texte final prêt à être inséré, sans guillemets au début/fin, sans puces et sans commentaires.`;
+  }
+
+  if (type === 'partner_criteria' || type === 'criteria') {
+    return `Tu es l'assistant de rédaction matrimoniale de la plateforme NASSIB.
+Mission : Rédige ce que ${genderLabel} recherche chez son futur époux / sa future épouse pour un mariage durable et épanoui.
+Rédige à la 1ère personne ('Je recherche...').
+Profil de la personne : ${contextDetails || 'Membre Nassib'}.
+${profileContext.preferredAgeRange ? `Tranche d'âge souhaitée : ${profileContext.preferredAgeRange}` : ''}
+${hints ? `Critères clés indiqués : "${hints}"` : ''}
+${currentDraft ? `Brouillon actuel : "${currentDraft}"` : ''}
+Ton requis : ${toneInstruction}.
+Règles strictes :
+- Mettre l'accent sur la crainte d'Allah, la maturité émotionnelle, la bienveillance, la fidélité aux engagements et le sens des responsabilités.
+- Rédige entre 3 et 4 phrases en français élégant et posé.
+- Rédige UNIQUEMENT le texte final prêt à l'emploi.`;
+  }
+
+  if (type === 'family_vision' || type === 'vision') {
+    return `Tu es l'assistant de rédaction matrimoniale de la plateforme NASSIB.
+Mission : Rédige la vision du foyer et de la vie de famille musulmane de ${genderLabel}.
+${hints ? `Points souhaités : "${hints}"` : ''}
+${currentDraft ? `Brouillon actuel : "${currentDraft}"` : ''}
+Ton requis : ${toneInstruction}.
+Règles strictes :
+- Souligne l'importance de l'amour empreint de miséricorde (Mawaddah wa Rahmah), la sérénité du foyer (Sakina), l'entraide quotidienne et l'éducation islamique des enfants.
+- 2 à 4 phrases bien tournées en français à la première personne.
+- Rédige UNIQUEMENT le texte final.`;
+  }
+
+  if (type === 'dealbreaker') {
+    return `Tu es l'assistant de rédaction matrimoniale de NASSIB.
+Mission : Formule une ligne rouge ou condition déterminante (deal-breaker) de manière polie, digne et résolue en 1 ou 2 phrases concises en français.
+Idée : "${hints || currentDraft || 'Manque de respect ou négligence religieuse'}".
+Rédige UNIQUEMENT la phrase finale.`;
+  }
+
+  return hints || currentDraft || `Rédige une description matrimoniale musulmane sincère, pudique et positive pour ${genderLabel}.`;
+}
+
+// Fallback intelligent en local si aucune clé API n'est configurée ou en cas de coupure temporaire
+function generateLocalFallback(
+  type: string,
+  hints: string,
+  currentDraft: string,
+  tone: string,
+  profileContext: any = {}
+): string {
+  const city = profileContext.city || 'Niamey';
+  const profession = profileContext.profession || 'mon domaine professionnel';
+  const isFemale = profileContext.gender === 'female';
+
+  if (type === 'bio' || type === 'presentation') {
+    if (hints || currentDraft) {
+      const input = (hints || currentDraft).trim();
+      return `De nature calme, respectueuse et attachée à mes valeurs religieuses, j'accorde une importance essentielle à l'authenticité et à la sincérité. ${input.length > 5 ? `Dans mon quotidien, je me caractérise par : ${input}. ` : ''}Je souhaite aujourd'hui concrétiser la moitié de mon dîn en fondant un foyer harmonieux et pieux, basé sur l'entraide mutuelle et la confiance.`;
+    }
+    return `Personne posée, sincère et attachée à la foi ainsi qu'aux valeurs familiales. Basé(e) à ${city} et évoluant dans ${profession}, je privilégie la paix intérieure, les relations vraies et le respect mutuel. Mon intention est de construire un foyer empreint de Sakina et d'évoluer ensemble dans l'amour d'Allah.`;
+  }
+
+  if (type === 'partner_criteria' || type === 'criteria') {
+    if (hints || currentDraft) {
+      const input = (hints || currentDraft).trim();
+      return `Je recherche une personne bienveillante et pieuse, accordant une valeur fondamentale à la moralité et au respect des engagements. Idéalement : ${input}. Mon souhait est de cheminer main dans la main avec un conjoint fiable, communicatif et investi dans la réussite de notre vie de famille.`;
+    }
+    return `Je recherche un(e) conjoint(e) pieux(se), intègre et bienveillant(e), avec qui partager une complicité saine et une entraide constante. Une personne attachée à la prière, à l'esprit de famille et au dialogue apaisé pour avancer sereinement ensemble.`;
+  }
+
+  if (type === 'family_vision' || type === 'vision') {
+    return `Pour moi, le foyer musulman doit être un havre de sérénité (Sakina), de tendresse et de respect partagé. Je conçois la vie conjugale comme un partenariat noble où l'on s'épaule face aux défis du quotidien et où l'on élève nos futurs enfants dans les plus beaux enseignements de l'Islam.`;
+  }
+
+  if (type === 'dealbreaker') {
+    const input = (hints || currentDraft).trim();
+    return input ? `Condition primordiale : ${input}. Je privilégie une relation bâtie sur la clarté, le respect mutuel et l'honnêteté réciproque.` : `Négligence des obligations religieuses et manque de respect envers la belle-famille.`;
+  }
+
+  return hints || currentDraft || 'Profil matrimonial respectueux et authentique.';
+}
+
+// API de Génération de texte assistée par IA (OpenRouter avec modèle google/gemma-4-31b-it:free)
+app.post(['/api/chat', '/api/ai/write', '/api/ai/assist'], async (req, res) => {
+  try {
+    const {
+      prompt,
+      type = 'bio',
+      hints = '',
+      currentDraft = '',
+      tone = 'sincere',
+      profileContext = {},
+    } = req.body || {};
+
+    const targetPrompt =
+      prompt && typeof prompt === 'string' && prompt.trim().length > 10
+        ? prompt.trim()
+        : buildMatrimonialPrompt(type, hints, currentDraft, tone, profileContext);
+
+    let generatedText = '';
+
+    // 1. Appel OpenRouter avec la clé OPENROUTER_API_KEY et le SDK @openrouter/ai-sdk-provider
+    const openrouter = getOpenRouterClient();
+    if (openrouter) {
+      try {
+        console.log('Appel OpenRouter avec modèle google/gemma-4-31b-it:free...');
+        const result = await generateText({
+          model: openrouter.chat('google/gemma-4-31b-it:free'),
+          prompt: targetPrompt,
+        });
+        if (result && result.text && result.text.trim()) {
+          generatedText = result.text.trim();
+        }
+      } catch (openRouterErr: any) {
+        console.warn('OpenRouter primary call error (tentative modèle alternatif):', openRouterErr?.message);
+        // Tentative sur un modèle OpenRouter alternatif gratuit si congestion
+        try {
+          const backupResult = await generateText({
+            model: openrouter.chat('meta-llama/llama-3.3-70b-instruct:free'),
+            prompt: targetPrompt,
+          });
+          if (backupResult && backupResult.text && backupResult.text.trim()) {
+            generatedText = backupResult.text.trim();
+          }
+        } catch (backupErr: any) {
+          console.warn('OpenRouter backup model error:', backupErr?.message);
+        }
+      }
+    }
+
+    // 2. Repli vers Gemini si OpenRouter n'a pas répondu et que GEMINI_API_KEY est présent
+    if (!generatedText) {
+      const gemini = getGenAIClient();
+      if (gemini) {
+        try {
+          console.log('Repli sur Gemini pour la rédaction IA...');
+          const response = await gemini.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: targetPrompt,
+          });
+          if (response && response.text && response.text.trim()) {
+            generatedText = response.text.trim();
+          }
+        } catch (geminiErr: any) {
+          console.warn('Gemini fallback failed:', geminiErr?.message);
+        }
+      }
+    }
+
+    // 3. Repli intelligent garanti sans coupure
+    if (!generatedText) {
+      console.log('Génération de repli textuel basée sur le profil...');
+      generatedText = generateLocalFallback(type, hints, currentDraft, tone, profileContext);
+    }
+
+    // Nettoyage des guillemets éventuels
+    generatedText = generatedText.replace(/^["'«»\s]+|["'«»\s]+$/g, '').trim();
+
+    return res.json({
+      success: true,
+      text: generatedText,
+      reply: generatedText,
+    });
+  } catch (error: any) {
+    console.error('Erreur API assistant rédaction IA:', error);
+    return res.status(500).json({ error: error?.message || 'Erreur lors de la rédaction' });
+  }
+});
+
+// Transmission de signalement ou message d'assistance vers l'administrateur (+227 82461299)
+app.post('/api/contact-support', async (req, res) => {
+  try {
+    const {
+      userId,
+      userName = 'Membre Nassib',
+      userEmail,
+      userPhone,
+      issueType = 'Autre problème',
+      description = '',
+    } = req.body || {};
+
+    if (!description || !description.trim()) {
+      return res.status(400).json({ error: 'La description du problème est obligatoire.' });
+    }
+
+    const adminWhatsApp = process.env.ADMIN_WHATSAPP_PHONE || '22782461299';
+    const cleanPhone = adminWhatsApp.replace(/[^0-9]/g, '');
+
+    const nowFormatted = new Date().toLocaleString('fr-FR', {
+      timeZone: 'Africa/Niamey',
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
+
+    const formattedMessage = [
+      `🔔 *NOUVEAU SIGNALEMENT / MESSAGE SUPPORT (NASSIB)* 🔔`,
+      ``,
+      `📌 *Type de problème :* ${issueType}`,
+      `👤 *Membre :* ${userName}`,
+      userPhone ? `📞 *Téléphone :* ${userPhone}` : null,
+      userEmail ? `✉️ *Email :* ${userEmail}` : null,
+      `⏰ *Date (Niamey) :* ${nowFormatted}`,
+      userId ? `🆔 *Identifiant :* ${userId}` : null,
+      ``,
+      `📝 *Description :*`,
+      `${description.trim()}`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    console.log('--- NOUVEAU TICKET SUPPORT TRANSMIS ---');
+    console.log('Admin WhatsApp:', `+${cleanPhone}`);
+    console.log(formattedMessage);
+    console.log('---------------------------------------');
+
+    // 1. Sauvegarde dans Supabase pour archivage sécurisé
+    const supabase = getSupabaseServer();
+    if (supabase) {
+      try {
+        await supabase.from('admin_audit_logs').insert({
+          action: 'user_support_ticket',
+          target_type: 'support_ticket',
+          details: {
+            issueType,
+            description: description.trim(),
+            userName,
+            userPhone,
+            userEmail,
+            userId,
+            adminWhatsApp: `+${cleanPhone}`,
+            sentAt: new Date().toISOString(),
+          },
+        });
+      } catch (dbErr) {
+        console.warn('Erreur archivage support dans admin_audit_logs:', dbErr);
+      }
+    }
+
+    // 2. Envoi vers WhatsApp via passerelles configurées
+    // a. Webhook WhatsApp / Automatisation (n8n, Make, Zapier...)
+    const webhookUrl = process.env.WHATSAPP_WEBHOOK_URL;
+    if (webhookUrl) {
+      try {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: cleanPhone,
+            message: formattedMessage,
+            issueType,
+            description: description.trim(),
+            userName,
+            userPhone,
+            userEmail,
+            userId,
+          }),
+        });
+      } catch (errWh) {
+        console.warn('Erreur Webhook WhatsApp:', errWh);
+      }
+    }
+
+    // b. CallMeBot API (passerelle gratuite vers numéro personnel WhatsApp)
+    const callmebotKey = process.env.CALLMEBOT_API_KEY || process.env.WHATSAPP_API_KEY;
+    if (callmebotKey) {
+      try {
+        const textEncoded = encodeURIComponent(formattedMessage);
+        await fetch(
+          `https://api.callmebot.com/whatsapp.php?phone=+${cleanPhone}&text=${textEncoded}&apikey=${callmebotKey}`
+        );
+      } catch (errBot) {
+        console.warn('Erreur CallMeBot WhatsApp:', errBot);
+      }
+    }
+
+    // c. Meta WhatsApp Cloud API officielle
+    const metaToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    const metaPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    if (metaToken && metaPhoneId) {
+      try {
+        await fetch(`https://graph.facebook.com/v19.0/${metaPhoneId}/messages`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${metaToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: cleanPhone,
+            type: 'text',
+            text: { body: formattedMessage },
+          }),
+        });
+      } catch (errMeta) {
+        console.warn('Erreur Meta WhatsApp Cloud API:', errMeta);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Votre message a bien été transmis à l’administrateur.',
+    });
+  } catch (error: any) {
+    console.error('Erreur API support:', error);
+    return res.status(500).json({ error: error?.message || 'Erreur lors de la transmission.' });
+  }
 });
 
 export default app;

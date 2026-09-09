@@ -162,33 +162,28 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
   const normalizeGender = (g?: string): 'male' | 'female' | 'unknown' => {
     if (!g) return 'unknown';
     const s = String(g).toLowerCase().trim();
-    if (s === 'male' || s === 'homme' || s === 'garçon' || s === 'garcon' || s === 'h' || s === 'm') return 'male';
-    if (s === 'female' || s === 'femme' || s === 'fille' || s === 'f') return 'female';
+    if (s === 'male' || s === 'homme' || s === 'garçon' || s === 'garcon' || s === 'h' || s === 'm' || s === 'masculin') return 'male';
+    if (s === 'female' || s === 'femme' || s === 'fille' || s === 'f' || s === 'feminin') return 'female';
     return 'unknown';
   };
 
   const filteredProfiles = useMemo(() => {
     let list = (profiles || []).filter((p) => {
-      // 0. Tout profil qui n'a téléversé aucune photo ne doit pas être visible dans l'application
-      if (!hasUploadedPhotos(p)) return false;
-
       // 1. Règle Halal Stricte :
-      // - Si un garçon (homme) est connecté, il voit UNIQUEMENT tous les profils de filles (femmes).
-      // - Si une fille (femme) est connectée, elle voit UNIQUEMENT tous les profils de garçons (hommes).
-      // Note : Cette logique affiche tous les profils inscrits (distincte de la recommandation de l'accueil).
+      // - Si un garçon (homme) est connecté, il voit UNIQUEMENT les profils de filles (femmes).
+      // - Si une fille (femme) est connectée, elle voit UNIQUEMENT les profils de garçons (hommes).
       const userGender = normalizeGender(user.gender);
       const profGender = normalizeGender(p.gender);
 
       if (userGender === 'male') {
-        if (profGender !== 'female') return false;
+        if (profGender === 'male') return false;
       } else if (userGender === 'female') {
-        if (profGender !== 'male') return false;
+        if (profGender === 'female') return false;
       }
 
-      // 2. Masquer son propre profil
+      // 2. Masquer son propre compte par ID uniquement
       if (user.id && (p.userId === user.id || p.id === user.id)) return false;
-      if (user.email && (p.email === user.email || p.userEmail === user.email)) return false;
-      if (user.name && p.name && user.name.trim().toLowerCase() === p.name.trim().toLowerCase()) return false;
+      if (user.email && p.userEmail && user.email.toLowerCase() === p.userEmail.toLowerCase()) return false;
 
       // 3. Filtres optionnels choisis par l'utilisateur
       if (selectedCity && !checkCityMatch(p.city, selectedCity)) return false;
@@ -202,8 +197,16 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
       return true;
     });
 
-    // Tri des profils avec priorité Premium & Boosts ("Sois vu(e) en premier")
+    // Tri des profils :
+    // - Les profils sans photo sont relégués tout en bas ("noyés presque invisibles")
+    // - Priorité ensuite aux profils avec Boost actif et Statut Premium
     list = [...list].sort((a, b) => {
+      const aHasPhoto = hasUploadedPhotos(a);
+      const bHasPhoto = hasUploadedPhotos(b);
+      if (aHasPhoto !== bHasPhoto) {
+        return aHasPhoto ? -1 : 1;
+      }
+
       const aIsBoosted = Boolean(a.boostedUntil && new Date(a.boostedUntil).getTime() > Date.now());
       const bIsBoosted = Boolean(b.boostedUntil && new Date(b.boostedUntil).getTime() > Date.now());
       const aScore = (aIsBoosted ? 20 : 0) + (a.isPremium ? 10 : 0) + (a.isVerifiedNNI ? 2 : 0);
@@ -232,10 +235,10 @@ export const BrowseView: React.FC<BrowseViewProps> = ({
             </span>
             <div>
               <p className="font-display font-bold text-xs sm:text-sm text-[#211E1A]">
-                Votre profil n'est pas visible dans l'application
+                Votre profil est actuellement presque invisible
               </p>
               <p className="font-body text-xs text-[#575147]">
-                Sans photo de profil, votre compte reste invisible aux autres membres et vous êtes en mode consultation seule. Ajoutez au moins une photo pour devenir visible et pouvoir échanger.
+                Les profils sans photo sont <strong>noyés tout en bas des résultats et presque invisibles</strong> pour les autres membres. Ajoutez une photo pour remonter immédiatement en tête de liste et multiplier vos chances ! (Mode flouté discrétion disponible).
               </p>
             </div>
           </div>

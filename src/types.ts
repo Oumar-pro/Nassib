@@ -270,7 +270,7 @@ export function calculateProfileCompletion(p: Partial<Profile> | null | undefine
 }
 
 /**
- * Règle stricte : Tout profil qui n'a téléversé aucune photo ne doit pas être visible dans l'application.
+ * Vérifie si le profil a une photo de profil téléversée.
  */
 export function hasUploadedPhoto(p: Partial<Profile> | null | undefined): boolean {
   if (!p) return false;
@@ -279,8 +279,13 @@ export function hasUploadedPhoto(p: Partial<Profile> | null | undefined): boolea
   return hasPhotoUrl || hasPhotos;
 }
 
+/**
+ * Règle de visibilité : Les profils sont visibles dans l'application dès lors qu'ils sont créés.
+ * Les profils sans photo restent visibles mais sont relégués tout en bas ("noyés presque invisibles").
+ */
 export function isProfileVisible(p: Partial<Profile> | null | undefined): boolean {
-  return hasUploadedPhoto(p);
+  if (!p) return false;
+  return Boolean(p.name && typeof p.name === 'string' && p.name.trim().length >= 2);
 }
 
 export interface Message {
@@ -343,7 +348,11 @@ export type PhotoAccessRelationshipState =
   | 'LOCKED'
   | 'REQUESTED_SENT'
   | 'REQUESTED_RECEIVED'
-  | 'GRANTED';
+  | 'GRANTED'
+  | 'NO_REQUEST'
+  | 'PENDING'
+  | 'ALLOWED'
+  | 'REJECTED';
 
 export interface UserWaliInfo {
   name: string;
@@ -374,6 +383,8 @@ export interface User {
   premiumExpiresAt?: string;
   dailyContactsCount?: number;
   dailyContactsDate?: string;
+  age?: number;
+  waliReference?: string;
 }
 
 export * from './types/database';

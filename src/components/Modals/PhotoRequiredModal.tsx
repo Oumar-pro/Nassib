@@ -33,12 +33,12 @@ export const PhotoRequiredModal: React.FC<PhotoRequiredModalProps> = ({
 
         {/* Title */}
         <h3 className="font-serif-display font-bold text-xl sm:text-2xl text-[#211E1A] mb-2">
-          Photo de profil requise
+          Optimisez votre visibilité
         </h3>
 
         {/* Description */}
         <p className="font-body text-xs sm:text-sm text-[#575147] leading-relaxed mb-4">
-          Toute personne qui n'a pas ajouté au moins une photo de profil ne peut pas envoyer de demande ni de message sur NASSIB. Vous pouvez uniquement consulter et lire les profils.
+          Les profils sans photo de profil sont <strong>noyés tout en bas des résultats et presque invisibles</strong> pour les autres membres. Ajoutez au moins une photo pour remonter en tête de liste et maximiser vos chances de trouver votre moitié !
         </p>
 
         {/* Informative Note on Privacy */}
@@ -47,7 +47,7 @@ export const PhotoRequiredModal: React.FC<PhotoRequiredModalProps> = ({
             lock
           </span>
           <div className="text-[11px] sm:text-xs text-[#735619] leading-snug">
-            <span className="font-bold">Mode Floutage disponible :</span> Si vous souhaitez préserver votre intimité, vous pourrez activer le mode photo privée. Vos photos ne seront débloquées qu'après votre accord.
+            <span className="font-bold">Option discrétion (Pudeur) :</span> Vous pouvez activer le floutage automatique de votre photo dans vos paramètres. Elle ne sera révélée qu'aux personnes que vous autoriserez explicitement.
           </div>
         </div>
 
@@ -70,7 +70,7 @@ export const PhotoRequiredModal: React.FC<PhotoRequiredModalProps> = ({
             onClick={onClose}
             className="w-full bg-transparent hover:bg-black/5 text-[#575147] font-display text-xs font-semibold py-2.5 px-4 rounded-xl transition-colors cursor-pointer"
           >
-            Continuer la lecture des profils
+            Continuer (profil peu visible)
           </button>
         </div>
       </div>

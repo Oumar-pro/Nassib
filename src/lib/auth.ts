@@ -67,6 +67,36 @@ async function accountFromAuthUser(authUser: any): Promise<AuthAccount> {
 
       const res = await withTimeout(queryPromise, 1800, { data: null, error: null } as any);
       profile = res.data;
+
+      // Si le profil n'existe pas encore dans la table profiles, le créer immédiatement
+      if (!profile && authUser.id) {
+        try {
+          const autoProfile: Record<string, any> = {
+            user_id: authUser.id,
+            name: metadata.name || 'Membre Nassib',
+            gender: metadata.gender === 'female' ? 'female' : 'male',
+            age: 25,
+            city: 'Niamey',
+            marital_status: 'Célibataire',
+            religion: 'Sunnite',
+            education: 'Non précisé',
+            is_verified_nni: false,
+            is_wali_approved: false,
+            is_premium: false,
+            photo_private: false,
+            photo_url: null,
+            bio: '',
+          };
+          const { data: createdProf } = await supabase
+            .from('profiles')
+            .upsert(autoProfile, { onConflict: 'user_id' })
+            .select('name,gender,is_premium,is_verified_nni,is_wali_approved,photo_url')
+            .maybeSingle();
+          if (createdProf) profile = createdProf;
+        } catch (autoErr) {
+          console.warn('Notice auto-creation profile on login:', autoErr);
+        }
+      }
     } catch {
       // Fallback cleanly to metadata
     }
@@ -130,6 +160,31 @@ export async function registerAccount(data: {
     }
 
     if (signUpData.user) {
+      if (signUpData.session) {
+        // Enregistrer immédiatement le profil dans public.profiles dès la création du compte
+        try {
+          const autoProfile: Record<string, any> = {
+            user_id: signUpData.user.id,
+            name,
+            gender: data.gender === 'female' ? 'female' : 'male',
+            age: 25,
+            city: 'Niamey',
+            marital_status: 'Célibataire',
+            religion: 'Sunnite',
+            education: 'Non précisé',
+            is_verified_nni: false,
+            is_wali_approved: false,
+            is_premium: false,
+            photo_private: false,
+            photo_url: null,
+            bio: '',
+          };
+          await supabase.from('profiles').upsert(autoProfile, { onConflict: 'user_id' });
+        } catch (initialProfErr) {
+          console.warn('Initial profile creation notice:', initialProfErr);
+        }
+      }
+
       if (!signUpData.session) {
         return { user: null, error: 'Compte créé avec succès. Veuillez vérifier votre boîte email pour confirmer votre inscription.' };
       }

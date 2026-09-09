@@ -70,16 +70,16 @@ export const ProfileInvisibilityNotice: React.FC<ProfileInvisibilityNoticeProps>
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-2 rounded-full bg-[#C9A45C] animate-pulse shrink-0" />
             <span className="font-display font-bold text-xs uppercase tracking-wider text-[#8A6724]">
-              Profil invisible
+              Visibilité très faible
             </span>
           </div>
 
           <h4 className="font-serif-display font-bold text-sm text-[#211E1A] leading-tight">
-            Votre profil n'apparaît pas
+            Votre profil est presque invisible
           </h4>
 
           <p className="font-body text-xs text-[#575147] leading-relaxed">
-            Sans photo de profil, votre compte reste masqué aux autres membres dans l'application. Ajoutez au moins une photo pour devenir visible et recevoir des demandes.
+            Les profils sans photo de profil sont <strong>noyés tout en bas des résultats et presque invisibles</strong> pour les autres membres. Ajoutez une photo pour remonter immédiatement en tête de liste et attirer des prétendant(e)s sérieux ! (Mode discrétion flouté disponible).
           </p>
 
           <div className="pt-2 flex items-center gap-2">

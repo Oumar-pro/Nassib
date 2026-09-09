@@ -149,7 +149,7 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
         const docSummary = `${docType.toUpperCase()}: ${docNumber.trim()} (${docFullName.trim()})`;
         if (isSupabaseConfigured && user.id) {
           await submitVerificationRequestInSupabase({
-            profileId: user.id,
+            profileId: user.profileId || user.id,
             userId: user.id,
             verificationType: 'nni',
             documentPath: docSummary,
@@ -186,7 +186,7 @@ export const VerificationView: React.FC<VerificationViewProps> = ({
     setSaveSuccess(true);
     if (isSupabaseConfigured && user.id) {
       await submitVerificationRequestInSupabase({
-        profileId: user.id,
+        profileId: user.profileId || user.id,
         userId: user.id,
         verificationType: 'wali',
         adminNote: `${waliRelation} (${waliName}, +227 ${waliPhone})`,

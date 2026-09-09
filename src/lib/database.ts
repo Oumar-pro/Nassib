@@ -3,17 +3,33 @@ import { supabase } from './supabase';
 import { calculateCompatibility } from './compatibility';
 
 export function hasUploadedPhotos(profile: Partial<Profile> | null | undefined): boolean { if (!profile) return false; return Boolean(profile.photoUrl?.trim()) || Boolean(Array.isArray(profile.photos) && profile.photos.some((p)=>typeof p==='string'&&p.trim())); }
+export function normalizeGenderString(g?: any): 'male' | 'female' {
+  if (!g) return 'male';
+  const s = String(g).toLowerCase().trim();
+  if (s === 'female' || s === 'femme' || s === 'fille' || s === 'f' || s === 'feminin') return 'female';
+  return 'male';
+}
+
 const mapProfile = (row: any): Profile => {
   const photoUrl = typeof row.photo_url === 'string' ? row.photo_url.trim() : '';
-  const photos = Array.isArray(row.photos)
-    ? row.photos.filter((p: any) => typeof p === 'string' && p.trim())
-    : photoUrl ? [photoUrl] : [];
+  const photosFromRelation = Array.isArray(row.profile_photos)
+    ? row.profile_photos
+        .slice()
+        .sort((a: any, b: any) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
+        .map((p: any) => (typeof p?.storage_path === 'string' ? p.storage_path.trim() : ''))
+        .filter(Boolean)
+    : [];
+  const photos = photosFromRelation.length > 0
+    ? photosFromRelation
+    : Array.isArray(row.photos)
+      ? row.photos.filter((p: any) => typeof p === 'string' && p.trim())
+      : photoUrl ? [photoUrl] : [];
   return {
     id: row.id,
     userId: row.user_id,
     name: row.name || '',
     age: row.age,
-    gender: row.gender === 'male' || row.gender === 'female' ? row.gender : 'female',
+    gender: normalizeGenderString(row.gender),
     profession: row.profession || '',
     professionCategory: row.profession_category || undefined,
     city: row.city || '',
@@ -60,6 +76,7 @@ const mapProfile = (row: any): Profile => {
     dealBreakers: Array.isArray(row.deal_breakers) ? row.deal_breakers : undefined,
     hasChildren: row.has_children !== null && row.has_children !== undefined ? (row.has_children ? 'Oui' : 'Non') : undefined,
     childrenCount: row.children_count ?? undefined,
+    phone: row.phone || undefined,
     boostsCount: Number(row.boosts_count ?? 0),
     boostedUntil: row.boosted_until || undefined,
     premiumExpiresAt: row.premium_expires_at || undefined,
@@ -71,20 +88,31 @@ const mapProfile = (row: any): Profile => {
 export async function getProfiles(userId?: string, currentUserProfile?: Profile | null): Promise<Profile[]> {
   if (!supabase) return [];
   try {
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*, profile_photos(storage_path, sort_order, is_primary)')
+      .order('created_at', { ascending: false });
     if (error) {
       console.warn('getProfiles Supabase error:', error.message);
       return [];
     }
-    let profiles = (data || []).map(mapProfile).filter(hasUploadedPhotos);
+    let profiles = (data || []).map(mapProfile);
     if (userId) profiles = profiles.filter(p => p.userId !== userId);
     if (currentUserProfile) {
       profiles = profiles.map(p => ({ ...p, matchPercentage: calculateCompatibility(currentUserProfile, p) }));
     }
 
-    // Tri prioritaire : Profils avec Boost actif ou Statut Premium affichés en premier
+    // Tri prioritaire :
+    // 1. Les profils sans photo sont relégués tout en bas ("noyés presque invisibles")
+    // 2. Profils avec Boost actif ou Statut Premium affichés en premier
     const now = Date.now();
     profiles.sort((a, b) => {
+      const aHasPhoto = hasUploadedPhotos(a);
+      const bHasPhoto = hasUploadedPhotos(b);
+      if (aHasPhoto !== bHasPhoto) {
+        return aHasPhoto ? -1 : 1;
+      }
+
       const aIsBoosted = Boolean(a.boostedUntil && new Date(a.boostedUntil).getTime() > now);
       const bIsBoosted = Boolean(b.boostedUntil && new Date(b.boostedUntil).getTime() > now);
 
@@ -125,22 +153,40 @@ export async function getProfiles(userId?: string, currentUserProfile?: Profile 
   }
 }
 
-export async function getProfileById(profileId:string,currentUserProfile?:Profile|null):Promise<Profile|null>{if(!profileId||!supabase)return null;try{const{data,error}=await supabase.from('profiles').select('*').eq('id',profileId).maybeSingle();if(error){console.warn('getProfileById error:',error.message);return null;}if(!data)return null;const profile=mapProfile(data);return currentUserProfile?{...profile,matchPercentage:calculateCompatibility(currentUserProfile,profile)}:profile;}catch(err){console.warn('getProfileById exception:',err);return null;}}
+export async function getProfileById(profileId:string,currentUserProfile?:Profile|null):Promise<Profile|null>{
+  if(!profileId||!supabase)return null;
+  try{
+    const{data,error}=await supabase
+      .from('profiles')
+      .select('*, profile_photos(storage_path, sort_order, is_primary)')
+      .eq('id',profileId)
+      .maybeSingle();
+    if(error){console.warn('getProfileById error:',error.message);return null;}
+    if(!data)return null;
+    const profile=mapProfile(data);
+    return currentUserProfile?{...profile,matchPercentage:calculateCompatibility(currentUserProfile,profile)}:profile;
+  }catch(err){console.warn('getProfileById exception:',err);return null;}
+}
 
 export async function getMyProfile(userId:string):Promise<Profile|null>{
   if(!userId||!supabase)return null;
   try{
-    const queryPromise = supabase.from('profiles').select('*').eq('user_id',userId).maybeSingle();
+    const queryPromise = supabase
+      .from('profiles')
+      .select('*, profile_photos(storage_path, sort_order, is_primary)')
+      .eq('user_id',userId)
+      .maybeSingle();
     const timeoutPromise = new Promise<any>((resolve) => setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 4000));
     const {data,error} = await Promise.race([queryPromise, timeoutPromise]);
     if(error){console.warn('getMyProfile error:',error.message);return null;}
     if(!data)return null;
     const mapped=mapProfile(data);
     try {
-      const privPromise = supabase.from('profile_private').select('wali_reference').eq('user_id',userId).maybeSingle();
+      const privPromise = supabase.from('profile_private').select('wali_reference, phone').eq('user_id',userId).maybeSingle();
       const privTimeout = new Promise<any>((resolve) => setTimeout(() => resolve({ data: null }), 1500));
       const {data:priv} = await Promise.race([privPromise, privTimeout]);
       if(priv?.wali_reference)mapped.waliReference=priv.wali_reference;
+      if(priv?.phone && !mapped.phone)mapped.phone=priv.phone;
     } catch {}
     return mapped;
   }catch(err){console.warn('getMyProfile exception:',err);return null;}
@@ -167,7 +213,7 @@ export async function getMyProfileStats():Promise<ProfileStats|null>{
 export async function saveMyProfile(userId: string, profile: Partial<Profile>, onboardingData?: any): Promise<Profile | null> {
   if (!userId || !supabase) return null;
   const rawAge = Number(profile.age);
-  const age = Number.isFinite(rawAge) && rawAge >= 18 && rawAge <= 100 ? rawAge : 25;
+  const age = Number.isFinite(rawAge) && Math.round(rawAge) >= 18 && Math.round(rawAge) <= 100 ? Math.round(rawAge) : 25;
 
   // Le genre est fixé définitivement lors de l'inscription et l'onboarding (non modifiable ultérieurement)
   const { data: existingProfile } = await supabase
@@ -176,9 +222,7 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
     .eq('user_id', userId)
     .maybeSingle();
 
-  const gender = (existingProfile?.gender === 'male' || existingProfile?.gender === 'female')
-    ? existingProfile.gender
-    : (profile.gender === 'male' ? 'male' : 'female');
+  const gender = normalizeGenderString(existingProfile?.gender || profile.gender);
 
   // Conversion propre de has_children en boolean Supabase
   let hasChildrenBool: boolean | null = null;
@@ -189,6 +233,11 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
     if (s.startsWith('oui') || s === 'true') hasChildrenBool = true;
     else if (s.startsWith('non') || s === 'false') hasChildrenBool = false;
   }
+
+  const cleanHeight = Number.isFinite(Number(profile.height)) && Number(profile.height) > 0 ? Math.round(Number(profile.height)) : null;
+  const cleanWeight = Number.isFinite(Number(profile.weight)) && Number(profile.weight) > 0 ? Math.round(Number(profile.weight)) : null;
+  const cleanChildrenCount = Number.isFinite(Number(profile.childrenCount)) && Number(profile.childrenCount) >= 0 ? Math.round(Number(profile.childrenCount)) : null;
+  const cleanPhone = profile.phone?.trim() || onboardingData?.phone?.trim() || null;
 
   const payload: Record<string, any> = {
     user_id: userId,
@@ -214,8 +263,8 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
     presentation: profile.presentation?.trim() || profile.partnerCriteria?.trim() || null,
     personality: profile.personality?.trim() || onboardingData?.personalityTrait?.trim() || null,
     family_importance: profile.familyImportance?.trim() || onboardingData?.familyImportance?.trim() || null,
-    height: Number.isFinite(Number(profile.height)) && Number(profile.height) > 0 ? Number(profile.height) : null,
-    weight: Number.isFinite(Number(profile.weight)) && Number(profile.weight) > 0 ? Number(profile.weight) : null,
+    height: cleanHeight,
+    weight: cleanWeight,
     body_type: profile.bodyType?.trim() || onboardingData?.bodyType?.trim() || null,
     preferred_age_range: profile.preferredAgeRange?.trim() || onboardingData?.preferredAgeRange?.trim() || null,
     ethnicity: profile.ethnicity?.trim() || null,
@@ -225,10 +274,11 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
     religious_practice_details: profile.religiousPracticeDetails?.trim() || null,
     quran_practice: profile.quranPractice?.trim() || null,
     has_children: hasChildrenBool,
-    children_count: Number.isFinite(Number(profile.childrenCount)) ? Number(profile.childrenCount) : null,
+    children_count: cleanChildrenCount,
     values: Array.isArray(profile.values) ? profile.values : null,
     partner_criteria: profile.partnerCriteria?.trim() || null,
     deal_breakers: Array.isArray(profile.dealBreakers) ? profile.dealBreakers : null,
+    phone: cleanPhone,
   };
   if (profile.isVerifiedNNI !== undefined) payload.is_verified_nni = Boolean(profile.isVerifiedNNI);
   if (profile.isWaliApproved !== undefined) payload.is_wali_approved = Boolean(profile.isWaliApproved);
@@ -245,8 +295,12 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
   const waliReference = onboardingData?.waliName?.trim() && onboardingData?.waliPhone?.trim()
     ? `${onboardingData.waliRelation?.trim() || 'Tuteur'} : ${onboardingData.waliName.trim()} (${onboardingData.waliPhone.trim()})`
     : profile.waliReference?.trim() || null;
-  if (waliReference) {
-    const { error: privError } = await supabase.from('profile_private').upsert({ profile_id: data.id, user_id: userId, wali_reference: waliReference }, { onConflict: 'profile_id' });
+  if (waliReference || cleanPhone) {
+    const privPayload: Record<string, any> = { profile_id: data.id, user_id: userId };
+    if (waliReference) privPayload.wali_reference = waliReference;
+    if (cleanPhone) privPayload.phone = cleanPhone;
+    if (profile.name?.trim()) privPayload.full_name = profile.name.trim();
+    const { error: privError } = await supabase.from('profile_private').upsert(privPayload, { onConflict: 'profile_id' });
     if (privError) console.warn('saveMyProfile private data error:', privError.message);
   }
   if (Array.isArray(profile.photos)) {
@@ -260,6 +314,7 @@ export async function saveMyProfile(userId: string, profile: Partial<Profile>, o
   }
   const saved = mapProfile(data);
   if (waliReference) saved.waliReference = waliReference;
+  if (cleanPhone) saved.phone = cleanPhone;
   if (Array.isArray(profile.photos)) saved.photos = profile.photos;
   return saved;
 }

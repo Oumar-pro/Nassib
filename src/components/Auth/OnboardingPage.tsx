@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { NasibaLogo } from '../NasibaLogo';
 import { OnboardingData } from './OnboardingModal';
 import { PremiumSelect } from '../Common/PremiumSelect';
 import { PremiumDatePicker } from '../Common/PremiumDatePicker';
@@ -184,8 +183,9 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
 
   // Step 6: Religion, Prayers & Hijab
   const [religion, setReligion] = useState<string>('Musulman(e) Sunnite (Rite Malékite)');
-  const [religiousPractice, setReligiousPractice] = useState<string>('Régulière à l\'heure (5 prières)');
-  const [hijabStatus, setHijabStatus] = useState<string>('Porte le Hijab au quotidien');
+  // RÈGLE MÉTIER : rester sans sélection par défaut
+  const [religiousPractice, setReligiousPractice] = useState<string>('');
+  const [hijabStatus, setHijabStatus] = useState<string>('');
 
   // Step 7: Personal Presentation (Bio) & Profession
   const [bio, setBio] = useState<string>('');
@@ -195,25 +195,19 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
 
   // Step 8: Personality & Family Priority
   const [personalityTrait, setPersonalityTrait] = useState<string>('Calme & Posé(e)');
-  const [familyImportance, setFamilyImportance] = useState<string>('Priorité absolue au quotidien');
+  const [familyImportance, setFamilyImportance] = useState<string>('');
 
-  // Step 9: Core Values
-  const [selectedValues, setSelectedValues] = useState<string[]>([
-    'Crainte d\'Allah (Taqwa)',
-    'Respect de la belle-famille',
-    'Pudeur & chasteté (Haya)',
-  ]);
+  // Step 9: Core Values (Vision du mariage)
+  // RÈGLE MÉTIER : rester sans sélection par défaut
+  const [selectedValues, setSelectedValues] = useState<string[]>([]);
 
   // Step 10: Partner Criteria (Ce que la personne cherche)
   const [partnerCriteria, setPartnerCriteria] = useState<string>('');
   const [preferredAgeRange, setPreferredAgeRange] = useState<string>('Tranche d\'âge similaire');
 
-  // Step 11: Deal-breakers (Ce qu'elle n'accepte pas)
-  const [selectedDealBreakers, setSelectedDealBreakers] = useState<string[]>([
-    'Consommation d\'alcool',
-    'Tabagisme / Chicha',
-    'Négligence des 5 prières quotidiennes',
-  ]);
+  // Step 11: Deal-breakers (Lignes Rouges)
+  // RÈGLE MÉTIER : rester sans sélection par défaut
+  const [selectedDealBreakers, setSelectedDealBreakers] = useState<string[]>([]);
   const [customDealBreaker, setCustomDealBreaker] = useState<string>('');
 
   // Step 12: Matrimonial Status & Polygamy
@@ -455,41 +449,37 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FAF8F2] text-[#211E1A] font-body flex flex-col selection:bg-[#8BAE9F]/25 selection:text-[#0F5C4D]">
-      {/* Main Container */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-3.5 sm:px-8 py-6 sm:py-10 flex flex-col justify-center">
-        {/* Inline Navigation & Step Progress */}
-        {!isLoadingAnalysis && currentStep > 0 && (
-          <div className="mb-4 sm:mb-6 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={handlePrev}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E8E3D7] text-xs font-semibold text-[#575147] hover:text-[#0F5C4D] hover:border-[#8BAE9F] shadow-2xs transition-colors cursor-pointer"
-              title="Étape précédente"
-            >
-              <span className="material-symbols-outlined text-base">arrow_back</span>
-              <span>Retour</span>
-            </button>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-[#0F5C4D]">
-                Étape {currentStep} / {totalSteps}
+      {/* Top Dedicated Full-Screen Progress Header - Sans icône retour */}
+      {!isLoadingAnalysis && currentStep > 0 && (
+        <header className="sticky top-0 z-30 bg-[#FAF8F2]/95 backdrop-blur-md border-b border-[#E8E3D7]/70 py-3.5 px-4 sm:px-8">
+          <div className="max-w-2xl mx-auto w-full flex flex-col gap-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-[#575147]">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider uppercase text-[#0F5C4D]">
+                <span className="w-2 h-2 rounded-full bg-[#0F5C4D] animate-pulse"></span>
+                Étape {currentStep} sur {totalSteps}
               </span>
-              <div className="w-20 sm:w-32 h-1.5 bg-[#E8E3D7] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#0F5C4D] transition-all duration-300 rounded-full"
-                  style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                ></div>
-              </div>
+              <span className="text-[11px] font-bold text-[#7D766C]">
+                {Math.round((currentStep / totalSteps) * 100)}% complété
+              </span>
+            </div>
+            <div className="w-full h-1.5 bg-[#E8E3D7] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#0F5C4D] transition-all duration-300 rounded-full"
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              ></div>
             </div>
           </div>
-        )}
+        </header>
+      )}
 
+      {/* Main Full-Screen Body Container - Dédié pleine page sans carte */}
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col justify-between">
         {isLoadingAnalysis ? (
-          /* Loading & Profiling Screen */
+          /* Loading & Profiling Screen - Pleine page */
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl p-8 sm:p-14 border border-[#E8E3D7] shadow-xl text-center space-y-6 max-w-xl mx-auto"
+            className="flex-1 flex flex-col justify-center items-center text-center space-y-6 py-12 max-w-xl mx-auto"
           >
             <div className="w-20 h-20 mx-auto rounded-full bg-[#0F5C4D]/10 border-2 border-[#0F5C4D] flex items-center justify-center text-[#0F5C4D] animate-pulse">
               <span className="material-symbols-outlined text-3xl">hourglass_top</span>
@@ -505,7 +495,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
             </div>
 
             {/* Progress Bar */}
-            <div className="space-y-2">
+            <div className="w-full max-w-md space-y-2">
               <div className="w-full h-3 bg-[#FAF8F2] border border-[#E8E3D7] rounded-full overflow-hidden p-0.5">
                 <div
                   className="h-full bg-[#0F5C4D] rounded-full transition-all duration-150"
@@ -518,23 +508,23 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#E8E3D7] text-[11px] text-[#7D766C] flex items-center justify-center gap-2">
+            <div className="pt-4 border-t border-[#E8E3D7]/60 text-[11px] text-[#7D766C] flex items-center justify-center gap-2">
               <span className="material-symbols-outlined text-sm text-[#C9A45C]">verified</span>
               <span>Inscription protégée par les protocoles éthiques NASSIB</span>
             </div>
           </motion.div>
         ) : currentStep === 0 ? (
           /* ============================================================ */
-          /* ÉCRAN DE BIENVENUE & PRÉPARATION (STEP 0)                    */
+          /* ÉCRAN DE BIENVENUE & PRÉPARATION (STEP 0) - DÉDIÉ PLEIN ÉCRAN */
           /* ============================================================ */
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="bg-white rounded-3xl p-8 sm:p-12 border border-[#E8E3D7] shadow-xl relative overflow-hidden space-y-8"
+            exit={{ opacity: 0, y: -15 }}
+            className="flex-1 flex flex-col justify-between space-y-8"
           >
-            <div className="text-center space-y-3">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FAF8F2] border border-[#E8E3D7] text-xs font-semibold text-[#0F5C4D]">
+            <div className="text-center space-y-3 pt-2">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#E8E3D7] text-xs font-semibold text-[#0F5C4D] shadow-2xs">
                 <span className="material-symbols-outlined text-sm text-[#C9A45C]">auto_awesome</span>
                 <span>Bismillah Ar-Rahman Ar-Rahim</span>
               </div>
@@ -543,7 +533,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                 Bienvenue sur NASSIB, {userName} !
               </h1>
 
-              <p className="font-body text-xs sm:text-sm text-[#575147] max-w-2xl mx-auto leading-relaxed">
+              <p className="font-body text-xs sm:text-sm text-[#575147] max-w-xl mx-auto leading-relaxed">
                 Votre démarche matrimoniale repose sur une intention noble et sincère (Niyyah).
                 Pour vous présenter les profils les plus compatibles et respectueux de votre vision,
                 nous vous guidons à travers un parcours d'onboarding complet, bienveillant et 100% confidentiel.
@@ -552,7 +542,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
 
             {/* Preparation Roadmap */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-5 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] space-y-2">
+              <div className="p-5 rounded-2xl bg-white border border-[#E8E3D7] shadow-2xs space-y-2">
                 <div className="w-10 h-10 rounded-xl bg-[#0F5C4D]/10 text-[#0F5C4D] flex items-center justify-center font-bold text-base">
                   1
                 </div>
@@ -564,7 +554,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] space-y-2">
+              <div className="p-5 rounded-2xl bg-white border border-[#E8E3D7] shadow-2xs space-y-2">
                 <div className="w-10 h-10 rounded-xl bg-[#C9A45C]/20 text-[#735619] flex items-center justify-center font-bold text-base">
                   2
                 </div>
@@ -576,7 +566,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-[#FAF8F2] border border-[#E8E3D7] space-y-2">
+              <div className="p-5 rounded-2xl bg-white border border-[#E8E3D7] shadow-2xs space-y-2">
                 <div className="w-10 h-10 rounded-xl bg-[#8BAE9F]/20 text-[#0F5C4D] flex items-center justify-center font-bold text-base">
                   3
                 </div>
@@ -595,50 +585,39 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                 shield
               </span>
               <div className="text-xs text-[#575147] leading-relaxed">
-                <strong className="text-[#0F5C4D]">Garantie de Pudeur &amp; Confidentialité :</strong> Vos informations sont protégées.
-                Sur NASSIB, seuls les profils comportant au moins une photo et complétés à 50% ou plus sont visibles aux autres membres, garantissant le sérieux des échanges.
+                <strong className="text-[#0F5C4D]">Pudeur, Visibilité &amp; Vérification :</strong> Vos informations sont protégées.
+                Sur NASSIB, ajouter une photo vous positionne en tête de liste (les profils sans photo sont noyés et presque invisibles). Le badge officiel Vérifié est quant à lui réservé à la vérification d'identité (NNI/Passeport).
               </div>
             </div>
 
-            {/* Start Onboarding CTA */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-[#E8E3D7]">
-              {onCancel ? (
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  className="text-xs font-semibold text-[#7D766C] hover:text-[#211E1A] cursor-pointer"
-                >
-                  Revenir plus tard
-                </button>
-              ) : (
-                <div className="text-xs text-[#7D766C]">Temps estimé : ~3 à 4 minutes</div>
-              )}
-
+            {/* Start Onboarding Primary CTA - SANS bouton d'abandon / Revenir plus tard */}
+            <div className="pt-4 flex flex-col items-center gap-3">
               <button
                 type="button"
                 onClick={handleNext}
-                className="w-full sm:w-auto px-8 py-4 bg-[#0F5C4D] text-white hover:bg-[#0c4a3e] rounded-2xl font-display text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-4 px-8 bg-[#0F5C4D] text-white hover:bg-[#0c4a3e] active:scale-[0.99] rounded-2xl font-display text-sm sm:text-base font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Commencer mon parcours</span>
                 <span className="material-symbols-outlined text-base">arrow_forward</span>
               </button>
+              <div className="text-[11px] text-[#7D766C] flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-xs">schedule</span>
+                <span>Temps estimé : ~3 à 4 minutes • Sauvegarde automatique</span>
+              </div>
             </div>
           </motion.div>
         ) : (
           /* ============================================================ */
-          /* FORMULAIRE SÉQUENTIEL MULTI-ÉTAPES                           */
+          /* FORMULAIRE SÉQUENTIEL MULTI-ÉTAPES - DÉDIÉ PLEIN ÉCRAN       */
           /* ============================================================ */
-          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#E8E3D7] shadow-xl space-y-6">
-            <div className="border-b border-[#E8E3D7] pb-4 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-bold text-[#C9A45C] tracking-wider uppercase">
-                  Étape {currentStep} sur {totalSteps}
-                </span>
-                <h2 className="font-serif-display text-xl sm:text-2xl font-bold text-[#0F5C4D] mt-0.5">
-                  {STEP_TITLES[currentStep]}
-                </h2>
-              </div>
-              <NasibaLogo size="sm" />
+          <div className="flex-1 flex flex-col justify-between space-y-6">
+            <div className="space-y-1 pb-2">
+              <span className="text-[11px] font-bold text-[#C9A45C] tracking-wider uppercase">
+                {currentStep <= 5 ? 'Identité & Origine' : currentStep <= 9 ? 'Foi & Tempérament' : currentStep <= 13 ? 'Vision & Critères' : 'Finalisation'}
+              </span>
+              <h2 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#0F5C4D]">
+                {STEP_TITLES[currentStep]}
+              </h2>
             </div>
 
             <div className="min-h-[280px]">
@@ -1525,25 +1504,19 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
               {currentStep === 15 && (
                 <div className="space-y-6">
                   {/* Critical Visibility Rule Banner */}
-                  <div
-                    className={`p-4 rounded-2xl border flex items-start gap-3 text-xs leading-relaxed ${
-                      isVisibleOnApp
-                        ? 'bg-[#8BAE9F]/15 border-[#0F5C4D]/30 text-[#0F5C4D]'
-                        : 'bg-amber-50 border-amber-300 text-amber-900'
-                    }`}
-                  >
+                  <div className="p-4 rounded-2xl border flex items-start gap-3 text-xs leading-relaxed bg-[#8BAE9F]/15 border-[#0F5C4D]/30 text-[#0F5C4D]">
                     <span className="material-symbols-outlined text-xl shrink-0 mt-0.5">
-                      {isVisibleOnApp ? 'verified' : 'warning'}
+                      info
                     </span>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <strong className="font-bold text-sm block">
-                        Règles strictes de visibilité sur NASSIB :
+                        Règles de visibilité et vérification sur NASSIB :
                       </strong>
                       <p>
-                        <strong>1. Photo obligatoire :</strong> Tout profil n'ayant aucune photo reste <strong>automatiquement masqué et invisible</strong> aux autres membres.
+                        <strong>1. Visibilité prioritaire avec photo :</strong> Les profils ayant au moins une photo apparaissent en tête de liste. Les profils sans photo restent visibles mais sont <strong>noyés tout en bas et presque invisibles</strong>.
                       </p>
                       <p>
-                        <strong>2. Complétion minimale de 50% :</strong> Tout profil dont le pourcentage de complétion est inférieur à 50% reste également <strong>non visible</strong> sur l'application.
+                        <strong>2. Badge Vérifié officiel :</strong> Le badge Vérifié est <strong>strictement réservé à la vérification d'identité officielle (NNI / Passeport)</strong>. L'activation de votre profil après inscription ne vous attribue pas ce badge.
                       </p>
                     </div>
                   </div>
@@ -1556,14 +1529,14 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                           Taux de complétion de votre profil :
                         </span>
                         <div className="text-[11px] text-[#575147]">
-                          Statut actuel :{' '}
-                          {isVisibleOnApp ? (
+                          Visibilité :{' '}
+                          {hasPhoto ? (
                             <span className="text-emerald-700 font-bold">
-                              Visible aux autres membres
+                              Optimale (En tête de liste)
                             </span>
                           ) : (
                             <span className="text-amber-800 font-bold">
-                              Non visible sur l'application (Masqué)
+                              Faible (Noyé en bas des résultats)
                             </span>
                           )}
                         </div>
@@ -1592,29 +1565,29 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`material-symbols-outlined text-sm font-bold ${
-                            hasPhoto ? 'text-emerald-600' : 'text-red-500'
+                            hasPhoto ? 'text-emerald-600' : 'text-amber-600'
                           }`}
                         >
-                          {hasPhoto ? 'check_circle' : 'cancel'}
+                          {hasPhoto ? 'check_circle' : 'info'}
                         </span>
-                        <span className={hasPhoto ? 'text-[#211E1A]' : 'text-red-600 font-semibold'}>
-                          Photo ajoutée ({hasPhoto ? 'Oui' : 'Non - Requise'})
+                        <span className={hasPhoto ? 'text-[#211E1A]' : 'text-amber-700 font-semibold'}>
+                          Photo : {hasPhoto ? 'Ajoutée (Profil prioritaire)' : 'Non ajoutée (Profil peu visible)'}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`material-symbols-outlined text-sm font-bold ${
-                            currentCompletionScore >= 50 ? 'text-emerald-600' : 'text-red-500'
+                            currentCompletionScore >= 50 ? 'text-emerald-600' : 'text-amber-600'
                           }`}
                         >
-                          {currentCompletionScore >= 50 ? 'check_circle' : 'cancel'}
+                          {currentCompletionScore >= 50 ? 'check_circle' : 'pending'}
                         </span>
                         <span
                           className={
-                            currentCompletionScore >= 50 ? 'text-[#211E1A]' : 'text-red-600 font-semibold'
+                            currentCompletionScore >= 50 ? 'text-[#211E1A]' : 'text-amber-700 font-semibold'
                           }
                         >
-                          Complétion ≥ 50% ({currentCompletionScore}%)
+                          Complétion recommandée ≥ 50% ({currentCompletionScore}%)
                         </span>
                       </div>
                     </div>
@@ -1623,7 +1596,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                   {/* Photo Upload Boxes */}
                   <div className="space-y-2">
                     <label className="font-display text-xs font-bold text-[#211E1A] block">
-                      Téléversez votre photo de profil (au moins 1 pour être visible) :
+                      Téléversez votre photo de profil (fortement recommandé pour être vu en premier) :
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {[0, 1, 2].map((idx) => {
@@ -1670,7 +1643,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                                   {idx === 0 ? 'Photo principale *' : `Photo ${idx + 1}`}
                                 </span>
                                 <span className="text-[10px] text-[#7D766C]/90 mt-1">
-                                  {idx === 0 ? '(Obligatoire pour visibilité)' : '(Complémentaire)'}
+                                  {idx === 0 ? '(Recommandée pour visibilité)' : '(Complémentaire)'}
                                 </span>
                                 <input
                                   type="file"
@@ -1684,34 +1657,38 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
                         );
                       })}
                     </div>
+
+                    {!hasPhoto && (
+                      <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200/70 text-xs text-amber-900 flex items-start gap-2.5">
+                        <span className="material-symbols-outlined text-amber-600 text-lg shrink-0 mt-0.5">
+                          visibility_off
+                        </span>
+                        <p className="leading-relaxed">
+                          <strong>Note importante :</strong> Vous pouvez finaliser votre inscription sans photo dès maintenant. Votre profil sera enregistré et accessible, mais il apparaîtra <strong>tout en bas des recherches (« noyé et presque invisible »)</strong>. Vous pourrez ajouter une photo à tout moment pour être propulsé en tête.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Bottom Navigation Buttons */}
-            <div className="pt-4 flex flex-col sm:flex-row gap-3 items-center justify-between border-t border-[#E8E3D7]">
-              <button
-                type="button"
-                onClick={handlePrev}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl font-display text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#E8E3D7] bg-white text-[#575147] hover:bg-[#FAF8F2]"
-              >
-                <span className="material-symbols-outlined text-sm">arrow_back</span>
-                <span>Étape précédente</span>
-              </button>
-
+            {/* Dedicated Full-Screen Bottom Navigation */}
+            <div className="pt-6 mt-auto border-t border-[#E8E3D7]/70">
               <button
                 type="button"
                 onClick={handleNext}
                 disabled={currentStep === 14 && !agreedToTerms}
-                className="w-full sm:w-auto px-8 py-3.5 bg-[#0F5C4D] text-white hover:bg-[#0c4a3e] rounded-2xl font-display text-xs sm:text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full py-4 px-6 bg-[#0F5C4D] text-white hover:bg-[#0c4a3e] active:scale-[0.99] rounded-2xl font-display text-sm sm:text-base font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>
                   {currentStep === totalSteps
-                    ? 'Finaliser mon profil et commencer'
+                    ? hasPhoto
+                      ? 'Finaliser mon profil et commencer'
+                      : 'Finaliser mon profil sans photo'
                     : 'Continuer'}
                 </span>
-                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                <span className="material-symbols-outlined text-base">arrow_forward</span>
               </button>
             </div>
           </div>

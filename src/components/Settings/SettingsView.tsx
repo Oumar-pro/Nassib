@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, TabType, Profile, calculateProfileCompletion, isProfileVisible, isProfileFullyComplete } from '../../types';
 import { NassibLogoIcon } from '../NasibaLogo';
 import { SubscriptionDetailView } from '../Subscription/SubscriptionDetailView';
+import { ContactSupportView } from './ContactSupportView';
 import { compressAndOptimizeImage } from '../../lib/imageOptimizer';
 
 interface SettingsViewProps {
@@ -46,7 +47,8 @@ type SettingsSection =
   | 'religion'
   | 'wali'
   | 'security'
-  | 'subscription';
+  | 'subscription'
+  | 'contact';
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   user,
@@ -95,14 +97,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [weight, setWeight] = useState<number | ''>(profile?.weight || '');
   const [ethnicity, setEthnicity] = useState<string>(profile?.ethnicity || '');
   const [originCity, setOriginCity] = useState<string>(profile?.originCity || '');
-  const [hijabStatus, setHijabStatus] = useState<string>(profile?.hijabStatus || '');
-  const [religiousPractice, setReligiousPractice] = useState<string>(profile?.religiousPracticeDetails || profile?.religion || 'Musulman(e) Sunnite');
+  const [hijabStatus, setHijabStatus] = useState<string>('');
+  const [religiousPractice, setReligiousPractice] = useState<string>('');
   const [profession, setProfession] = useState<string>(profile?.profession || '');
   const [city, setCity] = useState<string>(profile?.city || 'Niamey');
   const [maritalStatus, setMaritalStatus] = useState<string>(profile?.maritalStatus || 'Jamais marié(e)');
   const [education, setEducation] = useState<string>(profile?.education || 'Licence / Bac+3');
-  const [selectedValues, setSelectedValues] = useState<string[]>(profile?.values || ['Prière à l\'heure', 'Famille & Enfants', 'Respect mutuel']);
-  const [selectedDealBreakers, setSelectedDealBreakers] = useState<string[]>(profile?.dealBreakers || ['Négligence des prières', 'Mensonge & Tromperie']);
+  // Règle métier : Les onglets Vision et Pratique religieuse doivent rester sans sélection par défaut
+  const [selectedValues, setSelectedValues] = useState<string[]>([]);
+  const [selectedDealBreakers, setSelectedDealBreakers] = useState<string[]>([]);
 
   // Wali state
   const [waliName, setWaliName] = useState<string>(user.waliInfo?.name || '');
@@ -122,14 +125,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       if (profile.weight) setWeight(profile.weight);
       if (profile.ethnicity) setEthnicity(profile.ethnicity);
       if (profile.originCity) setOriginCity(profile.originCity);
-      if (profile.hijabStatus) setHijabStatus(profile.hijabStatus);
-      if (profile.religiousPracticeDetails) setReligiousPractice(profile.religiousPracticeDetails);
       if (profile.profession) setProfession(profile.profession);
       if (profile.city) setCity(profile.city);
       if (profile.maritalStatus) setMaritalStatus(profile.maritalStatus);
       if (profile.education) setEducation(profile.education);
-      if (profile.values) setSelectedValues(profile.values);
-      if (profile.dealBreakers) setSelectedDealBreakers(profile.dealBreakers);
+      // Règle d'exception : les onglets "Vision" et "Pratique religieuse du mariage"
+      // restent sans sélection par défaut même si remplis lors de l'onboarding
     }
   }, [profile]);
 
@@ -383,6 +384,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         gender,
         photoUrl: mainPhoto,
         photos: activePhotos,
+        phone,
         bio,
         partnerCriteria,
         presentation: bio || partnerCriteria,
@@ -410,6 +412,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const firstName = name ? name.split(' ')[0] : 'Ousmane';
 
   // Section definition array
+  // RÈGLE MÉTIER : Configurer le statut visuel des cartes "Tuteur légal" et des cartes d'information
+  // pour qu'elles s'affichent comme déjà renseignées / validées (isComplete: true)
   const actionCards = [
     {
       id: 'photo' as const,
@@ -421,51 +425,51 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     {
       id: 'personal' as const,
       title: 'Informations personnelles',
-      subtitle: isPersonalComplete ? 'Nom, âge, taille, poids, ethnie et origine renseignés' : 'Nom, âge, taille, poids, ethnie, origine...',
+      subtitle: 'Nom, âge, taille, poids, ethnie et origine renseignés',
       icon: 'person',
-      isComplete: isPersonalComplete,
+      isComplete: true,
     },
     {
       id: 'location' as const,
       title: 'Localisation & Profession',
-      subtitle: isLocationComplete ? 'Ville, profession et niveau d’études renseignés' : 'Ville, métier, diplôme...',
+      subtitle: 'Ville, profession et niveau d’études renseignés',
       icon: 'location_on',
-      isComplete: isLocationComplete,
+      isComplete: true,
     },
     {
       id: 'marriage' as const,
       title: 'Vision du mariage',
-      subtitle: isMarriageComplete ? 'Critères, valeurs et lignes rouges renseignés' : 'Ce que tu recherches, valeurs et lignes rouges...',
+      subtitle: 'Critères, valeurs et lignes rouges renseignés',
       icon: 'favorite',
-      isComplete: isMarriageComplete,
+      isComplete: true,
     },
     {
       id: 'personality' as const,
       title: 'Personnalité',
-      subtitle: isPersonalityComplete ? 'Biographie de présentation renseignée' : 'Biographie & traits de caractère...',
+      subtitle: 'Biographie de présentation renseignée',
       icon: 'groups',
-      isComplete: isPersonalityComplete,
+      isComplete: true,
     },
     {
       id: 'religion' as const,
       title: 'Pratique religieuse',
-      subtitle: isReligionComplete ? 'Pratique et tenue vestimentaire renseignées' : 'Pratique religieuse, tenue / hijab...',
+      subtitle: 'Pratique et tenue vestimentaire renseignées',
       icon: 'menu_book',
-      isComplete: isReligionComplete,
+      isComplete: true,
     },
     {
       id: 'wali' as const,
       title: 'Tuteur légal (Wali)',
-      subtitle: isWaliComplete ? (user.isWaliApproved ? 'Tuteur validé par l\'équipe' : 'Coordonnées du Wali renseignées') : (gender === 'female' ? 'Coordonnées du Wali obligatoires' : 'Tuteur ou référent familial'),
+      subtitle: 'Coordonnées du Wali validées',
       icon: 'shield',
-      isComplete: isWaliComplete,
+      isComplete: true,
     },
     {
       id: 'security' as const,
       title: 'Sécurité & Paramètres du Compte',
-      subtitle: isSecurityComplete ? 'Email et téléphone renseignés' : 'Email, téléphone, coordonnées...',
+      subtitle: 'Email et téléphone renseignés',
       icon: 'manage_accounts',
-      isComplete: isSecurityComplete,
+      isComplete: true,
     },
     {
       id: 'subscription' as const,
@@ -473,6 +477,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       subtitle: user.isPremium ? `Formule ${user.planName || 'Premium'} active` : 'Offres, tarifs et avantages exclusifs',
       icon: 'workspace_premium',
       isComplete: Boolean(user.isPremium),
+    },
+    {
+      id: 'contact' as const,
+      title: 'Contacter le support / Signaler un problème',
+      subtitle: 'Une question, un bug ou un souci ? Écrivez au support',
+      icon: 'support_agent',
+      isComplete: true,
     },
   ];
 
@@ -1257,6 +1268,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           </div>
         )}
+
+        {/* SECTION 10: CONTACT / SIGNALER UN PROBLÈME */}
+        {activeSection === 'contact' && (
+          <ContactSupportView
+            user={user}
+            profile={profile}
+            onBack={() => setActiveSection(null)}
+            onShowNotice={(msg) => showSaved(msg)}
+          />
+        )}
       </div>
     );
   }
@@ -1461,6 +1482,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white/20 transition-colors">
             <span className="material-symbols-outlined text-lg">chevron_right</span>
           </div>
+        </div>
+      </div>
+
+      {/* Option Support / Signaler un problème */}
+      <div
+        onClick={() => setActiveSection('contact')}
+        className="bg-white rounded-3xl p-5 border border-[#E8E3D7] shadow-xs flex items-center justify-between gap-4 cursor-pointer hover:border-[#0F5C4D]/40 hover:shadow-2xs transition-all group"
+      >
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="w-11 h-11 rounded-2xl bg-[#F0F7F4] text-[#0F5C4D] flex items-center justify-center shrink-0 group-hover:bg-[#E2F0EA] transition-colors">
+            <span className="material-symbols-outlined text-2xl">support_agent</span>
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-display font-bold text-sm text-[#211E1A] truncate group-hover:text-[#0F5C4D] transition-colors">
+              Contacter le support / Signaler un problème
+            </h3>
+            <p className="font-body text-xs text-[#7D766C] truncate mt-0.5">
+              Assistance technique, compte, paiement ou signalement
+            </p>
+          </div>
+        </div>
+
+        <div className="w-8 h-8 rounded-full bg-[#FAF8F2] border border-[#E8E3D7] flex items-center justify-center text-[#7D766C] group-hover:text-[#0F5C4D] group-hover:border-[#0F5C4D]/30 transition-colors shrink-0">
+          <span className="material-symbols-outlined text-lg">chevron_right</span>
         </div>
       </div>
 

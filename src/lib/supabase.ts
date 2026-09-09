@@ -199,8 +199,22 @@ export async function sendContactRequestInSupabase(params: {
   }
 
   try {
+    let effectiveSenderId = params.senderProfileId;
+    const { data: profCheck } = await supabase.from('profiles').select('id').eq('id', effectiveSenderId).maybeSingle();
+    if (!profCheck) {
+      const { data: profByUserId } = await supabase.from('profiles').select('id').eq('user_id', params.senderProfileId).maybeSingle();
+      if (profByUserId) effectiveSenderId = profByUserId.id;
+    }
+
+    let effectiveTargetId = params.targetProfileId;
+    const { data: targetCheck } = await supabase.from('profiles').select('id').eq('id', effectiveTargetId).maybeSingle();
+    if (!targetCheck) {
+      const { data: targetByUserId } = await supabase.from('profiles').select('id').eq('user_id', params.targetProfileId).maybeSingle();
+      if (targetByUserId) effectiveTargetId = targetByUserId.id;
+    }
+
     // 1. Check if conversation already exists
-    const existing = await getExistingConversationBetweenProfiles(params.senderProfileId, params.targetProfileId);
+    const existing = await getExistingConversationBetweenProfiles(effectiveSenderId, effectiveTargetId);
     if (existing) {
       if (existing.status === 'pending') {
         return {
@@ -223,9 +237,9 @@ export async function sendContactRequestInSupabase(params: {
       .from('conversations')
       .insert([
         {
-          candidate_id: params.senderProfileId,
-          suitor_id: params.targetProfileId,
-          requester_id: params.senderProfileId,
+          candidate_id: effectiveSenderId,
+          suitor_id: effectiveTargetId,
+          requester_id: effectiveSenderId,
           status: 'pending',
           is_supervised: true,
           last_message: messageText,
@@ -242,8 +256,8 @@ export async function sendContactRequestInSupabase(params: {
         .from('conversations')
         .insert([
           {
-            candidate_id: params.senderProfileId,
-            suitor_id: params.targetProfileId,
+            candidate_id: effectiveSenderId,
+            suitor_id: effectiveTargetId,
             is_supervised: true,
             last_message: messageText,
             last_message_time: new Date().toISOString(),
@@ -262,7 +276,7 @@ export async function sendContactRequestInSupabase(params: {
     const { error: msgErr } = await supabase.from('messages').insert([
       {
         conversation_id: newConv.id,
-        sender_id: params.senderProfileId,
+        sender_id: effectiveSenderId,
         sender_name: params.senderName,
         sender_avatar: params.senderAvatar || null,
         text: messageText,
@@ -320,7 +334,21 @@ export async function createOrGetConversationInSupabase(
   }
 
   try {
-    const existing = await getExistingConversationBetweenProfiles(candidateProfileId, suitorProfileId);
+    let effectiveCandidateId = candidateProfileId;
+    const { data: candCheck } = await supabase.from('profiles').select('id').eq('id', effectiveCandidateId).maybeSingle();
+    if (!candCheck) {
+      const { data: candByUserId } = await supabase.from('profiles').select('id').eq('user_id', candidateProfileId).maybeSingle();
+      if (candByUserId) effectiveCandidateId = candByUserId.id;
+    }
+
+    let effectiveSuitorId = suitorProfileId;
+    const { data: suitCheck } = await supabase.from('profiles').select('id').eq('id', effectiveSuitorId).maybeSingle();
+    if (!suitCheck) {
+      const { data: suitByUserId } = await supabase.from('profiles').select('id').eq('user_id', suitorProfileId).maybeSingle();
+      if (suitByUserId) effectiveSuitorId = suitByUserId.id;
+    }
+
+    const existing = await getExistingConversationBetweenProfiles(effectiveCandidateId, effectiveSuitorId);
     if (existing) return existing.id;
 
     // Insert new conversation in database
@@ -328,9 +356,9 @@ export async function createOrGetConversationInSupabase(
       .from('conversations')
       .insert([
         {
-          candidate_id: candidateProfileId,
-          suitor_id: suitorProfileId,
-          requester_id: candidateProfileId,
+          candidate_id: effectiveCandidateId,
+          suitor_id: effectiveSuitorId,
+          requester_id: effectiveCandidateId,
           status: 'pending',
           is_supervised: true,
           last_message: 'Discussion engagée sous la supervision du Wali',
@@ -436,12 +464,19 @@ export async function sendMessageToSupabase(
       }
     }
 
+    let effectiveSenderId = senderProfileId;
+    const { data: profCheck } = await supabase.from('profiles').select('id').eq('id', effectiveSenderId).maybeSingle();
+    if (!profCheck) {
+      const { data: profByUserId } = await supabase.from('profiles').select('id').eq('user_id', senderProfileId).maybeSingle();
+      if (profByUserId) effectiveSenderId = profByUserId.id;
+    }
+
     const { data, error } = await supabase
       .from('messages')
       .insert([
         {
           conversation_id: conversationId,
-          sender_id: senderProfileId,
+          sender_id: effectiveSenderId,
           sender_name: senderName,
           sender_avatar: senderAvatar || null,
           text: cleanText,
@@ -743,10 +778,17 @@ export async function submitVerificationRequestInSupabase(params: {
 
   const requestStatus = params.status || 'pending';
   try {
+    let effectiveProfileId = params.profileId;
+    const { data: profCheck } = await supabase.from('profiles').select('id').eq('id', effectiveProfileId).maybeSingle();
+    if (!profCheck) {
+      const { data: profByUserId } = await supabase.from('profiles').select('id').eq('user_id', params.userId).maybeSingle();
+      if (profByUserId) effectiveProfileId = profByUserId.id;
+    }
+
     // Insert verification request
     const { error: reqErr } = await supabase.from('verification_requests').insert([
       {
-        profile_id: params.profileId,
+        profile_id: effectiveProfileId,
         user_id: params.userId,
         verification_type: params.verificationType,
         status: requestStatus,
@@ -775,7 +817,7 @@ export async function submitVerificationRequestInSupabase(params: {
     await supabase.from('profile_private').upsert(
       [
         {
-          profile_id: params.profileId,
+          profile_id: effectiveProfileId,
           user_id: params.userId,
           ...updateField,
           updated_at: new Date().toISOString(),

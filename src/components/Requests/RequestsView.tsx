@@ -4,24 +4,24 @@ import SafeImage from '../Common/SafeImage';
 
 export interface PhotoRequestItem {
   id: string;
-  created_at: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  created_at?: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'approved';
   note?: string;
   requester_profile_id: string;
   target_profile_id: string;
   requester?: {
     id: string;
     name: string;
-    age: number;
-    city: string;
+    age?: number;
+    city?: string;
     profession?: string;
     photo_url?: string;
   };
   target?: {
     id: string;
     name: string;
-    age: number;
-    city: string;
+    age?: number;
+    city?: string;
     profession?: string;
     photo_url?: string;
   };
