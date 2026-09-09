@@ -1,33 +1,33 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import {defineConfig, type Plugin} from 'vite';
 
-export default defineConfig(() => {
-  return {
-    plugins: [react(), tailwindcss()],
-    define: {
-      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || ''),
-      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || ''),
+const profileDataBridge: Plugin = {
+  name: 'nassib-profile-data-bridge',
+  enforce: 'pre',
+  resolveId(source, importer) {
+    if (importer?.endsWith('/src/lib/profileData.ts')) return null;
+    if (source === './lib/database' || source === './lib/database.ts') {
+      return path.resolve(__dirname, 'src/lib/profileData.ts');
+    }
+    return null;
+  },
+};
+
+export default defineConfig(() => ({
+  plugins: [profileDataBridge, react(), tailwindcss()],
+  define: {
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || ''),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || ''),
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '.'),
     },
-    resolve: {
-      alias: [
-        {
-          find: /^\.\/lib\/database$/,
-          replacement: path.resolve(__dirname, 'src/lib/profileData.ts'),
-        },
-        {
-          find: '@',
-          replacement: path.resolve(__dirname, '.'),
-        },
-      ],
-    },
-    server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
-    },
-  };
-});
+  },
+  server: {
+    hmr: process.env.DISABLE_HMR !== 'true',
+    watch: process.env.DISABLE_HMR === 'true' ? null : {},
+  },
+}));
