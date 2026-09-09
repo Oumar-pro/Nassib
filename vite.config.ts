@@ -7,9 +7,9 @@ const profileDataBridge: Plugin = {
   name: 'nassib-profile-data-bridge',
   enforce: 'pre',
   resolveId(source, importer) {
-    if (importer?.endsWith('/src/lib/profileData.ts')) return null;
+    if (importer?.endsWith('/src/lib/profileData.ts') || importer?.endsWith('/src/lib/profileDataRuntime.ts')) return null;
     if (source === './lib/database' || source === './lib/database.ts') {
-      return path.resolve(__dirname, 'src/lib/profileData.ts');
+      return path.resolve(__dirname, 'src/lib/profileDataRuntime.ts');
     }
     return null;
   },
